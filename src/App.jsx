@@ -3,6 +3,7 @@ import PracticeItemList from './components/PracticeItemList';
 import {
   getItems,
   addItem,
+  renameItem,
   deleteItem,
   addLog,
   getTodaysLogs,
@@ -11,6 +12,7 @@ import {
 function App() {
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
+  const [editing, setEditing] = useState(false);
   const [activeItemId, setActiveItemId] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef(null);
@@ -86,6 +88,14 @@ function App() {
     [loadData],
   );
 
+  const handleRenameItem = useCallback(
+    async (id, newName) => {
+      await renameItem(id, newName);
+      await loadData();
+    },
+    [loadData],
+  );
+
   const handleDeleteItem = useCallback(
     async (id) => {
       if (activeItemId === id) {
@@ -99,6 +109,16 @@ function App() {
     [activeItemId, stopTimer, loadData],
   );
 
+  const handleSetEditing = useCallback(
+    async (value) => {
+      if (value && activeItemId != null) {
+        await saveAndStop();
+      }
+      setEditing(value);
+    },
+    [activeItemId, saveAndStop],
+  );
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-lg mx-auto px-4 py-8 flex flex-col gap-6">
@@ -110,9 +130,12 @@ function App() {
           totals={totals}
           activeItemId={activeItemId}
           elapsedTime={elapsedTime}
+          editing={editing}
+          onSetEditing={handleSetEditing}
           onStart={handleStart}
           onStop={handleStop}
           onAddItem={handleAddItem}
+          onRenameItem={handleRenameItem}
           onDeleteItem={handleDeleteItem}
         />
       </div>

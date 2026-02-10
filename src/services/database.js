@@ -17,6 +17,10 @@ export const addItem = async (name) => {
   return await db.practiceItems.add({ name });
 };
 
+export const renameItem = async (id, newName) => {
+  return await db.practiceItems.update(id, { name: newName });
+};
+
 export const deleteItem = async (id) => {
   await db.practiceLogs.where('itemId').equals(id).delete();
   return await db.practiceItems.delete(id);
