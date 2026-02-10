@@ -26,6 +26,7 @@ function Metronome() {
     engineRef.current.onBeat = (beat) => {
       setCurrentBeat(beat);
     };
+
     return () => {
       engineRef.current.destroy();
       engineRef.current = null;
@@ -45,13 +46,13 @@ function Metronome() {
     setCurrentBeat(-1);
   }, [timeSignature]);
 
-  const handleTogglePlay = useCallback(() => {
+  const handleTogglePlay = useCallback(async () => {
     if (isPlaying) {
       engineRef.current.stop();
       setIsPlaying(false);
       setCurrentBeat(-1);
     } else {
-      engineRef.current.start();
+      await engineRef.current.start();
       setIsPlaying(true);
     }
   }, [isPlaying]);

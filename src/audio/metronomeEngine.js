@@ -1,6 +1,7 @@
 export class MetronomeEngine {
   constructor() {
     this.audioCtx = null;
+    this.worker = null;
     this.timerID = null;
     this.nextNoteTime = 0.0;
     this.currentBeat = 0;
@@ -12,9 +13,17 @@ export class MetronomeEngine {
 
     this._lookaheadMs = 25.0;
     this._scheduleAhead = 0.1;
+
+    // Create worker
+    try {
+      this.worker = new Worker('/metronome-worker.js');
+      this.worker.onmessage = () => this._scheduler();
+    } catch (e) {
+      console.warn('Web Worker not available, falling back to setInterval');
+    }
   }
 
-  start() {
+  async start() {
     if (this.isPlaying) return;
 
     if (!this.audioCtx) {
@@ -22,21 +31,29 @@ export class MetronomeEngine {
     }
 
     if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
+      await this.audioCtx.resume();
     }
 
     this.currentBeat = 0;
     this.nextNoteTime = this.audioCtx.currentTime;
     this.isPlaying = true;
 
-    this.timerID = setInterval(() => this._scheduler(), this._lookaheadMs);
+    if (this.worker) {
+      this.worker.postMessage('start');
+    } else {
+      this.timerID = setInterval(() => this._scheduler(), this._lookaheadMs);
+    }
   }
 
   stop() {
     if (!this.isPlaying) return;
 
-    clearInterval(this.timerID);
-    this.timerID = null;
+    if (this.worker) {
+      this.worker.postMessage('stop');
+    } else if (this.timerID) {
+      clearInterval(this.timerID);
+      this.timerID = null;
+    }
     this.isPlaying = false;
   }
 
@@ -51,6 +68,10 @@ export class MetronomeEngine {
 
   destroy() {
     this.stop();
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
+    }
     if (this.audioCtx) {
       this.audioCtx.close();
       this.audioCtx = null;
@@ -58,6 +79,8 @@ export class MetronomeEngine {
   }
 
   _scheduler() {
+    if (!this.audioCtx || !this.isPlaying) return;
+
     while (this.nextNoteTime < this.audioCtx.currentTime + this._scheduleAhead) {
       this._scheduleNote(this.nextNoteTime, this.currentBeat);
       this._advanceBeat();
