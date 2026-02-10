@@ -104,7 +104,7 @@ function PracticeItemList({
 
         {items.length === 0 && (
           <p className="text-center text-gray-400 py-4">
-            No practice items yet. Add one below!
+            {t('noPracticeItems')}
           </p>
         )}
 
@@ -178,7 +178,7 @@ function PracticeItemList({
 
       {items.length === 0 && (
         <p className="text-center text-gray-400 py-4">
-          No practice items yet. Tap Edit to add some!
+          {t('noPracticeItems')}
         </p>
       )}
 
