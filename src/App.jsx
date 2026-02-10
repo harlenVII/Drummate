@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PracticeItemList from './components/PracticeItemList';
+import DailyReport from './components/DailyReport';
+import TabBar from './components/TabBar';
 import {
   getItems,
   addItem,
@@ -7,7 +9,9 @@ import {
   deleteItem,
   addLog,
   getTodaysLogs,
+  getLogsByDate,
 } from './services/database';
+import { getTodayString } from './utils/dateHelpers';
 
 function App() {
   const [items, setItems] = useState([]);
@@ -17,6 +21,9 @@ function App() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('practice');
+  const [reportDate, setReportDate] = useState(getTodayString());
+  const [reportLogs, setReportLogs] = useState([]);
 
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
@@ -119,26 +126,65 @@ function App() {
     [activeItemId, saveAndStop],
   );
 
+  const loadReportData = useCallback(async (dateString) => {
+    const logs = await getLogsByDate(dateString);
+    setReportLogs(logs);
+  }, []);
+
+  const handleReportDateChange = useCallback(
+    async (dateString) => {
+      setReportDate(dateString);
+      await loadReportData(dateString);
+    },
+    [loadReportData],
+  );
+
+  const handleTabChange = useCallback(
+    async (tab) => {
+      setActiveTab(tab);
+      if (tab === 'report') {
+        const today = getTodayString();
+        setReportDate(today);
+        await loadReportData(today);
+      }
+    },
+    [loadReportData],
+  );
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="max-w-lg mx-auto px-4 py-8 flex flex-col gap-6">
+      <div className="max-w-lg mx-auto px-4 py-8 pb-24 flex flex-col gap-6">
         <h1 className="text-3xl font-bold text-center text-gray-800">
           Drummate
         </h1>
-        <PracticeItemList
-          items={items}
-          totals={totals}
-          activeItemId={activeItemId}
-          elapsedTime={elapsedTime}
-          editing={editing}
-          onSetEditing={handleSetEditing}
-          onStart={handleStart}
-          onStop={handleStop}
-          onAddItem={handleAddItem}
-          onRenameItem={handleRenameItem}
-          onDeleteItem={handleDeleteItem}
-        />
+
+        {activeTab === 'practice' && (
+          <PracticeItemList
+            items={items}
+            totals={totals}
+            activeItemId={activeItemId}
+            elapsedTime={elapsedTime}
+            editing={editing}
+            onSetEditing={handleSetEditing}
+            onStart={handleStart}
+            onStop={handleStop}
+            onAddItem={handleAddItem}
+            onRenameItem={handleRenameItem}
+            onDeleteItem={handleDeleteItem}
+          />
+        )}
+
+        {activeTab === 'report' && (
+          <DailyReport
+            items={items}
+            reportDate={reportDate}
+            reportLogs={reportLogs}
+            onDateChange={handleReportDateChange}
+          />
+        )}
       </div>
+
+      <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 }

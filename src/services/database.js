@@ -1,4 +1,5 @@
 import Dexie from 'dexie';
+import { getTodayString } from '../utils/dateHelpers';
 
 export const db = new Dexie('DrummateDB');
 
@@ -29,11 +30,15 @@ export const deleteItem = async (id) => {
 // --- Practice Logs ---
 
 export const addLog = async (itemId, duration) => {
-  const date = new Date().toISOString().split('T')[0];
+  const date = getTodayString();
   return await db.practiceLogs.add({ itemId, date, duration });
 };
 
 export const getTodaysLogs = async () => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getTodayString();
   return await db.practiceLogs.where('date').equals(today).toArray();
+};
+
+export const getLogsByDate = async (dateString) => {
+  return await db.practiceLogs.where('date').equals(dateString).toArray();
 };
