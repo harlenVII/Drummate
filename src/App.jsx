@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import PracticeItemList from './components/PracticeItemList';
 import DailyReport from './components/DailyReport';
+import Metronome from './components/Metronome';
 import TabBar from './components/TabBar';
 import {
   getItems,
@@ -173,6 +174,8 @@ function App() {
             onDeleteItem={handleDeleteItem}
           />
         )}
+
+        {activeTab === 'metronome' && <Metronome />}
 
         {activeTab === 'report' && (
           <DailyReport

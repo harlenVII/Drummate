@@ -21,6 +21,32 @@ function TabBar({ activeTab, onTabChange }) {
       ),
     },
     {
+      key: 'metronome',
+      label: 'Metronome',
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3L5 21h14L12 3z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8l4-5"
+          />
+        </svg>
+      ),
+    },
+    {
       key: 'report',
       label: 'Report',
       icon: (
