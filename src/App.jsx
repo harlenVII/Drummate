@@ -4,6 +4,7 @@ import DailyReport from './components/DailyReport';
 import Metronome from './components/Metronome';
 import TabBar from './components/TabBar';
 import { useLanguage } from './contexts/LanguageContext';
+import { MetronomeEngine } from './audio/metronomeEngine';
 import {
   getItems,
   addItem,
@@ -28,6 +29,13 @@ function App() {
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
 
+  // Metronome state (persists across tab changes)
+  const metronomeEngineRef = useRef(null);
+  const [metronomeBpm, setMetronomeBpm] = useState(120);
+  const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
+  const [metronomeCurrentBeat, setMetronomeCurrentBeat] = useState(-1);
+  const [metronomeTimeSignature, setMetronomeTimeSignature] = useState([4, 4]);
+
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
     setItems(allItems);
@@ -42,6 +50,21 @@ function App() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Initialize metronome engine once
+  useEffect(() => {
+    metronomeEngineRef.current = new MetronomeEngine();
+    metronomeEngineRef.current.onBeat = (beat) => {
+      setMetronomeCurrentBeat(beat);
+    };
+
+    return () => {
+      if (metronomeEngineRef.current) {
+        metronomeEngineRef.current.destroy();
+        metronomeEngineRef.current = null;
+      }
+    };
+  }, []);
 
   const stopTimer = useCallback(() => {
     clearInterval(intervalRef.current);
@@ -185,7 +208,19 @@ function App() {
           />
         )}
 
-        {activeTab === 'metronome' && <Metronome />}
+        {activeTab === 'metronome' && (
+          <Metronome
+            engineRef={metronomeEngineRef}
+            bpm={metronomeBpm}
+            setBpm={setMetronomeBpm}
+            isPlaying={metronomeIsPlaying}
+            setIsPlaying={setMetronomeIsPlaying}
+            currentBeat={metronomeCurrentBeat}
+            setCurrentBeat={setMetronomeCurrentBeat}
+            timeSignature={metronomeTimeSignature}
+            setTimeSignature={setMetronomeTimeSignature}
+          />
+        )}
 
         {activeTab === 'report' && (
           <DailyReport

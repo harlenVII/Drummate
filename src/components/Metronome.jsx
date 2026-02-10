@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { MetronomeEngine } from '../audio/metronomeEngine';
+import { useEffect, useCallback, useRef } from 'react';
 import BpmDial from './BpmDial';
 import BeatIndicator from './BeatIndicator';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -13,40 +12,32 @@ const TIME_SIGNATURES = [
   [7, 8],
 ];
 
-function Metronome() {
+function Metronome({
+  engineRef,
+  bpm,
+  setBpm,
+  isPlaying,
+  setIsPlaying,
+  currentBeat,
+  setCurrentBeat,
+  timeSignature,
+  setTimeSignature,
+}) {
   const { t } = useLanguage();
-  const [bpm, setBpm] = useState(120);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentBeat, setCurrentBeat] = useState(-1);
-  const [timeSignature, setTimeSignature] = useState([4, 4]);
-
-  const engineRef = useRef(null);
   const tapTimesRef = useRef([]);
-
-  useEffect(() => {
-    engineRef.current = new MetronomeEngine();
-    engineRef.current.onBeat = (beat) => {
-      setCurrentBeat(beat);
-    };
-
-    return () => {
-      engineRef.current.destroy();
-      engineRef.current = null;
-    };
-  }, []);
 
   useEffect(() => {
     if (engineRef.current) {
       engineRef.current.setBpm(bpm);
     }
-  }, [bpm]);
+  }, [engineRef, bpm]);
 
   useEffect(() => {
     if (engineRef.current) {
       engineRef.current.setBeatsPerMeasure(timeSignature[0]);
     }
     setCurrentBeat(-1);
-  }, [timeSignature]);
+  }, [engineRef, timeSignature, setCurrentBeat]);
 
   const handleTogglePlay = useCallback(async () => {
     if (isPlaying) {
@@ -57,7 +48,7 @@ function Metronome() {
       await engineRef.current.start();
       setIsPlaying(true);
     }
-  }, [isPlaying]);
+  }, [engineRef, isPlaying, setIsPlaying, setCurrentBeat]);
 
   const handleTap = useCallback(() => {
     const now = performance.now();
