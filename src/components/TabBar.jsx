@@ -1,8 +1,12 @@
+import { useLanguage } from '../contexts/LanguageContext';
+
 function TabBar({ activeTab, onTabChange }) {
+  const { t } = useLanguage();
+
   const tabs = [
     {
       key: 'practice',
-      label: 'Practice',
+      label: t('practice'),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -22,7 +26,7 @@ function TabBar({ activeTab, onTabChange }) {
     },
     {
       key: 'metronome',
-      label: 'Metronome',
+      label: t('metronome'),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -48,7 +52,7 @@ function TabBar({ activeTab, onTabChange }) {
     },
     {
       key: 'report',
-      label: 'Report',
+      label: t('report'),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"

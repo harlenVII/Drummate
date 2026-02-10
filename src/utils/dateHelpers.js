@@ -28,12 +28,12 @@ export function shiftDate(dateString, days) {
  * Formats "YYYY-MM-DD" into a human-readable label.
  * Returns "Today", "Yesterday", or a locale string like "Mon, Jan 6, 2025".
  */
-export function formatDateLabel(dateString) {
+export function formatDateLabel(dateString, t) {
   const today = getTodayString();
-  if (dateString === today) return 'Today';
+  if (dateString === today) return t ? t('today') : 'Today';
 
   const yesterday = shiftDate(today, -1);
-  if (dateString === yesterday) return 'Yesterday';
+  if (dateString === yesterday) return t ? t('yesterday') : 'Yesterday';
 
   const date = new Date(dateString + 'T12:00:00');
   return date.toLocaleDateString(undefined, {

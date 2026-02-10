@@ -3,6 +3,7 @@ import PracticeItemList from './components/PracticeItemList';
 import DailyReport from './components/DailyReport';
 import Metronome from './components/Metronome';
 import TabBar from './components/TabBar';
+import { useLanguage } from './contexts/LanguageContext';
 import {
   getItems,
   addItem,
@@ -15,6 +16,7 @@ import {
 import { getTodayString } from './utils/dateHelpers';
 
 function App() {
+  const { language, toggleLanguage, t } = useLanguage();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -155,9 +157,17 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-lg mx-auto px-4 py-8 pb-24 flex flex-col gap-6">
-        <h1 className="text-3xl font-bold text-center text-gray-800">
-          Drummate
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-gray-800">
+            {t('appName')}
+          </h1>
+          <button
+            onClick={toggleLanguage}
+            className="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {language === 'en' ? '中文' : 'EN'}
+          </button>
+        </div>
 
         {activeTab === 'practice' && (
           <PracticeItemList

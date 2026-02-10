@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { formatTime } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function formatMinutes(totalSeconds) {
   return Math.round(totalSeconds / 60);
 }
 
 function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
+  const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   // Build per-item totals from logs
@@ -49,7 +51,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
           </svg>
         </button>
         <span className="text-lg font-semibold text-gray-800">
-          {formatDateLabel(reportDate)}
+          {formatDateLabel(reportDate, t)}
         </span>
         <button
           onClick={() => onDateChange(shiftDate(reportDate, 1))}
@@ -80,12 +82,12 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
 
       {/* Grand total card */}
       <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-        <p className="text-sm text-gray-500 font-medium">Total Practice Time</p>
+        <p className="text-sm text-gray-500 font-medium">{t('totalPracticeTime')}</p>
         <p className="text-3xl font-mono text-gray-800 mt-1">
-          {formatMinutes(grandTotal)} minutes
+          {formatMinutes(grandTotal)} {t('minutes')}
         </p>
         {grandTotal === 0 && (
-          <p className="text-sm text-gray-400 mt-2">No practice recorded</p>
+          <p className="text-sm text-gray-400 mt-2">{t('noPracticeRecorded')}</p>
         )}
       </div>
 
@@ -100,7 +102,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
               </span>
               <div className={`text-right ${entry.duration > 0 ? 'text-gray-600' : 'text-gray-400'}`}>
                 <div>
-                  {entry.duration > 0 ? formatMinutes(entry.duration) : 0} minutes
+                  {entry.duration > 0 ? formatMinutes(entry.duration) : 0} {t('minutes')}
                 </div>
                 {entry.duration > 0 && (
                   <div className="text-xs text-gray-500">({percentage}%)</div>
@@ -121,7 +123,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
 
       {items.length === 0 && (
         <p className="text-center text-gray-400 py-8">
-          No practice items configured. Go to Practice to add some!
+          {t('noPracticeItems')}
         </p>
       )}
 
@@ -131,7 +133,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
           onClick={() => { setCopied(false); setShowModal(true); }}
           className="mt-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
-          Generate Report
+          {t('generateReport')}
         </button>
       )}
 
@@ -145,14 +147,14 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
             className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-gray-800">Daily Report</h2>
+            <h2 className="text-lg font-bold text-gray-800">{t('dailyReport')}</h2>
             <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
-              {generateReportText(reportDate, grandTotal, breakdown)}
+              {generateReportText(reportDate, grandTotal, breakdown, t)}
             </pre>
             <button
               onClick={async () => {
                 await navigator.clipboard.writeText(
-                  generateReportText(reportDate, grandTotal, breakdown)
+                  generateReportText(reportDate, grandTotal, breakdown, t)
                 );
                 setCopied(true);
               }}
@@ -162,13 +164,13 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
-              {copied ? 'Copied!' : 'Copy to Clipboard'}
+              {copied ? t('copied') : t('copyToClipboard')}
             </button>
             <button
               onClick={() => setShowModal(false)}
               className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
-              Close
+              {t('close')}
             </button>
           </div>
         </div>
@@ -177,18 +179,18 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
   );
 }
 
-function generateReportText(reportDate, grandTotal, breakdown) {
+function generateReportText(reportDate, grandTotal, breakdown, t) {
   // Format date as YYYY/MM/DD
   const [year, month, day] = reportDate.split('-');
   const formattedDate = `${year}/${month}/${day}`;
 
   const lines = [
-    `Date: ${formattedDate}`,
-    `Total: ${formatMinutes(grandTotal)} minutes`,
+    `${t('date')}: ${formattedDate}`,
+    `${t('total')}: ${formatMinutes(grandTotal)} ${t('minutes')}`,
   ];
   for (const entry of breakdown) {
     if (entry.duration > 0) {
-      lines.push(`${entry.name}: ${formatMinutes(entry.duration)} minutes`);
+      lines.push(`${entry.name}: ${formatMinutes(entry.duration)} ${t('minutes')}`);
     }
   }
   return lines.join('\n');

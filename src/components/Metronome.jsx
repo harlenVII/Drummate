@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { MetronomeEngine } from '../audio/metronomeEngine';
 import BpmDial from './BpmDial';
 import BeatIndicator from './BeatIndicator';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const TIME_SIGNATURES = [
   [2, 4],
@@ -13,6 +14,7 @@ const TIME_SIGNATURES = [
 ];
 
 function Metronome() {
+  const { t } = useLanguage();
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(-1);
@@ -144,7 +146,7 @@ function Metronome() {
         onClick={handleTap}
         className="px-6 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-100 transition-colors"
       >
-        Tap Tempo
+        {t('tapTempo')}
       </button>
     </div>
   );

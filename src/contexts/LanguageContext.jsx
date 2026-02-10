@@ -1,0 +1,124 @@
+import { createContext, useContext, useState, useCallback } from 'react';
+
+const translations = {
+  en: {
+    appName: 'Drummate',
+    practice: 'Practice',
+    report: 'Report',
+    metronome: 'Metronome',
+    addItem: 'Add Practice Item',
+    enterName: 'Enter practice item name',
+    add: 'Add',
+    cancel: 'Cancel',
+    edit: 'Edit',
+    done: 'Done',
+    delete: 'Delete',
+    start: 'Start',
+    stop: 'Stop',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    totalPracticeTime: 'Total Practice Time',
+    minutes: 'minutes',
+    noPracticeRecorded: 'No practice recorded',
+    noPracticeItems: 'No practice items configured. Go to Practice to add some!',
+    generateReport: 'Generate Report',
+    dailyReport: 'Daily Report',
+    copyToClipboard: 'Copy to Clipboard',
+    copied: 'Copied!',
+    close: 'Close',
+    date: 'Date',
+    total: 'Total',
+    tapTempo: 'Tap Tempo',
+    bpm: 'BPM',
+    tempoNames: {
+      grave: 'Grave',
+      largo: 'Largo',
+      larghetto: 'Larghetto',
+      adagio: 'Adagio',
+      andante: 'Andante',
+      moderato: 'Moderato',
+      allegro: 'Allegro',
+      vivace: 'Vivace',
+      presto: 'Presto',
+      prestissimo: 'Prestissimo',
+    },
+  },
+  zh: {
+    appName: 'Drummate',
+    practice: '练习',
+    report: '报告',
+    metronome: '节拍器',
+    addItem: '添加练习项目',
+    enterName: '输入练习项目名称',
+    add: '添加',
+    cancel: '取消',
+    edit: '编辑',
+    done: '完成',
+    delete: '删除',
+    start: '开始',
+    stop: '停止',
+    today: '今天',
+    yesterday: '昨天',
+    totalPracticeTime: '总练习时间',
+    minutes: '分钟',
+    noPracticeRecorded: '未记录练习',
+    noPracticeItems: '未配置练习项目。前往练习页面添加！',
+    generateReport: '生成报告',
+    dailyReport: '每日报告',
+    copyToClipboard: '复制到剪贴板',
+    copied: '已复制！',
+    close: '关闭',
+    date: '日期',
+    total: '总计',
+    tapTempo: '敲击节拍',
+    bpm: 'BPM',
+    tempoNames: {
+      grave: '极慢板',
+      largo: '广板',
+      larghetto: '小广板',
+      adagio: '柔板',
+      andante: '行板',
+      moderato: '中板',
+      allegro: '快板',
+      vivace: '活泼的快板',
+      presto: '急板',
+      prestissimo: '最急板',
+    },
+  },
+};
+
+const LanguageContext = createContext();
+
+export function LanguageProvider({ children }) {
+  const [language, setLanguage] = useState('en');
+
+  const toggleLanguage = useCallback(() => {
+    setLanguage((prev) => (prev === 'en' ? 'zh' : 'en'));
+  }, []);
+
+  const t = useCallback(
+    (key) => {
+      const keys = key.split('.');
+      let value = translations[language];
+      for (const k of keys) {
+        value = value?.[k];
+      }
+      return value || key;
+    },
+    [language],
+  );
+
+  return (
+    <LanguageContext.Provider value={{ language, toggleLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within LanguageProvider');
+  }
+  return context;
+}

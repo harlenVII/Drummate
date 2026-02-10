@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { formatTime } from '../utils/formatTime';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function PracticeItemList({
   items,
@@ -14,6 +15,7 @@ function PracticeItemList({
   onRenameItem,
   onDeleteItem,
 }) {
+  const { t } = useLanguage();
   const [newName, setNewName] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingName, setEditingName] = useState('');
@@ -120,7 +122,7 @@ function PracticeItemList({
             disabled={!newName.trim()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            + Add
+            + {t('add')}
           </button>
         </div>
 
@@ -128,7 +130,7 @@ function PracticeItemList({
           onClick={() => onSetEditing(false)}
           className="mt-1 px-4 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
         >
-          Done
+          {t('done')}
         </button>
       </div>
     );
@@ -160,14 +162,14 @@ function PracticeItemList({
                 onClick={onStop}
                 className="px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
               >
-                Stop
+                {t('stop')}
               </button>
             ) : (
               <button
                 onClick={() => onStart(item.id)}
                 className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
               >
-                Start
+                {t('start')}
               </button>
             )}
           </div>
@@ -184,7 +186,7 @@ function PracticeItemList({
         onClick={() => onSetEditing(true)}
         className="mt-1 px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
       >
-        Edit Items
+        {t('edit')}
       </button>
     </div>
   );

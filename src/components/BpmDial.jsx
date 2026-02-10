@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const MIN_ANGLE = 135;
 const MAX_ANGLE = 405;
@@ -46,17 +47,17 @@ function describeArc(cx, cy, radius, startAngle, endAngle) {
   return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
 }
 
-function getTempoName(bpm) {
-  if (bpm < 40) return 'Grave';
-  if (bpm < 60) return 'Largo';
-  if (bpm < 66) return 'Larghetto';
-  if (bpm < 76) return 'Adagio';
-  if (bpm < 108) return 'Andante';
-  if (bpm < 120) return 'Moderato';
-  if (bpm < 156) return 'Allegro';
-  if (bpm < 176) return 'Vivace';
-  if (bpm < 200) return 'Presto';
-  return 'Prestissimo';
+function getTempoName(bpm, t) {
+  if (bpm < 40) return t('tempoNames.grave');
+  if (bpm < 60) return t('tempoNames.largo');
+  if (bpm < 66) return t('tempoNames.larghetto');
+  if (bpm < 76) return t('tempoNames.adagio');
+  if (bpm < 108) return t('tempoNames.andante');
+  if (bpm < 120) return t('tempoNames.moderato');
+  if (bpm < 156) return t('tempoNames.allegro');
+  if (bpm < 176) return t('tempoNames.vivace');
+  if (bpm < 200) return t('tempoNames.presto');
+  return t('tempoNames.prestissimo');
 }
 
 // Pre-compute tick marks
@@ -69,6 +70,7 @@ const ticks = Array.from({ length: NUM_TICKS }, (_, i) => {
 });
 
 function BpmDial({ bpm, onBpmChange }) {
+  const { t } = useLanguage();
   const svgRef = useRef(null);
   const isDragging = useRef(false);
 
@@ -181,7 +183,7 @@ function BpmDial({ bpm, onBpmChange }) {
         style={{ fontSize: '16px', fontWeight: '500' }}
         fill="#6b7280"
       >
-        {getTempoName(bpm)}
+        {getTempoName(bpm, t)}
       </text>
       <text
         x={CX}
@@ -190,7 +192,7 @@ function BpmDial({ bpm, onBpmChange }) {
         style={{ fontSize: '12px' }}
         fill="#9ca3af"
       >
-        BPM
+        {t('bpm')}
       </text>
     </svg>
   );
