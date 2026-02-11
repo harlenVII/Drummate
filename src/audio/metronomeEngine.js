@@ -9,6 +9,8 @@ export class MetronomeEngine {
 
     this.bpm = 120;
     this.beatsPerMeasure = 4;
+    this.subdivisionPattern = [0]; // quarter notes only by default
+    this.subdivisionIndex = 0;
     this.onBeat = null;
 
     this._lookaheadMs = 25.0;
@@ -78,6 +80,7 @@ export class MetronomeEngine {
     this._warmUpAudioContext();
 
     this.currentBeat = 0;
+    this.subdivisionIndex = 0;
     // Small buffer to avoid scheduling notes in the past
     this.nextNoteTime = this.audioCtx.currentTime + 0.05;
     this.isPlaying = true;
@@ -120,6 +123,12 @@ export class MetronomeEngine {
   setBeatsPerMeasure(n) {
     this.beatsPerMeasure = n;
     this.currentBeat = 0;
+    this.subdivisionIndex = 0;
+  }
+
+  setSubdivision(pattern) {
+    this.subdivisionPattern = pattern;
+    this.subdivisionIndex = 0;
   }
 
   destroy() {
@@ -139,25 +148,37 @@ export class MetronomeEngine {
     if (!this.audioCtx || !this.isPlaying) return;
 
     while (this.nextNoteTime < this.audioCtx.currentTime + this._scheduleAhead) {
-      this._scheduleNote(this.nextNoteTime, this.currentBeat);
+      this._scheduleNote(this.nextNoteTime, this.currentBeat, this.subdivisionIndex);
       this._advanceBeat();
     }
   }
 
-  _scheduleNote(time, beat) {
+  _scheduleNote(time, beat, subIndex) {
     const osc = this.audioCtx.createOscillator();
     const gain = this.audioCtx.createGain();
 
     osc.connect(gain);
     gain.connect(this.audioCtx.destination);
 
-    const isAccent = beat === 0;
-    osc.frequency.value = isAccent ? 1000 : 800;
+    const isMainBeat = subIndex === 0;
+    const isAccent = beat === 0 && isMainBeat;
+
+    let freq, volume;
+    if (isAccent) {
+      freq = 1000;
+      volume = 0.8;
+    } else if (isMainBeat) {
+      freq = 800;
+      volume = 0.5;
+    } else {
+      freq = 600;
+      volume = 0.3;
+    }
+
+    osc.frequency.value = freq;
     osc.type = 'sine';
 
-    const volume = isAccent ? 0.8 : 0.5;
     const duration = 0.05;
-
     gain.gain.setValueAtTime(volume, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
 
@@ -166,13 +187,27 @@ export class MetronomeEngine {
 
     const delay = Math.max(0, (time - this.audioCtx.currentTime) * 1000);
     setTimeout(() => {
-      this.onBeat?.(beat);
+      this.onBeat?.({ beat, subdivisionIndex: subIndex });
     }, delay);
   }
 
   _advanceBeat() {
     const secondsPerBeat = 60.0 / this.bpm;
-    this.nextNoteTime += secondsPerBeat;
-    this.currentBeat = (this.currentBeat + 1) % this.beatsPerMeasure;
+    const pattern = this.subdivisionPattern;
+
+    this.subdivisionIndex++;
+
+    if (this.subdivisionIndex >= pattern.length) {
+      // Finished all subdivisions in this beat, move to next beat
+      const lastOffset = pattern[pattern.length - 1];
+      this.nextNoteTime += (1 - lastOffset) * secondsPerBeat;
+      this.subdivisionIndex = 0;
+      this.currentBeat = (this.currentBeat + 1) % this.beatsPerMeasure;
+    } else {
+      // Move to next subdivision within this beat
+      const prevOffset = pattern[this.subdivisionIndex - 1];
+      const nextOffset = pattern[this.subdivisionIndex];
+      this.nextNoteTime += (nextOffset - prevOffset) * secondsPerBeat;
+    }
   }
 }

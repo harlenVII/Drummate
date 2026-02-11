@@ -35,6 +35,7 @@ function App() {
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [metronomeCurrentBeat, setMetronomeCurrentBeat] = useState(-1);
   const [metronomeTimeSignature, setMetronomeTimeSignature] = useState([4, 4]);
+  const [metronomeSubdivision, setMetronomeSubdivision] = useState('quarter');
 
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
@@ -54,8 +55,10 @@ function App() {
   // Initialize metronome engine once
   useEffect(() => {
     metronomeEngineRef.current = new MetronomeEngine();
-    metronomeEngineRef.current.onBeat = (beat) => {
-      setMetronomeCurrentBeat(beat);
+    metronomeEngineRef.current.onBeat = ({ beat, subdivisionIndex }) => {
+      if (subdivisionIndex === 0) {
+        setMetronomeCurrentBeat(beat);
+      }
     };
 
     return () => {
@@ -219,6 +222,8 @@ function App() {
             setCurrentBeat={setMetronomeCurrentBeat}
             timeSignature={metronomeTimeSignature}
             setTimeSignature={setMetronomeTimeSignature}
+            subdivision={metronomeSubdivision}
+            setSubdivision={setMetronomeSubdivision}
           />
         )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import BpmDial from './BpmDial';
 import BeatIndicator from './BeatIndicator';
+import SubdivisionIcon from './SubdivisionIcon';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const TIME_SIGNATURES = [
@@ -8,8 +9,16 @@ const TIME_SIGNATURES = [
   [3, 4],
   [4, 4],
   [5, 4],
-  [6, 8],
-  [7, 8],
+];
+
+const SUBDIVISIONS = [
+  { key: 'quarter', pattern: [0] },
+  { key: 'eighth', pattern: [0, 0.5] },
+  { key: 'triplet', pattern: [0, 1 / 3, 2 / 3] },
+  { key: 'sixteenth', pattern: [0, 0.25, 0.5, 0.75] },
+  { key: 'eighthTwoSixteenths', pattern: [0, 0.5, 0.75] },
+  { key: 'twoSixteenthsEighth', pattern: [0, 0.25, 0.5] },
+  { key: 'sixteenthEighthSixteenth', pattern: [0, 0.25, 0.75] },
 ];
 
 function Metronome({
@@ -22,6 +31,8 @@ function Metronome({
   setCurrentBeat,
   timeSignature,
   setTimeSignature,
+  subdivision,
+  setSubdivision,
 }) {
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
@@ -38,6 +49,13 @@ function Metronome({
     }
     setCurrentBeat(-1);
   }, [engineRef, timeSignature, setCurrentBeat]);
+
+  useEffect(() => {
+    if (engineRef.current) {
+      const sub = SUBDIVISIONS.find((s) => s.key === subdivision);
+      engineRef.current.setSubdivision(sub ? sub.pattern : [0]);
+    }
+  }, [engineRef, subdivision]);
 
   const handleTogglePlay = useCallback(async () => {
     if (isPlaying) {
@@ -83,6 +101,10 @@ function Metronome({
     setTimeSignature(sig);
   }, []);
 
+  const handleSubdivisionChange = useCallback((key) => {
+    setSubdivision(key);
+  }, []);
+
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Beat indicator */}
@@ -108,6 +130,23 @@ function Metronome({
             }`}
           >
             {num}/{den}
+          </button>
+        ))}
+      </div>
+
+      {/* Subdivision selector */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {SUBDIVISIONS.map(({ key }) => (
+          <button
+            key={key}
+            onClick={() => handleSubdivisionChange(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              subdivision === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            <SubdivisionIcon type={key} />
           </button>
         ))}
       </div>
