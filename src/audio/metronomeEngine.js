@@ -13,33 +13,86 @@ export class MetronomeEngine {
 
     this._lookaheadMs = 25.0;
     this._scheduleAhead = 0.1;
+    this._workerFallbackID = null;
 
     // Create worker
     try {
       this.worker = new Worker('/metronome-worker.js');
-      this.worker.onmessage = () => this._scheduler();
+      this.worker.onmessage = () => {
+        clearTimeout(this._workerFallbackID);
+        this._scheduler();
+      };
+      this.worker.onerror = () => {
+        console.warn('Web Worker failed to load, falling back to setInterval');
+        this.worker.terminate();
+        this.worker = null;
+      };
     } catch (e) {
       console.warn('Web Worker not available, falling back to setInterval');
     }
   }
 
+  _initAudioContext() {
+    if (this.audioCtx) return;
+
+    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Safari uses a non-standard "interrupted" state when the tab loses focus,
+    // phone calls come in, etc. Listen for state changes and auto-resume.
+    this.audioCtx.addEventListener('statechange', () => {
+      if (this.isPlaying && this.audioCtx.state !== 'running') {
+        this.audioCtx.resume().catch(() => {});
+      }
+    });
+  }
+
+  // Safari requires a user-gesture-triggered "warm-up" to unlock audio.
+  // Play a silent buffer to ensure the context is truly unlocked.
+  _warmUpAudioContext() {
+    const buffer = this.audioCtx.createBuffer(1, 1, this.audioCtx.sampleRate);
+    const source = this.audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.audioCtx.destination);
+    source.start(0);
+  }
+
   async start() {
     if (this.isPlaying) return;
 
-    if (!this.audioCtx) {
-      this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
+    // Create AudioContext inside user gesture for Safari compatibility
+    this._initAudioContext();
 
-    if (this.audioCtx.state === 'suspended') {
+    if (this.audioCtx.state === 'suspended' || this.audioCtx.state === 'interrupted') {
       await this.audioCtx.resume();
     }
 
+    // If resume didn't work, recreate the AudioContext
+    if (this.audioCtx.state !== 'running') {
+      this.audioCtx.close().catch(() => {});
+      this.audioCtx = null;
+      this._initAudioContext();
+      await this.audioCtx.resume();
+    }
+
+    // Warm up with a silent buffer (unlocks audio on Safari/iOS)
+    this._warmUpAudioContext();
+
     this.currentBeat = 0;
-    this.nextNoteTime = this.audioCtx.currentTime;
+    // Small buffer to avoid scheduling notes in the past
+    this.nextNoteTime = this.audioCtx.currentTime + 0.05;
     this.isPlaying = true;
 
     if (this.worker) {
       this.worker.postMessage('start');
+      // Safety: if worker doesn't produce a tick within 200ms, fall back
+      this._workerFallbackID = setTimeout(() => {
+        if (this.isPlaying && this.worker && this.nextNoteTime <= this.audioCtx.currentTime + this._scheduleAhead) {
+          console.warn('Worker not responding, falling back to setInterval');
+          this.worker.terminate();
+          this.worker = null;
+          this.timerID = setInterval(() => this._scheduler(), this._lookaheadMs);
+        }
+      }, 200);
     } else {
       this.timerID = setInterval(() => this._scheduler(), this._lookaheadMs);
     }
@@ -48,9 +101,12 @@ export class MetronomeEngine {
   stop() {
     if (!this.isPlaying) return;
 
+    clearTimeout(this._workerFallbackID);
+
     if (this.worker) {
       this.worker.postMessage('stop');
-    } else if (this.timerID) {
+    }
+    if (this.timerID) {
       clearInterval(this.timerID);
       this.timerID = null;
     }
@@ -68,6 +124,7 @@ export class MetronomeEngine {
 
   destroy() {
     this.stop();
+    clearTimeout(this._workerFallbackID);
     if (this.worker) {
       this.worker.terminate();
       this.worker = null;
