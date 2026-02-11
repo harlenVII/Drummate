@@ -62,11 +62,11 @@ export class MetronomeEngine {
     // Create AudioContext inside user gesture for Safari compatibility
     this._initAudioContext();
 
-    if (this.audioCtx.state === 'suspended' || this.audioCtx.state === 'interrupted') {
-      await this.audioCtx.resume();
-    }
+    // Always call resume() — after a long idle period, the browser may have
+    // silently suspended the context while still reporting state as "running".
+    await this.audioCtx.resume();
 
-    // If resume didn't work, recreate the AudioContext
+    // If resume didn't work, recreate the AudioContext from scratch
     if (this.audioCtx.state !== 'running') {
       this.audioCtx.close().catch(() => {});
       this.audioCtx = null;
