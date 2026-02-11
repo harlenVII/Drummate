@@ -37,6 +37,16 @@ export class MetronomeEngine {
   _initAudioContext() {
     if (this.audioCtx) return;
 
+    // On iOS, set audio session to "playback" so audio plays even when the
+    // physical silent-mode switch is on.  Safari 17+ exposes the standard
+    // navigator.audioSession API; for older iOS we fall back to a silent
+    // <audio> element that forces the audio session category to "playback".
+    if (typeof navigator !== 'undefined' && navigator.audioSession) {
+      try { navigator.audioSession.type = 'playback'; } catch (_) {}
+    } else {
+      this._ensureSilentPlaybackElement();
+    }
+
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     // Safari uses a non-standard "interrupted" state when the tab loses focus,
@@ -46,6 +56,26 @@ export class MetronomeEngine {
         this.audioCtx.resume().catch(() => {});
       }
     });
+  }
+
+  // Create a looping silent <audio> element.  On older iOS (< 17) this forces
+  // the Web Audio session into the "playback" category, which bypasses the
+  // hardware silent-mode switch.  The element is shared across instances and
+  // harmless on non-iOS browsers (it simply plays silence).
+  _ensureSilentPlaybackElement() {
+    if (MetronomeEngine._silentAudioEl) return;
+
+    try {
+      // Minimal silent WAV: 1 sample, 8-bit mono, 8 kHz  (58 bytes base64)
+      const silentWav =
+        'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQIAAAAAAA==';
+      const el = document.createElement('audio');
+      el.src = silentWav;
+      el.loop = true;
+      el.setAttribute('playsinline', '');
+      el.play().catch(() => {});
+      MetronomeEngine._silentAudioEl = el;
+    } catch (_) {}
   }
 
   // Safari requires a user-gesture-triggered "warm-up" to unlock audio.
