@@ -1,12 +1,8 @@
 import { useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-const MIN_ANGLE = 135;
-const MAX_ANGLE = 405;
-const ANGLE_RANGE = MAX_ANGLE - MIN_ANGLE; // 270
 const MIN_BPM = 30;
 const MAX_BPM = 300;
-const BPM_RANGE = MAX_BPM - MIN_BPM; // 270
 
 const CX = 140;
 const CY = 140;
@@ -14,21 +10,16 @@ const RADIUS = 120;
 const TICK_INNER = 108;
 const TICK_OUTER = 118;
 const HANDLE_RADIUS = 14;
-const NUM_TICKS = 54;
+const NUM_TICKS = 36; // Evenly spaced tick marks around the circle
+
+// For infinite turn, we just track the visual angle based on BPM
+// Each full rotation represents 60 BPM (5 rotations for 30-300 range)
+const BPM_PER_ROTATION = 60;
 
 function bpmToAngle(bpm) {
   const clamped = Math.max(MIN_BPM, Math.min(MAX_BPM, bpm));
-  return MIN_ANGLE + ((clamped - MIN_BPM) / BPM_RANGE) * ANGLE_RANGE;
-}
-
-function angleToBpm(angleDeg) {
-  let normalized = angleDeg - MIN_ANGLE;
-  if (normalized < 0) normalized += 360;
-  if (normalized > ANGLE_RANGE) {
-    normalized = normalized > ANGLE_RANGE + 45 ? 0 : ANGLE_RANGE;
-  }
-  const ratio = Math.max(0, Math.min(1, normalized / ANGLE_RANGE));
-  return Math.round(MIN_BPM + ratio * BPM_RANGE);
+  // Convert BPM to degrees (continuous rotation)
+  return ((clamped - MIN_BPM) / BPM_PER_ROTATION) * 360;
 }
 
 function polarToCartesian(cx, cy, radius, angleDeg) {
@@ -60,12 +51,12 @@ function getTempoName(bpm, t) {
   return t('tempoNames.prestissimo');
 }
 
-// Pre-compute tick marks
+// Pre-compute tick marks evenly around the circle
 const ticks = Array.from({ length: NUM_TICKS }, (_, i) => {
-  const angle = MIN_ANGLE + (i / (NUM_TICKS - 1)) * ANGLE_RANGE;
+  const angle = (i / NUM_TICKS) * 360;
   const inner = polarToCartesian(CX, CY, TICK_INNER, angle);
   const outer = polarToCartesian(CX, CY, TICK_OUTER, angle);
-  const isMajor = i % 9 === 0;
+  const isMajor = i % 6 === 0; // Every 6th tick is major (6 major ticks total)
   return { ...inner, x2: outer.x, y2: outer.y, isMajor };
 });
 
@@ -73,6 +64,8 @@ function BpmDial({ bpm, onBpmChange }) {
   const { t } = useLanguage();
   const svgRef = useRef(null);
   const isDragging = useRef(false);
+  const lastAngle = useRef(null);
+  const accumulatedRotation = useRef(0);
 
   const getAngleFromPointer = useCallback((clientX, clientY) => {
     const rect = svgRef.current.getBoundingClientRect();
@@ -90,111 +83,173 @@ function BpmDial({ bpm, onBpmChange }) {
       isDragging.current = true;
       e.currentTarget.setPointerCapture(e.pointerId);
       const angle = getAngleFromPointer(e.clientX, e.clientY);
-      onBpmChange(angleToBpm(angle));
+      lastAngle.current = angle;
+      accumulatedRotation.current = 0;
     },
-    [getAngleFromPointer, onBpmChange],
+    [getAngleFromPointer],
   );
 
   const handlePointerMove = useCallback(
     (e) => {
       if (!isDragging.current) return;
       const angle = getAngleFromPointer(e.clientX, e.clientY);
-      onBpmChange(angleToBpm(angle));
+
+      if (lastAngle.current !== null) {
+        let delta = angle - lastAngle.current;
+
+        // Handle wrapping around 0/360
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+
+        accumulatedRotation.current += delta;
+
+        // Convert rotation to BPM change
+        const bpmChange = (accumulatedRotation.current / 360) * BPM_PER_ROTATION;
+        const newBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, Math.round(bpm + bpmChange)));
+
+        if (newBpm !== bpm) {
+          onBpmChange(newBpm);
+          accumulatedRotation.current = 0;
+        }
+      }
+
+      lastAngle.current = angle;
     },
-    [getAngleFromPointer, onBpmChange],
+    [getAngleFromPointer, onBpmChange, bpm],
   );
 
   const handlePointerUp = useCallback(() => {
     isDragging.current = false;
+    lastAngle.current = null;
+    accumulatedRotation.current = 0;
   }, []);
+
+  const handleIncrement = useCallback(() => {
+    const newBpm = Math.min(MAX_BPM, bpm + 1);
+    onBpmChange(newBpm);
+  }, [bpm, onBpmChange]);
+
+  const handleDecrement = useCallback(() => {
+    const newBpm = Math.max(MIN_BPM, bpm - 1);
+    onBpmChange(newBpm);
+  }, [bpm, onBpmChange]);
 
   const currentAngle = bpmToAngle(bpm);
   const handle = polarToCartesian(CX, CY, RADIUS, currentAngle);
-  const arcPath = describeArc(CX, CY, RADIUS, MIN_ANGLE, currentAngle);
+
+  // For infinite turn, show a short arc segment (45 degrees) leading up to the handle
+  const arcStartAngle = currentAngle - 45;
+  const arcPath = describeArc(CX, CY, RADIUS, arcStartAngle, currentAngle);
 
   return (
-    <svg
-      ref={svgRef}
-      viewBox="0 0 280 280"
-      className="w-64 h-64 touch-none select-none cursor-pointer"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-    >
-      {/* Background track */}
-      <circle
-        cx={CX}
-        cy={CY}
-        r={RADIUS}
-        fill="none"
-        stroke="#e5e7eb"
-        strokeWidth="8"
-        strokeLinecap="round"
-      />
+    <div className="flex items-center gap-4">
+      {/* Decrement button */}
+      <button
+        onClick={handleDecrement}
+        className="w-12 h-12 flex items-center justify-center bg-white border-2 border-gray-300 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+        aria-label="Decrease BPM"
+      >
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <line x1="5" y1="12" x2="19" y2="12" className="text-gray-700" />
+        </svg>
+      </button>
 
-      {/* Tick marks */}
-      {ticks.map((tick, i) => (
-        <line
-          key={i}
-          x1={tick.x}
-          y1={tick.y}
-          x2={tick.x2}
-          y2={tick.y2}
-          stroke={tick.isMajor ? '#9ca3af' : '#d1d5db'}
-          strokeWidth={tick.isMajor ? 2 : 1}
-        />
-      ))}
-
-      {/* Active arc */}
-      {arcPath && (
-        <path
-          d={arcPath}
+      {/* SVG Dial */}
+      <svg
+        ref={svgRef}
+        viewBox="0 0 280 280"
+        className="w-64 h-64 touch-none select-none cursor-pointer"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {/* Background track */}
+        <circle
+          cx={CX}
+          cy={CY}
+          r={RADIUS}
           fill="none"
-          stroke="#3b82f6"
+          stroke="#e5e7eb"
           strokeWidth="8"
           strokeLinecap="round"
         />
-      )}
 
-      {/* Drag handle */}
-      <circle
-        cx={handle.x}
-        cy={handle.y}
-        r={HANDLE_RADIUS}
-        fill="#3b82f6"
-        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
-      />
+        {/* Tick marks */}
+        {ticks.map((tick, i) => (
+          <line
+            key={i}
+            x1={tick.x}
+            y1={tick.y}
+            x2={tick.x2}
+            y2={tick.y2}
+            stroke={tick.isMajor ? '#9ca3af' : '#d1d5db'}
+            strokeWidth={tick.isMajor ? 2 : 1}
+          />
+        ))}
 
-      {/* Center text */}
-      <text
-        x={CX}
-        y={CY - 12}
-        textAnchor="middle"
-        style={{ fontSize: '48px', fontWeight: '700' }}
-        fill="#1f2937"
+        {/* Active arc segment */}
+        {arcPath && (
+          <path
+            d={arcPath}
+            fill="none"
+            stroke="#3b82f6"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
+        )}
+
+        {/* Drag handle */}
+        <circle
+          cx={handle.x}
+          cy={handle.y}
+          r={HANDLE_RADIUS}
+          fill="#3b82f6"
+          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
+        />
+
+        {/* Center text */}
+        <text
+          x={CX}
+          y={CY - 12}
+          textAnchor="middle"
+          style={{ fontSize: '48px', fontWeight: '700' }}
+          fill="#1f2937"
+        >
+          {bpm}
+        </text>
+        <text
+          x={CX}
+          y={CY + 16}
+          textAnchor="middle"
+          style={{ fontSize: '16px', fontWeight: '500' }}
+          fill="#6b7280"
+        >
+          {getTempoName(bpm, t)}
+        </text>
+        <text
+          x={CX}
+          y={CY + 36}
+          textAnchor="middle"
+          style={{ fontSize: '12px' }}
+          fill="#9ca3af"
+        >
+          {t('bpm')}
+        </text>
+      </svg>
+
+      {/* Increment button */}
+      <button
+        onClick={handleIncrement}
+        className="w-12 h-12 flex items-center justify-center bg-white border-2 border-gray-300 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+        aria-label="Increase BPM"
       >
-        {bpm}
-      </text>
-      <text
-        x={CX}
-        y={CY + 16}
-        textAnchor="middle"
-        style={{ fontSize: '16px', fontWeight: '500' }}
-        fill="#6b7280"
-      >
-        {getTempoName(bpm, t)}
-      </text>
-      <text
-        x={CX}
-        y={CY + 36}
-        textAnchor="middle"
-        style={{ fontSize: '12px' }}
-        fill="#9ca3af"
-      >
-        {t('bpm')}
-      </text>
-    </svg>
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19" className="text-gray-700" />
+          <line x1="5" y1="12" x2="19" y2="12" className="text-gray-700" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
