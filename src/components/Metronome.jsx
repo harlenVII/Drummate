@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
+import NoSleep from 'nosleep.js';
 import BpmDial from './BpmDial';
 import BeatIndicator from './BeatIndicator';
 import SubdivisionIcon from './SubdivisionIcon';
@@ -36,7 +37,7 @@ function Metronome({
 }) {
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
-  // eslint-disable-next-line no-unused-vars
+  const noSleepRef = useRef(new NoSleep());
   const wakeLockRef = useRef(null);
 
   useEffect(() => {
@@ -64,6 +65,7 @@ function Metronome({
       engineRef.current.stop();
       setIsPlaying(false);
       setCurrentBeat(-1);
+      noSleepRef.current.disable();
 
       // Release wake lock when stopping
       if (wakeLockRef.current) {
@@ -75,6 +77,8 @@ function Metronome({
         }
       }
     } else {
+      // Enable NoSleep BEFORE async engine start to preserve user gesture context
+      noSleepRef.current.enable();
       await engineRef.current.start();
       setIsPlaying(true);
 
@@ -126,9 +130,10 @@ function Metronome({
     setSubdivision(key);
   }, []);
 
-  // Clean up wake lock on unmount
+  // Clean up NoSleep and wake lock on unmount
   useEffect(() => {
     return () => {
+      noSleepRef.current.disable();
       if (wakeLockRef.current) {
         wakeLockRef.current.release().catch(() => {});
       }
