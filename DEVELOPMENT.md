@@ -225,31 +225,46 @@ After making changes, verify:
 
 ## Future Enhancements
 
-### Phase 6: Analytics (Not Started)
+### Phase 6: Data Persistency Across Devices (Not Started)
+- Export/import practice data as JSON (manual backup/restore)
+- Dexie Cloud integration for real-time cross-device sync
+- User authentication for cloud sync
+- See `DATA_SYNC_RESEARCH.md` for technical research
+
+### Phase 7: Voice-Controlled Metronome & Voice Commands (Not Started)
+- Wake word detection ("Hey Drummate") via Picovoice Porcupine
+- Speech-to-text via Whisper Tiny (WASM, on-device)
+- Voice commands: set tempo, start/stop metronome, generate reports, navigate tabs
+- Intent parsing via regex for structured commands
+- Text-to-speech feedback via browser `speechSynthesis` API
+- Encouragement generation after daily reports (template-based → optional on-device LLM)
+- See `VOICE_COMMANDS_RESEARCH.md` for technical research
+
+### Phase 8: Weekly/Monthly Analytics (Not Started)
 - Weekly/monthly practice summaries
 - Streak tracking
 - Practice time charts
 - Item-specific progress tracking
 
-### Phase 7: Advanced Metronome (Not Started)
+### Phase 9: Advanced Metronome (Not Started)
 - Subdivisions (eighth notes, triplets)
 - Accents on custom beats
 - Polyrhythms
 - Sound customization (click sounds)
 - Visual flash on screen edge
 
-### Phase 8: On-Device LLM (Not Started)
-- Practice recommendations
-- Personalized insights
-- Smart practice plan generation
-- Integration with local LLM
+### Phase 10: Leaderboard (Not Started)
+- Cross-user practice leaderboard
+- Requires cloud backend (pairs with Phase 6 cloud sync)
+- Weekly/monthly rankings
+- Opt-in sharing of practice stats
 
-### Phase 9: Additional Features (Ideas)
-- Backup/restore data (export/import JSON)
-- Practice goals and reminders
-- Multiple user profiles
-- Audio recording integration
-- Sheet music timer integration
+### Phase 11: On-Device LLM (Not Started)
+- Practice recommendations based on history
+- Personalized insights and encouragement (upgrade from templates)
+- Smart practice plan generation
+- SmolLM2 135M or Qwen2.5 0.5B via WASM
+- See `VOICE_COMMANDS_RESEARCH.md` for model options
 
 ## Deployment
 
@@ -332,6 +347,6 @@ vercel
 
 ---
 
-**Last Updated:** 2026-02-10
+**Last Updated:** 2026-02-11
 **Current Phase:** Phase 5 Complete (Metronome + Bilingual)
-**Next Phase:** Phase 6 (Analytics) or user-defined features
+**Next Phase:** Phase 6 (Data Persistency Across Devices)

@@ -100,9 +100,12 @@ For detailed development instructions, architecture overview, and how to continu
 - [x] Phase 3: Daily reports and analytics
 - [x] Phase 4: PWA configuration
 - [x] Phase 5: Metronome + Bilingual support
-- [ ] Phase 6: Weekly/monthly analytics
-- [ ] Phase 7: Advanced metronome features
-- [ ] Phase 8: On-device LLM integration
+- [ ] Phase 6: Data sync across devices (export/import + cloud sync)
+- [ ] Phase 7: Voice-controlled metronome & voice commands
+- [ ] Phase 8: Weekly/monthly analytics & streak tracking
+- [ ] Phase 9: Advanced metronome (subdivisions, polyrhythms, custom sounds)
+- [ ] Phase 10: Leaderboard across users
+- [ ] Phase 11: On-device LLM for practice insights & encouragement
 
 ## Contributing
 

@@ -36,3 +36,4 @@ coverage/
 # Research and planning docs (local, not needed in repo)
 VOICE_COMMANDS_RESEARCH.md
 DATA_SYNC_RESEARCH.md
+DEVELOPMENT.md
