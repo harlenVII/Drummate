@@ -38,7 +38,6 @@ function Metronome({
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
   const noSleepRef = useRef(new NoSleep());
-  const wakeLockRef = useRef(null);
 
   useEffect(() => {
     if (engineRef.current) {
@@ -66,30 +65,11 @@ function Metronome({
       setIsPlaying(false);
       setCurrentBeat(-1);
       noSleepRef.current.disable();
-
-      // Release wake lock when stopping
-      if (wakeLockRef.current) {
-        try {
-          await wakeLockRef.current.release();
-          wakeLockRef.current = null;
-        } catch (err) {
-          console.warn('Failed to release wake lock:', err);
-        }
-      }
     } else {
       // Enable NoSleep BEFORE async engine start to preserve user gesture context
       noSleepRef.current.enable();
       await engineRef.current.start();
       setIsPlaying(true);
-
-      // Request wake lock when starting
-      if ('wakeLock' in navigator) {
-        try {
-          wakeLockRef.current = await navigator.wakeLock.request('screen');
-        } catch (err) {
-          console.warn('Failed to request wake lock:', err);
-        }
-      }
     }
   }, [engineRef, isPlaying, setIsPlaying, setCurrentBeat]);
 
@@ -130,13 +110,10 @@ function Metronome({
     setSubdivision(key);
   }, []);
 
-  // Clean up NoSleep and wake lock on unmount
+  // Clean up NoSleep on unmount
   useEffect(() => {
     return () => {
       noSleepRef.current.disable();
-      if (wakeLockRef.current) {
-        wakeLockRef.current.release().catch(() => {});
-      }
     };
   }, []);
 
