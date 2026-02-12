@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import NoSleep from 'nosleep.js';
 import PracticeItemList from './components/PracticeItemList';
 import DailyReport from './components/DailyReport';
 import Metronome from './components/Metronome';
@@ -30,6 +31,7 @@ function App() {
   const [reportLogs, setReportLogs] = useState([]);
 
   // Metronome state (persists across tab changes)
+  const noSleepRef = useRef(new NoSleep());
   const metronomeEngineRef = useRef(null);
   const [metronomeBpm, setMetronomeBpm] = useState(120);
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
@@ -214,6 +216,7 @@ function App() {
         {activeTab === 'metronome' && (
           <Metronome
             engineRef={metronomeEngineRef}
+            noSleepRef={noSleepRef}
             bpm={metronomeBpm}
             setBpm={setMetronomeBpm}
             isPlaying={metronomeIsPlaying}

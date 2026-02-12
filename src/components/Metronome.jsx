@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useRef } from 'react';
-import NoSleep from 'nosleep.js';
 import BpmDial from './BpmDial';
 import BeatIndicator from './BeatIndicator';
 import SubdivisionIcon from './SubdivisionIcon';
@@ -24,6 +23,7 @@ const SUBDIVISIONS = [
 
 function Metronome({
   engineRef,
+  noSleepRef,
   bpm,
   setBpm,
   isPlaying,
@@ -37,7 +37,6 @@ function Metronome({
 }) {
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
-  const noSleepRef = useRef(new NoSleep());
 
   useEffect(() => {
     if (engineRef.current) {
@@ -115,13 +114,6 @@ function Metronome({
 
   const handleSubdivisionChange = useCallback((key) => {
     setSubdivision(key);
-  }, []);
-
-  // Clean up NoSleep on unmount
-  useEffect(() => {
-    return () => {
-      noSleepRef.current.disable();
-    };
   }, []);
 
   return (
