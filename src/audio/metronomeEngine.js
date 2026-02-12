@@ -151,12 +151,15 @@ export class MetronomeEngine {
   }
 
   setBeatsPerMeasure(n) {
+    if (this.beatsPerMeasure === n) return;
     this.beatsPerMeasure = n;
     this.currentBeat = 0;
     this.subdivisionIndex = 0;
   }
 
   setSubdivision(pattern) {
+    if (this.subdivisionPattern.length === pattern.length &&
+        this.subdivisionPattern.every((v, i) => v === pattern[i])) return;
     this.subdivisionPattern = pattern;
     this.subdivisionIndex = 0;
   }

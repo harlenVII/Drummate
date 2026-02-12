@@ -45,11 +45,18 @@ function Metronome({
     }
   }, [engineRef, bpm]);
 
+  const prevTimeSignatureRef = useRef(timeSignature);
   useEffect(() => {
     if (engineRef.current) {
       engineRef.current.setBeatsPerMeasure(timeSignature[0]);
     }
-    setCurrentBeat(-1);
+    // Only reset beat display when the time signature actually changes,
+    // not on remount with the same value
+    if (prevTimeSignatureRef.current[0] !== timeSignature[0] ||
+        prevTimeSignatureRef.current[1] !== timeSignature[1]) {
+      setCurrentBeat(-1);
+      prevTimeSignatureRef.current = timeSignature;
+    }
   }, [engineRef, timeSignature, setCurrentBeat]);
 
   useEffect(() => {
