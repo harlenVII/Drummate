@@ -91,20 +91,17 @@ export class MetronomeEngine {
   async start() {
     if (this.isPlaying) return;
 
-    // Create AudioContext inside user gesture for Safari compatibility
-    this._initAudioContext();
-
-    // Always call resume() — after a long idle period, the browser may have
-    // silently suspended the context while still reporting state as "running".
-    await this.audioCtx.resume();
-
-    // If resume didn't work, recreate the AudioContext from scratch
-    if (this.audioCtx.state !== 'running') {
+    // Always create a fresh AudioContext.  After a long idle period browsers
+    // (especially Chrome) silently break the audio pipeline — resume() resolves
+    // and state reports "running", but no sound is produced.  Closing the old
+    // context and creating a new one is cheap and guarantees a working
+    // connection to the audio output device.
+    if (this.audioCtx) {
       this.audioCtx.close().catch(() => {});
       this.audioCtx = null;
-      this._initAudioContext();
-      await this.audioCtx.resume();
     }
+    this._initAudioContext();
+    await this.audioCtx.resume();
 
     // Warm up with a silent buffer (unlocks audio on Safari/iOS)
     this._warmUpAudioContext();
