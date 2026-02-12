@@ -5,7 +5,13 @@ let interval = 25;
 
 self.onmessage = function (e) {
   if (e.data === 'start') {
-    if (timerID) return;
+    // Always clear any existing timer first — after a long sleep the old
+    // setInterval may be dead while timerID is still set, which would cause
+    // the early-return to silently skip restarting the timer.
+    if (timerID) {
+      clearInterval(timerID);
+      timerID = null;
+    }
     timerID = setInterval(() => {
       self.postMessage('tick');
     }, interval);
