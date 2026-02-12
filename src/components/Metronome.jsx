@@ -36,6 +36,8 @@ function Metronome({
 }) {
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
+  // eslint-disable-next-line no-unused-vars
+  const wakeLockRef = useRef(null);
 
   useEffect(() => {
     if (engineRef.current) {
@@ -62,9 +64,28 @@ function Metronome({
       engineRef.current.stop();
       setIsPlaying(false);
       setCurrentBeat(-1);
+
+      // Release wake lock when stopping
+      if (wakeLockRef.current) {
+        try {
+          await wakeLockRef.current.release();
+          wakeLockRef.current = null;
+        } catch (err) {
+          console.warn('Failed to release wake lock:', err);
+        }
+      }
     } else {
       await engineRef.current.start();
       setIsPlaying(true);
+
+      // Request wake lock when starting
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.warn('Failed to request wake lock:', err);
+        }
+      }
     }
   }, [engineRef, isPlaying, setIsPlaying, setCurrentBeat]);
 
@@ -103,6 +124,15 @@ function Metronome({
 
   const handleSubdivisionChange = useCallback((key) => {
     setSubdivision(key);
+  }, []);
+
+  // Clean up wake lock on unmount
+  useEffect(() => {
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+      }
+    };
   }, []);
 
   return (
