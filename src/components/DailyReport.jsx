@@ -162,7 +162,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-gray-800">{t('dailyReport')}</h2>
-            <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
+            <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap select-text">
               {generateReportText(reportDate, grandTotal, breakdown, t)}
             </pre>
             <button

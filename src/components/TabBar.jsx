@@ -73,7 +73,7 @@ function TabBar({ activeTab, onTabChange }) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex">
+    <nav className="shrink-0 bg-white border-t border-gray-200 flex pb-[env(safe-area-inset-bottom)]">
       {tabs.map((tab) => (
         <button
           key={tab.key}

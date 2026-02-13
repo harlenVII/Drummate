@@ -183,61 +183,63 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-lg mx-auto px-4 py-8 pb-24 flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-800">
-            {t('appName')}
-          </h1>
-          <button
-            onClick={toggleLanguage}
-            className="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            {language === 'en' ? '中文' : 'EN'}
-          </button>
+    <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-lg mx-auto px-4 py-8 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-800">
+              {t('appName')}
+            </h1>
+            <button
+              onClick={toggleLanguage}
+              className="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {language === 'en' ? '中文' : 'EN'}
+            </button>
+          </div>
+
+          {activeTab === 'practice' && (
+            <PracticeItemList
+              items={items}
+              totals={totals}
+              activeItemId={activeItemId}
+              elapsedTime={elapsedTime}
+              editing={editing}
+              onSetEditing={handleSetEditing}
+              onStart={handleStart}
+              onStop={handleStop}
+              onAddItem={handleAddItem}
+              onRenameItem={handleRenameItem}
+              onDeleteItem={handleDeleteItem}
+            />
+          )}
+
+          {activeTab === 'metronome' && (
+            <Metronome
+              engineRef={metronomeEngineRef}
+              noSleepRef={noSleepRef}
+              bpm={metronomeBpm}
+              setBpm={setMetronomeBpm}
+              isPlaying={metronomeIsPlaying}
+              setIsPlaying={setMetronomeIsPlaying}
+              currentBeat={metronomeCurrentBeat}
+              setCurrentBeat={setMetronomeCurrentBeat}
+              timeSignature={metronomeTimeSignature}
+              setTimeSignature={setMetronomeTimeSignature}
+              subdivision={metronomeSubdivision}
+              setSubdivision={setMetronomeSubdivision}
+            />
+          )}
+
+          {activeTab === 'report' && (
+            <DailyReport
+              items={items}
+              reportDate={reportDate}
+              reportLogs={reportLogs}
+              onDateChange={handleReportDateChange}
+            />
+          )}
         </div>
-
-        {activeTab === 'practice' && (
-          <PracticeItemList
-            items={items}
-            totals={totals}
-            activeItemId={activeItemId}
-            elapsedTime={elapsedTime}
-            editing={editing}
-            onSetEditing={handleSetEditing}
-            onStart={handleStart}
-            onStop={handleStop}
-            onAddItem={handleAddItem}
-            onRenameItem={handleRenameItem}
-            onDeleteItem={handleDeleteItem}
-          />
-        )}
-
-        {activeTab === 'metronome' && (
-          <Metronome
-            engineRef={metronomeEngineRef}
-            noSleepRef={noSleepRef}
-            bpm={metronomeBpm}
-            setBpm={setMetronomeBpm}
-            isPlaying={metronomeIsPlaying}
-            setIsPlaying={setMetronomeIsPlaying}
-            currentBeat={metronomeCurrentBeat}
-            setCurrentBeat={setMetronomeCurrentBeat}
-            timeSignature={metronomeTimeSignature}
-            setTimeSignature={setMetronomeTimeSignature}
-            subdivision={metronomeSubdivision}
-            setSubdivision={setMetronomeSubdivision}
-          />
-        )}
-
-        {activeTab === 'report' && (
-          <DailyReport
-            items={items}
-            reportDate={reportDate}
-            reportLogs={reportLogs}
-            onDateChange={handleReportDateChange}
-          />
-        )}
       </div>
 
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
