@@ -116,7 +116,7 @@ export class MetronomeEngine {
       }
       return buf;
     };
-    return { accent: make(1000, 1.0), normal: make(800, 0.7), sub: make(600, 0.5) };
+    return { accent: make(1000, 1.5), normal: make(800, 1.2), sub: make(600, 0.9) };
   }
 
   // Wood Block: sharp attack with harmonic overtones
@@ -136,7 +136,7 @@ export class MetronomeEngine {
       }
       return buf;
     };
-    return { accent: make(1200, 1.0), normal: make(1000, 0.7), sub: make(800, 0.5) };
+    return { accent: make(1200, 1.5), normal: make(1000, 1.2), sub: make(800, 0.9) };
   }
 
   // Hi-Hat: white noise burst with fast decay
@@ -153,7 +153,7 @@ export class MetronomeEngine {
       }
       return buf;
     };
-    return { accent: make(1.0, 0.012), normal: make(0.7, 0.009), sub: make(0.5, 0.007) };
+    return { accent: make(1.5, 0.012), normal: make(1.2, 0.009), sub: make(0.9, 0.007) };
   }
 
   // Rimshot: noise + tone blend for a snappy hit
@@ -172,7 +172,7 @@ export class MetronomeEngine {
       }
       return buf;
     };
-    return { accent: make(1500, 1.0), normal: make(1200, 0.7), sub: make(1000, 0.5) };
+    return { accent: make(1500, 1.5), normal: make(1200, 1.2), sub: make(1000, 0.9) };
   }
 
   // Beep: square wave for a sharp digital sound
@@ -189,7 +189,7 @@ export class MetronomeEngine {
       }
       return buf;
     };
-    return { accent: make(1000, 0.8), normal: make(800, 0.6), sub: make(600, 0.4) };
+    return { accent: make(1000, 1.3), normal: make(800, 1.0), sub: make(600, 0.7) };
   }
 
   // Create a looping silent <audio> element.  On older iOS (< 17) this forces
