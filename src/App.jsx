@@ -38,6 +38,7 @@ function App() {
   const [metronomeCurrentBeat, setMetronomeCurrentBeat] = useState(-1);
   const [metronomeTimeSignature, setMetronomeTimeSignature] = useState([4, 4]);
   const [metronomeSubdivision, setMetronomeSubdivision] = useState('quarter');
+  const [metronomeSoundType, setMetronomeSoundType] = useState('click');
 
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
@@ -228,6 +229,8 @@ function App() {
               setTimeSignature={setMetronomeTimeSignature}
               subdivision={metronomeSubdivision}
               setSubdivision={setMetronomeSubdivision}
+              soundType={metronomeSoundType}
+              setSoundType={setMetronomeSoundType}
             />
           )}
 

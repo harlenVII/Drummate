@@ -11,6 +11,8 @@ const TIME_SIGNATURES = [
   [5, 4],
 ];
 
+const SOUND_TYPES = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+
 const SUBDIVISIONS = [
   { key: 'quarter', pattern: [0] },
   { key: 'eighth', pattern: [0, 0.5] },
@@ -34,6 +36,8 @@ function Metronome({
   setTimeSignature,
   subdivision,
   setSubdivision,
+  soundType,
+  setSoundType,
 }) {
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
@@ -64,6 +68,12 @@ function Metronome({
       engineRef.current.setSubdivision(sub ? sub.pattern : [0]);
     }
   }, [engineRef, subdivision]);
+
+  useEffect(() => {
+    if (engineRef.current) {
+      engineRef.current.setSoundType(soundType);
+    }
+  }, [engineRef, soundType]);
 
   const handleTogglePlay = useCallback(async () => {
     if (isPlaying) {
@@ -127,6 +137,23 @@ function Metronome({
 
       {/* BPM dial */}
       <BpmDial bpm={bpm} onBpmChange={setBpm} />
+
+      {/* Sound type selector */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {SOUND_TYPES.map((key) => (
+          <button
+            key={key}
+            onClick={() => setSoundType(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              soundType === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            {t(`soundTypes.${key}`)}
+          </button>
+        ))}
+      </div>
 
       {/* Time signature selector */}
       <div className="flex gap-2 flex-wrap justify-center">

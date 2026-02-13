@@ -31,6 +31,13 @@ const translations = {
     total: 'Total',
     tapTempo: 'Tap Tempo',
     bpm: 'BPM',
+    soundTypes: {
+      click: 'Click',
+      woodBlock: 'Wood',
+      hiHat: 'Hi-Hat',
+      rimshot: 'Rimshot',
+      beep: 'Beep',
+    },
     tempoNames: {
       grave: 'Grave',
       largo: 'Largo',
@@ -74,6 +81,13 @@ const translations = {
     total: '总计',
     tapTempo: '敲击节拍',
     bpm: 'BPM',
+    soundTypes: {
+      click: '咔嗒',
+      woodBlock: '木块',
+      hiHat: '踩镲',
+      rimshot: '边击',
+      beep: '蜂鸣',
+    },
     tempoNames: {
       grave: '极慢板',
       largo: '广板',

@@ -15,6 +15,7 @@ export class MetronomeEngine {
     this.beatsPerMeasure = 4;
     this.subdivisionPattern = [0]; // quarter notes only by default
     this.subdivisionIndex = 0;
+    this.soundType = 'click';
     this.onBeat = null;
 
     this._lookaheadMs = 25.0;
@@ -88,30 +89,107 @@ export class MetronomeEngine {
   }
 
   // Pre-compute click waveforms as AudioBuffers.  Each buffer contains a
-  // short sine-wave burst with an exponential decay baked in, so playback
-  // only needs a single BufferSourceNode (no gain automation required).
+  // short burst with an exponential decay baked in, so playback only needs
+  // a single BufferSourceNode (no gain automation required).
   _createClickBuffers() {
-    const sr = this.audioCtx.sampleRate;
-    const duration = 0.05; // 50ms click
-    const numSamples = Math.ceil(sr * duration);
+    const generators = {
+      click: () => this._createClickSound(),
+      woodBlock: () => this._createWoodSound(),
+      hiHat: () => this._createHiHatSound(),
+      rimshot: () => this._createRimshotSound(),
+      beep: () => this._createBeepSound(),
+    };
+    const gen = generators[this.soundType] || generators.click;
+    this._clickBuffers = gen();
+  }
 
-    const createClick = (freq, volume) => {
-      const buffer = this.audioCtx.createBuffer(1, numSamples, sr);
-      const data = buffer.getChannelData(0);
+  // Click: boosted sine wave
+  _createClickSound() {
+    const sr = this.audioCtx.sampleRate;
+    const numSamples = Math.ceil(sr * 0.05);
+    const make = (freq, vol) => {
+      const buf = this.audioCtx.createBuffer(1, numSamples, sr);
+      const d = buf.getChannelData(0);
       for (let i = 0; i < numSamples; i++) {
         const t = i / sr;
-        // Exponential decay with ~15ms time constant, matching original envelope
-        const envelope = volume * Math.exp(-t / 0.015);
-        data[i] = envelope * Math.sin(2 * Math.PI * freq * t);
+        d[i] = vol * Math.exp(-t / 0.015) * Math.sin(2 * Math.PI * freq * t);
       }
-      return buffer;
+      return buf;
     };
+    return { accent: make(1000, 1.0), normal: make(800, 0.7), sub: make(600, 0.5) };
+  }
 
-    this._clickBuffers = {
-      accent: createClick(1000, 0.8),
-      normal: createClick(800, 0.5),
-      sub: createClick(600, 0.3),
+  // Wood Block: sharp attack with harmonic overtones
+  _createWoodSound() {
+    const sr = this.audioCtx.sampleRate;
+    const numSamples = Math.ceil(sr * 0.04);
+    const make = (freq, vol) => {
+      const buf = this.audioCtx.createBuffer(1, numSamples, sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sr;
+        const env = vol * Math.exp(-t / 0.008);
+        const f1 = Math.sin(2 * Math.PI * freq * t);
+        const f2 = 0.6 * Math.sin(2 * Math.PI * freq * 2 * t);
+        const f3 = 0.3 * Math.sin(2 * Math.PI * freq * 3.5 * t);
+        d[i] = env * (f1 + f2 + f3);
+      }
+      return buf;
     };
+    return { accent: make(1200, 1.0), normal: make(1000, 0.7), sub: make(800, 0.5) };
+  }
+
+  // Hi-Hat: white noise burst with fast decay
+  _createHiHatSound() {
+    const sr = this.audioCtx.sampleRate;
+    const numSamples = Math.ceil(sr * 0.04);
+    const make = (vol, decay) => {
+      const buf = this.audioCtx.createBuffer(1, numSamples, sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sr;
+        const env = vol * Math.exp(-t / decay);
+        d[i] = env * (Math.random() * 2 - 1);
+      }
+      return buf;
+    };
+    return { accent: make(1.0, 0.012), normal: make(0.7, 0.009), sub: make(0.5, 0.007) };
+  }
+
+  // Rimshot: noise + tone blend for a snappy hit
+  _createRimshotSound() {
+    const sr = this.audioCtx.sampleRate;
+    const numSamples = Math.ceil(sr * 0.05);
+    const make = (freq, vol) => {
+      const buf = this.audioCtx.createBuffer(1, numSamples, sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sr;
+        const env = vol * Math.exp(-t / 0.012);
+        const tone = Math.sin(2 * Math.PI * freq * t);
+        const noise = Math.random() * 2 - 1;
+        d[i] = env * (tone * 0.6 + noise * 0.4);
+      }
+      return buf;
+    };
+    return { accent: make(1500, 1.0), normal: make(1200, 0.7), sub: make(1000, 0.5) };
+  }
+
+  // Beep: square wave for a sharp digital sound
+  _createBeepSound() {
+    const sr = this.audioCtx.sampleRate;
+    const numSamples = Math.ceil(sr * 0.04);
+    const make = (freq, vol) => {
+      const buf = this.audioCtx.createBuffer(1, numSamples, sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < numSamples; i++) {
+        const t = i / sr;
+        const env = vol * Math.exp(-t / 0.015);
+        d[i] = env * (Math.sin(2 * Math.PI * freq * t) > 0 ? 1 : -1);
+      }
+      return buf;
+    };
+    return { accent: make(1000, 0.8), normal: make(800, 0.6), sub: make(600, 0.4) };
   }
 
   // Create a looping silent <audio> element.  On older iOS (< 17) this forces
@@ -284,6 +362,14 @@ export class MetronomeEngine {
         this.subdivisionPattern.every((v, i) => v === pattern[i])) return;
     this.subdivisionPattern = pattern;
     this.subdivisionIndex = 0;
+  }
+
+  setSoundType(type) {
+    if (this.soundType === type) return;
+    this.soundType = type;
+    if (this.isPlaying && this.audioCtx) {
+      this._createClickBuffers();
+    }
   }
 
   destroy() {
