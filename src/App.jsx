@@ -26,6 +26,7 @@ function App() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
+  const activeItemIdRef = useRef(null);
   const [activeTab, setActiveTab] = useState('practice');
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
@@ -69,6 +70,57 @@ function App() {
         metronomeEngineRef.current.destroy();
         metronomeEngineRef.current = null;
       }
+    };
+  }, []);
+
+  // Keep ref in sync so pagehide/beforeunload always read latest value
+  useEffect(() => {
+    activeItemIdRef.current = activeItemId;
+  }, [activeItemId]);
+
+  // Recover any unsaved practice session from a previous page close
+  useEffect(() => {
+    const pending = localStorage.getItem('drummate_pending_log');
+    if (pending) {
+      localStorage.removeItem('drummate_pending_log');
+      try {
+        const { itemId, duration, date } = JSON.parse(pending);
+        if (itemId != null && duration > 0) {
+          addLog(itemId, duration, date).then(() => loadData());
+        }
+      } catch {
+        // ignore malformed data
+      }
+    }
+  }, [loadData]);
+
+  // Save ongoing practice session when page is closed/refreshed
+  useEffect(() => {
+    const saveSession = () => {
+      const itemId = activeItemIdRef.current;
+      const start = startTimeRef.current;
+      if (itemId != null && start != null) {
+        const elapsed = Math.floor((Date.now() - start) / 1000);
+        if (elapsed > 0) {
+          clearInterval(intervalRef.current);
+          // Synchronous localStorage write survives iOS page kill
+          localStorage.setItem(
+            'drummate_pending_log',
+            JSON.stringify({ itemId, duration: elapsed, date: getTodayString() }),
+          );
+        }
+      }
+    };
+
+    // For desktop browsers (close/refresh)
+    window.addEventListener('beforeunload', saveSession);
+
+    // For iOS Safari (more reliable than beforeunload)
+    window.addEventListener('pagehide', saveSession);
+
+    return () => {
+      window.removeEventListener('beforeunload', saveSession);
+      window.removeEventListener('pagehide', saveSession);
     };
   }, []);
 

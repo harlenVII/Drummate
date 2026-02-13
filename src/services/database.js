@@ -29,8 +29,8 @@ export const deleteItem = async (id) => {
 
 // --- Practice Logs ---
 
-export const addLog = async (itemId, duration) => {
-  const date = getTodayString();
+export const addLog = async (itemId, duration, date) => {
+  if (!date) date = getTodayString();
   return await db.practiceLogs.add({ itemId, date, duration });
 };
 
