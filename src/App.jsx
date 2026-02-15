@@ -3,6 +3,7 @@ import NoSleep from 'nosleep.js';
 import PracticeItemList from './components/PracticeItemList';
 import DailyReport from './components/DailyReport';
 import Metronome from './components/Metronome';
+import SequencerPage from './components/SequencerPage';
 import TabBar from './components/TabBar';
 import { useLanguage } from './contexts/LanguageContext';
 import { MetronomeEngine } from './audio/metronomeEngine';
@@ -41,6 +42,17 @@ function App() {
   const [metronomeSubdivision, setMetronomeSubdivision] = useState('quarter');
   const [metronomeSoundType, setMetronomeSoundType] = useState('click');
 
+  // Subpage toggle within metronome tab
+  const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
+  // 'metronome' | 'sequencer'
+
+  // Sequencer state (persists across tab changes)
+  const [sequencerSlots, setSequencerSlots] = useState([]);
+  const [sequencerPlayingSlot, setSequencerPlayingSlot] = useState(-1);
+  // -1 when not playing
+  const sequencerNextIdRef = useRef(1);
+  // Auto-increment ID for new slots
+
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
     setItems(allItems);
@@ -63,6 +75,9 @@ function App() {
       if (subdivisionIndex === 0) {
         setMetronomeCurrentBeat(beat);
       }
+    };
+    metronomeEngineRef.current.onSequenceBeat = (slotIndex) => {
+      setSequencerPlayingSlot(slotIndex);
     };
 
     return () => {
@@ -235,6 +250,21 @@ function App() {
     [loadReportData],
   );
 
+  const handleSubpageChange = useCallback(
+    (subpage) => {
+      if (metronomeIsPlaying) {
+        metronomeEngineRef.current.stop();
+        metronomeEngineRef.current.setSequence(null);
+        setMetronomeIsPlaying(false);
+        setMetronomeCurrentBeat(-1);
+        setSequencerPlayingSlot(-1);
+        noSleepRef.current.disable();
+      }
+      setMetronomeSubpage(subpage);
+    },
+    [metronomeIsPlaying],
+  );
+
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
       <div className="flex-1 overflow-y-auto">
@@ -268,22 +298,66 @@ function App() {
           )}
 
           {activeTab === 'metronome' && (
-            <Metronome
-              engineRef={metronomeEngineRef}
-              noSleepRef={noSleepRef}
-              bpm={metronomeBpm}
-              setBpm={setMetronomeBpm}
-              isPlaying={metronomeIsPlaying}
-              setIsPlaying={setMetronomeIsPlaying}
-              currentBeat={metronomeCurrentBeat}
-              setCurrentBeat={setMetronomeCurrentBeat}
-              timeSignature={metronomeTimeSignature}
-              setTimeSignature={setMetronomeTimeSignature}
-              subdivision={metronomeSubdivision}
-              setSubdivision={setMetronomeSubdivision}
-              soundType={metronomeSoundType}
-              setSoundType={setMetronomeSoundType}
-            />
+            <>
+              {/* Subpage toggle */}
+              <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+                <button
+                  onClick={() => handleSubpageChange('metronome')}
+                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    metronomeSubpage === 'metronome'
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {t('metronome')}
+                </button>
+                <button
+                  onClick={() => handleSubpageChange('sequencer')}
+                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    metronomeSubpage === 'sequencer'
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {t('sequencer')}
+                </button>
+              </div>
+
+              {metronomeSubpage === 'metronome' ? (
+                <Metronome
+                  engineRef={metronomeEngineRef}
+                  noSleepRef={noSleepRef}
+                  bpm={metronomeBpm}
+                  setBpm={setMetronomeBpm}
+                  isPlaying={metronomeIsPlaying}
+                  setIsPlaying={setMetronomeIsPlaying}
+                  currentBeat={metronomeCurrentBeat}
+                  setCurrentBeat={setMetronomeCurrentBeat}
+                  timeSignature={metronomeTimeSignature}
+                  setTimeSignature={setMetronomeTimeSignature}
+                  subdivision={metronomeSubdivision}
+                  setSubdivision={setMetronomeSubdivision}
+                  soundType={metronomeSoundType}
+                  setSoundType={setMetronomeSoundType}
+                />
+              ) : (
+                <SequencerPage
+                  engineRef={metronomeEngineRef}
+                  noSleepRef={noSleepRef}
+                  bpm={metronomeBpm}
+                  setBpm={setMetronomeBpm}
+                  isPlaying={metronomeIsPlaying}
+                  setIsPlaying={setMetronomeIsPlaying}
+                  soundType={metronomeSoundType}
+                  setSoundType={setMetronomeSoundType}
+                  slots={sequencerSlots}
+                  setSlots={setSequencerSlots}
+                  playingSlot={sequencerPlayingSlot}
+                  setPlayingSlot={setSequencerPlayingSlot}
+                  nextIdRef={sequencerNextIdRef}
+                />
+              )}
+            </>
           )}
 
           {activeTab === 'report' && (

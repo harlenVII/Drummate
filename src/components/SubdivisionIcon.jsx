@@ -138,6 +138,25 @@ function SixteenthEighthSixteenth() {
   );
 }
 
+// Quarter rest symbol
+function Rest() {
+  return (
+    <svg viewBox="0 0 16 32" className="w-4 h-8" fill="none">
+      {/* Quarter rest zigzag path */}
+      <path
+        d="M 10 8 L 6 12 L 10 16 L 6 20 L 10 24"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Rest hook at bottom */}
+      <circle cx={10} cy={26} r={2} fill="currentColor" />
+    </svg>
+  );
+}
+
 const ICONS = {
   quarter: Quarter,
   eighth: Eighth,
@@ -146,6 +165,7 @@ const ICONS = {
   eighthTwoSixteenths: EighthTwoSixteenths,
   twoSixteenthsEighth: TwoSixteenthsEighth,
   sixteenthEighthSixteenth: SixteenthEighthSixteenth,
+  rest: Rest,
 };
 
 function SubdivisionIcon({ type }) {

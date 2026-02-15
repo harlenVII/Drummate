@@ -31,6 +31,11 @@ const translations = {
     total: 'Total',
     tapTempo: 'Tap Tempo',
     bpm: 'BPM',
+    sequencer: 'Sequencer',
+    sequencerEditSlot: 'Editing Slot',
+    sequencerTapToAdd: 'Tap to add',
+    sequencerEmpty: 'Tap a subdivision below to start building your rhythm',
+    rest: 'Rest',
     soundTypes: {
       click: 'Click',
       woodBlock: 'Wood',
@@ -81,6 +86,11 @@ const translations = {
     total: '总计',
     tapTempo: '敲击节拍',
     bpm: 'BPM',
+    sequencer: '音序器',
+    sequencerEditSlot: '编辑节拍',
+    sequencerTapToAdd: '点击添加',
+    sequencerEmpty: '点击下方的节奏类型开始构建',
+    rest: '休止',
     soundTypes: {
       click: '咔嗒',
       woodBlock: '木块',

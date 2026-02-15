@@ -18,6 +18,17 @@ export class MetronomeEngine {
     this.soundType = 'click';
     this.onBeat = null;
 
+    // Sequence mode: array of subdivision patterns, one per beat.
+    // When null, uses the single subdivisionPattern for all beats (normal mode).
+    this.sequencePatterns = null;
+    this.sequenceBeatIndex = 0;
+
+    // Callback fired when sequence beat advances (for UI highlight).
+    this.onSequenceBeat = null;
+
+    // Flag for rest beats (no sound)
+    this._isRestBeat = false;
+
     this._lookaheadMs = 25.0;
     this._scheduleAhead = 0.1;
     this._workerFallbackID = null;
@@ -41,7 +52,7 @@ export class MetronomeEngine {
         this.worker.terminate();
         this.worker = null;
       };
-    } catch (e) {
+    } catch {
       console.warn('Web Worker not available, falling back to setInterval');
     }
   }
@@ -54,7 +65,7 @@ export class MetronomeEngine {
     // navigator.audioSession API; for older iOS we fall back to a silent
     // <audio> element that forces the audio session category to "playback".
     if (typeof navigator !== 'undefined' && navigator.audioSession) {
-      try { navigator.audioSession.type = 'playback'; } catch (_) {}
+      try { navigator.audioSession.type = 'playback'; } catch { /* ignore */ }
     } else {
       this._ensureSilentPlaybackElement();
     }
@@ -209,7 +220,7 @@ export class MetronomeEngine {
       el.setAttribute('playsinline', '');
       el.play().catch(() => {});
       MetronomeEngine._silentAudioEl = el;
-    } catch (_) {}
+    } catch { /* ignore */ }
   }
 
   // Check AnalyserNode for non-zero audio data to verify output is alive.
@@ -295,6 +306,19 @@ export class MetronomeEngine {
     this.nextNoteTime = this.audioCtx.currentTime + 0.05;
     this.isPlaying = true;
 
+    // Reset sequence to first slot
+    if (this.sequencePatterns && this.sequencePatterns.length > 0) {
+      this.sequenceBeatIndex = 0;
+      const firstPattern = this.sequencePatterns[0];
+      if (firstPattern === null) {
+        this.subdivisionPattern = [0];
+        this._isRestBeat = true;
+      } else {
+        this.subdivisionPattern = firstPattern;
+        this._isRestBeat = false;
+      }
+    }
+
     console.log('[Metronome] Scheduling start — nextNoteTime:', this.nextNoteTime.toFixed(4),
       'ctxTime:', this.audioCtx.currentTime.toFixed(4),
       'worker:', !!this.worker);
@@ -364,6 +388,34 @@ export class MetronomeEngine {
     this.subdivisionIndex = 0;
   }
 
+  /**
+   * Enable sequence mode.
+   * @param {Array<Array<number>>|null} patterns - Array of subdivision patterns,
+   *   one per "slot". Pass null to return to normal (single-pattern) mode.
+   */
+  setSequence(patterns) {
+    if (!patterns) {
+      this.sequencePatterns = null;
+      this._isRestBeat = false;
+      return;
+    }
+    this.sequencePatterns = patterns;
+    // Clamp sequenceBeatIndex if the array shrank
+    if (this.sequenceBeatIndex >= patterns.length) {
+      this.sequenceBeatIndex = 0;
+    }
+    // Update current subdivision to match the current slot
+    const currentPattern = patterns[this.sequenceBeatIndex];
+    if (currentPattern === null) {
+      this.subdivisionPattern = [0];
+      this._isRestBeat = true;
+    } else {
+      this.subdivisionPattern = currentPattern;
+      this._isRestBeat = false;
+    }
+    this.subdivisionIndex = 0;
+  }
+
   setSoundType(type) {
     if (this.soundType === type) return;
     this.soundType = type;
@@ -411,6 +463,15 @@ export class MetronomeEngine {
 
   _scheduleNote(time, beat, subIndex) {
     this._noteCount++;
+
+    // Skip audio for rest beats, but still fire callback
+    if (this._isRestBeat) {
+      const delay = Math.max(0, (time - this.audioCtx.currentTime) * 1000);
+      setTimeout(() => {
+        this.onBeat?.({ beat, subdivisionIndex: subIndex });
+      }, delay);
+      return;
+    }
 
     const isMainBeat = subIndex === 0;
     const isAccent = beat === 0 && isMainBeat;
@@ -464,6 +525,27 @@ export class MetronomeEngine {
       this.nextNoteTime += (1 - lastOffset) * secondsPerBeat;
       this.subdivisionIndex = 0;
       this.currentBeat = (this.currentBeat + 1) % this.beatsPerMeasure;
+
+      // Sequence mode: advance to next slot and load its pattern
+      if (this.sequencePatterns && this.sequencePatterns.length > 0) {
+        this.sequenceBeatIndex =
+          (this.sequenceBeatIndex + 1) % this.sequencePatterns.length;
+        const nextPattern = this.sequencePatterns[this.sequenceBeatIndex];
+        if (nextPattern === null) {
+          this.subdivisionPattern = [0];
+          this._isRestBeat = true;
+        } else {
+          this.subdivisionPattern = nextPattern;
+          this._isRestBeat = false;
+        }
+
+        // Fire callback for UI to highlight current slot
+        if (!this.audioCtx) return;
+        const delay = Math.max(0, (this.nextNoteTime - this.audioCtx.currentTime) * 1000);
+        setTimeout(() => {
+          this.onSequenceBeat?.(this.sequenceBeatIndex);
+        }, delay);
+      }
     } else {
       const prevOffset = pattern[this.subdivisionIndex - 1];
       const nextOffset = pattern[this.subdivisionIndex];

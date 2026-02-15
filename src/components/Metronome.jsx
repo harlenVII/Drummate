@@ -3,6 +3,7 @@ import BpmDial from './BpmDial';
 import BeatIndicator from './BeatIndicator';
 import SubdivisionIcon from './SubdivisionIcon';
 import { useLanguage } from '../contexts/LanguageContext';
+import { SUBDIVISIONS } from '../constants/subdivisions';
 
 const TIME_SIGNATURES = [
   [2, 4],
@@ -12,16 +13,6 @@ const TIME_SIGNATURES = [
 ];
 
 const SOUND_TYPES = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
-
-const SUBDIVISIONS = [
-  { key: 'quarter', pattern: [0] },
-  { key: 'eighth', pattern: [0, 0.5] },
-  { key: 'triplet', pattern: [0, 1 / 3, 2 / 3] },
-  { key: 'sixteenth', pattern: [0, 0.25, 0.5, 0.75] },
-  { key: 'eighthTwoSixteenths', pattern: [0, 0.5, 0.75] },
-  { key: 'twoSixteenthsEighth', pattern: [0, 0.25, 0.5] },
-  { key: 'sixteenthEighthSixteenth', pattern: [0, 0.25, 0.75] },
-];
 
 function Metronome({
   engineRef,
@@ -82,12 +73,14 @@ function Metronome({
       setCurrentBeat(-1);
       noSleepRef.current.disable();
     } else {
+      // Ensure sequence mode is off for normal metronome
+      engineRef.current.setSequence(null);
       // Enable NoSleep BEFORE async engine start to preserve user gesture context
       noSleepRef.current.enable();
       await engineRef.current.start();
       setIsPlaying(true);
     }
-  }, [engineRef, isPlaying, setIsPlaying, setCurrentBeat]);
+  }, [engineRef, isPlaying, setIsPlaying, setCurrentBeat, noSleepRef]);
 
   const handleTap = useCallback(() => {
     const now = performance.now();
