@@ -46,8 +46,32 @@ function App() {
   });
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [metronomeCurrentBeat, setMetronomeCurrentBeat] = useState(-1);
-  const [metronomeTimeSignature, setMetronomeTimeSignature] = useState([4, 4]);
-  const [metronomeSubdivision, setMetronomeSubdivision] = useState('quarter');
+  const [metronomeTimeSignature, setMetronomeTimeSignature] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_metronome_time_signature');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 2 &&
+            typeof parsed[0] === 'number' && typeof parsed[1] === 'number') {
+          return parsed;
+        }
+      }
+      return [4, 4];
+    } catch {
+      return [4, 4];
+    }
+  });
+  const [metronomeSubdivision, setMetronomeSubdivision] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_metronome_subdivision');
+      const validSubdivisions = ['quarter', 'eighth', 'triplet', 'sixteenth',
+                                  'eighthTwoSixteenths', 'twoSixteenthsEighth',
+                                  'sixteenthEighthSixteenth', 'quintuplet', 'sextuplet'];
+      return saved && validSubdivisions.includes(saved) ? saved : 'quarter';
+    } catch {
+      return 'quarter';
+    }
+  });
   const [metronomeSoundType, setMetronomeSoundType] = useState(() => {
     try {
       const saved = localStorage.getItem('drummate_metronome_sound_type');
@@ -90,6 +114,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem('drummate_metronome_sound_type', metronomeSoundType);
   }, [metronomeSoundType]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_metronome_time_signature', JSON.stringify(metronomeTimeSignature));
+  }, [metronomeTimeSignature]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_metronome_subdivision', metronomeSubdivision);
+  }, [metronomeSubdivision]);
 
   // Persist sequencer slots to localStorage
   useEffect(() => {
