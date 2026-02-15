@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import BpmDial from './BpmDial';
 import SubdivisionIcon from './SubdivisionIcon';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,6 +20,13 @@ function SequencerPage({
   nextIdRef,
 }) {
   const { t } = useLanguage();
+
+  // Sync BPM to engine whenever it changes
+  useEffect(() => {
+    if (engineRef.current) {
+      engineRef.current.setBpm(bpm);
+    }
+  }, [engineRef, bpm]);
 
   // Build pattern array from slots for the engine
   const buildSequencePatterns = useCallback((slotArray) => {
