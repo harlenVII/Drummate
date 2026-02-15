@@ -539,11 +539,14 @@ export class MetronomeEngine {
           this._isRestBeat = false;
         }
 
-        // Fire callback for UI to highlight current slot
+        // Fire callback for UI to highlight current slot.
+        // Capture index now — by the time setTimeout fires, the scheduler
+        // may have already advanced sequenceBeatIndex past this slot.
         if (!this.audioCtx) return;
+        const slotIdx = this.sequenceBeatIndex;
         const delay = Math.max(0, (this.nextNoteTime - this.audioCtx.currentTime) * 1000);
         setTimeout(() => {
-          this.onSequenceBeat?.(this.sequenceBeatIndex);
+          this.onSequenceBeat?.(slotIdx);
         }, delay);
       }
     } else {
