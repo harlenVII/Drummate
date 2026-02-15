@@ -87,6 +87,24 @@ function App() {
   // 'metronome' | 'sequencer'
 
   // Sequencer state (persists across tab changes and page reloads)
+  const [sequencerBpm, setSequencerBpm] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_sequencer_bpm');
+      const bpm = saved ? Number(saved) : 120;
+      return bpm >= 30 && bpm <= 300 ? bpm : 120;
+    } catch {
+      return 120;
+    }
+  });
+  const [sequencerSoundType, setSequencerSoundType] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_sequencer_sound_type');
+      const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+      return saved && validTypes.includes(saved) ? saved : 'click';
+    } catch {
+      return 'click';
+    }
+  });
   const [sequencerSlots, setSequencerSlots] = useState(() => {
     try {
       const saved = localStorage.getItem('drummate_sequencer_slots');
@@ -123,7 +141,15 @@ function App() {
     localStorage.setItem('drummate_metronome_subdivision', metronomeSubdivision);
   }, [metronomeSubdivision]);
 
-  // Persist sequencer slots to localStorage
+  // Persist sequencer settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('drummate_sequencer_bpm', String(sequencerBpm));
+  }, [sequencerBpm]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_sequencer_sound_type', sequencerSoundType);
+  }, [sequencerSoundType]);
+
   useEffect(() => {
     localStorage.setItem('drummate_sequencer_slots', JSON.stringify(sequencerSlots));
     localStorage.setItem('drummate_sequencer_next_id', String(sequencerNextIdRef.current));
@@ -420,12 +446,12 @@ function App() {
                 <SequencerPage
                   engineRef={metronomeEngineRef}
                   noSleepRef={noSleepRef}
-                  bpm={metronomeBpm}
-                  setBpm={setMetronomeBpm}
+                  bpm={sequencerBpm}
+                  setBpm={setSequencerBpm}
                   isPlaying={metronomeIsPlaying}
                   setIsPlaying={setMetronomeIsPlaying}
-                  soundType={metronomeSoundType}
-                  setSoundType={setMetronomeSoundType}
+                  soundType={sequencerSoundType}
+                  setSoundType={setSequencerSoundType}
                   slots={sequencerSlots}
                   setSlots={setSequencerSlots}
                   playingSlot={sequencerPlayingSlot}
