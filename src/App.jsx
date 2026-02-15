@@ -32,15 +32,31 @@ function App() {
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
 
-  // Metronome state (persists across tab changes)
+  // Metronome state (persists across tab changes and page reloads)
   const noSleepRef = useRef(new NoSleep());
   const metronomeEngineRef = useRef(null);
-  const [metronomeBpm, setMetronomeBpm] = useState(120);
+  const [metronomeBpm, setMetronomeBpm] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_metronome_bpm');
+      const bpm = saved ? Number(saved) : 120;
+      return bpm >= 30 && bpm <= 300 ? bpm : 120;
+    } catch {
+      return 120;
+    }
+  });
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [metronomeCurrentBeat, setMetronomeCurrentBeat] = useState(-1);
   const [metronomeTimeSignature, setMetronomeTimeSignature] = useState([4, 4]);
   const [metronomeSubdivision, setMetronomeSubdivision] = useState('quarter');
-  const [metronomeSoundType, setMetronomeSoundType] = useState('click');
+  const [metronomeSoundType, setMetronomeSoundType] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_metronome_sound_type');
+      const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+      return saved && validTypes.includes(saved) ? saved : 'click';
+    } catch {
+      return 'click';
+    }
+  });
 
   // Subpage toggle within metronome tab
   const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
@@ -65,6 +81,15 @@ function App() {
       sequencerNextIdRef.current = 1;
     }
   }
+
+  // Persist metronome settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('drummate_metronome_bpm', String(metronomeBpm));
+  }, [metronomeBpm]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_metronome_sound_type', metronomeSoundType);
+  }, [metronomeSoundType]);
 
   // Persist sequencer slots to localStorage
   useEffect(() => {
