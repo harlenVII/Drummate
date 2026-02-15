@@ -46,12 +46,31 @@ function App() {
   const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
   // 'metronome' | 'sequencer'
 
-  // Sequencer state (persists across tab changes)
-  const [sequencerSlots, setSequencerSlots] = useState([]);
+  // Sequencer state (persists across tab changes and page reloads)
+  const [sequencerSlots, setSequencerSlots] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_sequencer_slots');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [sequencerPlayingSlot, setSequencerPlayingSlot] = useState(-1);
-  // -1 when not playing
-  const sequencerNextIdRef = useRef(1);
-  // Auto-increment ID for new slots
+  const sequencerNextIdRef = useRef(null);
+  if (sequencerNextIdRef.current === null) {
+    try {
+      const saved = localStorage.getItem('drummate_sequencer_next_id');
+      sequencerNextIdRef.current = saved ? Number(saved) : 1;
+    } catch {
+      sequencerNextIdRef.current = 1;
+    }
+  }
+
+  // Persist sequencer slots to localStorage
+  useEffect(() => {
+    localStorage.setItem('drummate_sequencer_slots', JSON.stringify(sequencerSlots));
+    localStorage.setItem('drummate_sequencer_next_id', String(sequencerNextIdRef.current));
+  }, [sequencerSlots]);
 
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
