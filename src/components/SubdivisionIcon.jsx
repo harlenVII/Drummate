@@ -69,6 +69,34 @@ function Triplet() {
   );
 }
 
+// Six beamed sextuplet notes (two beams)
+function Sextuplet() {
+  return (
+    <svg viewBox="0 0 60 36" className="w-15 h-9" fill="none">
+      {/* Bracket */}
+      <line x1={5} y1={3} x2={5} y2={6} stroke="currentColor" strokeWidth={1} />
+      <line x1={5} y1={3} x2={19} y2={3} stroke="currentColor" strokeWidth={1} />
+      <text x={27} y={5.5} textAnchor="middle" fill="currentColor" fontSize={7} fontWeight="bold" fontStyle="italic">6</text>
+      <line x1={35} y1={3} x2={55} y2={3} stroke="currentColor" strokeWidth={1} />
+      <line x1={55} y1={3} x2={55} y2={6} stroke="currentColor" strokeWidth={1} />
+      {/* Notes */}
+      <Beam x1={8.5} x2={51.5} y={10} />
+      <Stem x={8.5} bottom={28} top={10} />
+      <Stem x={18} bottom={28} top={10} />
+      <Stem x={27.5} bottom={28} top={10} />
+      <Stem x={37} bottom={28} top={10} />
+      <Stem x={46.5} bottom={28} top={10} />
+      <Stem x={56} bottom={28} top={10} />
+      <Notehead cx={6} cy={28} />
+      <Notehead cx={15.5} cy={28} />
+      <Notehead cx={25} cy={28} />
+      <Notehead cx={34.5} cy={28} />
+      <Notehead cx={44} cy={28} />
+      <Notehead cx={53.5} cy={28} />
+    </svg>
+  );
+}
+
 // Four beamed sixteenth notes (two beams)
 function Sixteenth() {
   return (
@@ -161,6 +189,7 @@ const ICONS = {
   quarter: Quarter,
   eighth: Eighth,
   triplet: Triplet,
+  sextuplet: Sextuplet,
   sixteenth: Sixteenth,
   eighthTwoSixteenths: EighthTwoSixteenths,
   twoSixteenthsEighth: TwoSixteenthsEighth,
