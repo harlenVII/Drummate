@@ -167,7 +167,7 @@ function Metronome({
 
       {/* Subdivision selector */}
       <div className="flex gap-2 flex-wrap justify-center">
-        {SUBDIVISIONS.map(({ key }) => (
+        {SUBDIVISIONS.filter(({ key }) => key !== 'rest').map(({ key }) => (
           <button
             key={key}
             onClick={() => handleSubdivisionChange(key)}

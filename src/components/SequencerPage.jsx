@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { SUBDIVISIONS } from '../constants/subdivisions';
 
 const MAX_SLOTS = 16;
+const SOUND_TYPES = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
 
 function SequencerPage({
   engineRef,
@@ -13,6 +14,8 @@ function SequencerPage({
   setBpm,
   isPlaying,
   setIsPlaying,
+  soundType,
+  setSoundType,
   slots,
   setSlots,
   playingSlot,
@@ -27,6 +30,13 @@ function SequencerPage({
       engineRef.current.setBpm(bpm);
     }
   }, [engineRef, bpm]);
+
+  // Sync sound type to engine whenever it changes
+  useEffect(() => {
+    if (engineRef.current) {
+      engineRef.current.setSoundType(soundType);
+    }
+  }, [engineRef, soundType]);
 
   // Build pattern array from slots for the engine
   const buildSequencePatterns = useCallback((slotArray) => {
@@ -177,6 +187,23 @@ function SequencerPage({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* === Sound Type Selector === */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {SOUND_TYPES.map((key) => (
+          <button
+            key={key}
+            onClick={() => setSoundType(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              soundType === key
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+            }`}
+          >
+            {t(`soundTypes.${key}`)}
+          </button>
+        ))}
       </div>
 
       {/* === BPM Dial === */}
