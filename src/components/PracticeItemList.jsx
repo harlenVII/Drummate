@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { formatTime } from '../utils/formatTime';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -19,6 +19,43 @@ function PracticeItemList({
   const [newName, setNewName] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingName, setEditingName] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState(0);
+
+  // Keyboard shortcuts (only in normal/timer mode, not edit mode)
+  const handleKeyDown = useCallback((e) => {
+    if (editing) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (items.length === 0) return;
+
+    if (e.code === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIndex((prev) => Math.max(0, prev - 1));
+    } else if (e.code === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIndex((prev) => Math.min(items.length - 1, prev + 1));
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      const focusedItem = items[focusedIndex];
+      if (!focusedItem) return;
+      if (activeItemId === focusedItem.id) {
+        onStop();
+      } else {
+        onStart(focusedItem.id);
+      }
+    }
+  }, [editing, items, focusedIndex, activeItemId, onStart, onStop]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Keep focusedIndex in bounds if items list changes
+  useEffect(() => {
+    if (focusedIndex >= items.length && items.length > 0) {
+      setFocusedIndex(items.length - 1);
+    }
+  }, [items.length, focusedIndex]);
 
   const handleAdd = () => {
     const name = newName.trim();
@@ -139,8 +176,9 @@ function PracticeItemList({
   // --- Normal (timer) mode ---
   return (
     <div className="flex flex-col gap-3">
-      {items.map((item) => {
+      {items.map((item, index) => {
         const isActive = activeItemId === item.id;
+        const isFocused = index === focusedIndex;
         const savedTotal = totals[item.id] || 0;
         const displayTime = isActive ? savedTotal + elapsedTime : savedTotal;
 
@@ -148,7 +186,7 @@ function PracticeItemList({
           <div
             key={item.id}
             className={`bg-white rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors ${
-              isActive ? 'ring-2 ring-blue-500' : ''
+              isActive ? 'ring-2 ring-blue-500' : isFocused ? 'ring-2 ring-gray-300' : ''
             }`}
           >
             <div className="flex flex-col">
