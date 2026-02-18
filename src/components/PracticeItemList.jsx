@@ -35,7 +35,11 @@ function PracticeItemList({
       setFocusedIndex((prev) => prev === null ? 0 : Math.min(items.length - 1, prev + 1));
     } else if (e.code === 'Space') {
       e.preventDefault();
-      if (focusedIndex === null) return;
+      // If nothing is focused but something is running, stop it
+      if (focusedIndex === null) {
+        if (activeItemId != null) onStop();
+        return;
+      }
       const focusedItem = items[focusedIndex];
       if (!focusedItem) return;
       if (activeItemId === focusedItem.id) {
@@ -50,6 +54,14 @@ function PracticeItemList({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  // When returning to this tab with an active item, restore focus to it
+  useEffect(() => {
+    if (focusedIndex === null && activeItemId != null) {
+      const idx = items.findIndex((item) => item.id === activeItemId);
+      if (idx !== -1) setFocusedIndex(idx);
+    }
+  }, [activeItemId, items, focusedIndex]);
 
   // Keep focusedIndex in bounds if items list changes
   useEffect(() => {
