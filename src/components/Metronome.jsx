@@ -119,6 +119,35 @@ function Metronome({
     setSubdivision(key);
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore if user is typing in an input/textarea
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Space: toggle play/pause
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleTogglePlay();
+      }
+      // Left arrow: decrease BPM by 1
+      else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        setBpm((prev) => Math.max(30, prev - 1));
+      }
+      // Right arrow: increase BPM by 1
+      else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        setBpm((prev) => Math.min(300, prev + 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleTogglePlay, setBpm]);
+
   return (
     <div className="flex flex-col items-center gap-6">
       {/* Beat indicator */}

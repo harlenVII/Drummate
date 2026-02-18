@@ -101,6 +101,29 @@ function SequencerPage({
     }
   }, [slots, setSlots, isPlaying, engineRef, setIsPlaying, setPlayingSlot, noSleepRef]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleTogglePlay();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        setBpm((prev) => Math.max(30, prev - 1));
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        setBpm((prev) => Math.min(300, prev + 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleTogglePlay, setBpm]);
+
   return (
     <div className="flex flex-col items-center gap-5">
 
