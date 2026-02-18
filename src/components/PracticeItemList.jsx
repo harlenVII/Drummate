@@ -19,7 +19,7 @@ function PracticeItemList({
   const [newName, setNewName] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const [focusedIndex, setFocusedIndex] = useState(0);
+  const [focusedIndex, setFocusedIndex] = useState(null);
 
   // Keyboard shortcuts (only in normal/timer mode, not edit mode)
   const handleKeyDown = useCallback((e) => {
@@ -29,12 +29,13 @@ function PracticeItemList({
 
     if (e.code === 'ArrowUp') {
       e.preventDefault();
-      setFocusedIndex((prev) => Math.max(0, prev - 1));
+      setFocusedIndex((prev) => prev === null ? items.length - 1 : Math.max(0, prev - 1));
     } else if (e.code === 'ArrowDown') {
       e.preventDefault();
-      setFocusedIndex((prev) => Math.min(items.length - 1, prev + 1));
+      setFocusedIndex((prev) => prev === null ? 0 : Math.min(items.length - 1, prev + 1));
     } else if (e.code === 'Space') {
       e.preventDefault();
+      if (focusedIndex === null) return;
       const focusedItem = items[focusedIndex];
       if (!focusedItem) return;
       if (activeItemId === focusedItem.id) {
@@ -52,8 +53,8 @@ function PracticeItemList({
 
   // Keep focusedIndex in bounds if items list changes
   useEffect(() => {
-    if (focusedIndex >= items.length && items.length > 0) {
-      setFocusedIndex(items.length - 1);
+    if (focusedIndex !== null && focusedIndex >= items.length) {
+      setFocusedIndex(items.length > 0 ? items.length - 1 : null);
     }
   }, [items.length, focusedIndex]);
 
@@ -178,7 +179,7 @@ function PracticeItemList({
     <div className="flex flex-col gap-3">
       {items.map((item, index) => {
         const isActive = activeItemId === item.id;
-        const isFocused = index === focusedIndex;
+        const isFocused = focusedIndex !== null && index === focusedIndex;
         const savedTotal = totals[item.id] || 0;
         const displayTime = isActive ? savedTotal + elapsedTime : savedTotal;
 
