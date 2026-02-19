@@ -1,6 +1,6 @@
 import { useLanguage } from '../contexts/LanguageContext';
 
-function SettingsPanel({ isOpen, onClose, signOut, language, toggleLanguage }) {
+function SettingsPanel({ isOpen, onClose, signOut, language, toggleLanguage, user }) {
   const { t } = useLanguage();
 
   return (
@@ -31,6 +31,19 @@ function SettingsPanel({ isOpen, onClose, signOut, language, toggleLanguage }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+        </div>
+
+        {/* Profile card */}
+        <div className="px-5 py-5 flex items-center gap-4 border-b border-gray-100">
+          <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-semibold shrink-0">
+            {(user?.name || user?.email || '?')[0].toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            {user?.name && (
+              <p className="text-sm font-semibold text-gray-800 truncate">{user.name}</p>
+            )}
+            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+          </div>
         </div>
 
         {/* Settings content */}
