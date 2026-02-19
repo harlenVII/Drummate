@@ -66,6 +66,8 @@ const translations = {
       hasAccount: 'Already have an account?',
       syncing: 'Syncing...',
     },
+    settings: 'Settings',
+    language: 'Language',
   },
   zh: {
     appName: 'Drummate',
@@ -132,6 +134,8 @@ const translations = {
       hasAccount: '已有账号？',
       syncing: '同步中...',
     },
+    settings: '设置',
+    language: '语言',
   },
 };
 
