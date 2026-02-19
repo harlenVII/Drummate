@@ -8,6 +8,12 @@ db.version(2).stores({
   practiceLogs: '++id, itemId, date, duration',
 });
 
+db.version(3).stores({
+  practiceItems: '++id, name, remoteId',
+  practiceLogs: '++id, itemId, date, duration, remoteId',
+  syncQueue: '++id, action, collection, localId',
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {

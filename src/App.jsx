@@ -6,8 +6,11 @@ import Metronome from './components/Metronome';
 import SequencerPage from './components/SequencerPage';
 import TabBar from './components/TabBar';
 import { useLanguage } from './contexts/LanguageContext';
+import { useAuth } from './contexts/AuthContext';
+import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
 import {
+  db,
   getItems,
   addItem,
   renameItem,
@@ -16,10 +19,12 @@ import {
   getTodaysLogs,
   getLogsByDate,
 } from './services/database';
+import { pushItem, pushLog, pushDeleteItem, pushRenameItem, pullAll, pushAllUnsynced, flushSyncQueue, subscribeToChanges } from './services/sync';
 import { getTodayString } from './utils/dateHelpers';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
+  const { user, loading, signOut } = useAuth();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -170,6 +175,35 @@ function App() {
     loadData();
   }, [loadData]);
 
+  // Sync with PocketBase on sign-in
+  useEffect(() => {
+    if (!user) return;
+
+    let unsubscribe = null;
+    let cancelled = false;
+
+    const init = async () => {
+      try {
+        await flushSyncQueue(user.id);
+        await pushAllUnsynced(user.id);
+        await pullAll(user.id);
+        await loadData();
+      } catch (err) {
+        console.error('Sync init failed:', err);
+      }
+      // Subscribe to real-time changes only after initial sync completes
+      if (!cancelled) {
+        unsubscribe = subscribeToChanges(user.id, loadData);
+      }
+    };
+    init();
+
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user, loadData]);
+
   // Initialize metronome engine once
   useEffect(() => {
     metronomeEngineRef.current = new MetronomeEngine();
@@ -251,14 +285,21 @@ function App() {
     stopTimer();
     const elapsed = elapsedTime;
     const itemId = activeItemId;
-    setActiveItemId(null);
-    setElapsedTime(0);
 
     if (elapsed > 0 && itemId != null) {
-      await addLog(itemId, elapsed);
+      const logId = await addLog(itemId, elapsed);
       await loadData();
+      setActiveItemId(null);
+      setElapsedTime(0);
+      if (user) {
+        const log = await db.practiceLogs.get(logId);
+        pushLog(log, user.id).catch(console.error);
+      }
+    } else {
+      setActiveItemId(null);
+      setElapsedTime(0);
     }
-  }, [activeItemId, elapsedTime, stopTimer, loadData]);
+  }, [activeItemId, elapsedTime, stopTimer, loadData, user]);
 
   const handleStart = useCallback(
     async (itemId) => {
@@ -266,7 +307,11 @@ function App() {
       if (activeItemId != null) {
         stopTimer();
         if (elapsedTime > 0) {
-          await addLog(activeItemId, elapsedTime);
+          const logId = await addLog(activeItemId, elapsedTime);
+          if (user) {
+            const log = await db.practiceLogs.get(logId);
+            pushLog(log, user.id).catch(console.error);
+          }
         }
       }
 
@@ -281,7 +326,7 @@ function App() {
         await loadData();
       }
     },
-    [activeItemId, elapsedTime, stopTimer, loadData],
+    [activeItemId, elapsedTime, stopTimer, loadData, user],
   );
 
   const handleStop = useCallback(async () => {
@@ -290,18 +335,26 @@ function App() {
 
   const handleAddItem = useCallback(
     async (name) => {
-      await addItem(name);
+      const localId = await addItem(name);
       await loadData();
+      if (user) {
+        const item = await db.practiceItems.get(localId);
+        pushItem(item, user.id).catch(console.error);
+      }
     },
-    [loadData],
+    [loadData, user],
   );
 
   const handleRenameItem = useCallback(
     async (id, newName) => {
+      const item = await db.practiceItems.get(id);
       await renameItem(id, newName);
       await loadData();
+      if (user && item?.remoteId) {
+        pushRenameItem(item.remoteId, newName).catch(console.error);
+      }
     },
-    [loadData],
+    [loadData, user],
   );
 
   const handleDeleteItem = useCallback(
@@ -311,10 +364,14 @@ function App() {
         setActiveItemId(null);
         setElapsedTime(0);
       }
+      const item = await db.practiceItems.get(id);
       await deleteItem(id);
       await loadData();
+      if (user && item?.remoteId) {
+        pushDeleteItem(item.remoteId).catch(console.error);
+      }
     },
-    [activeItemId, stopTimer, loadData],
+    [activeItemId, stopTimer, loadData, user],
   );
 
   const handleSetEditing = useCallback(
@@ -379,6 +436,18 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleTabChange]);
 
+  if (loading) {
+    return (
+      <div className="h-[100dvh] flex items-center justify-center bg-gray-100">
+        <div className="text-gray-400 text-lg">{t('auth.syncing')}</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
       <div className="flex-1 overflow-y-auto">
@@ -387,12 +456,20 @@ function App() {
             <h1 className="text-3xl font-bold text-gray-800">
               {t('appName')}
             </h1>
-            <button
-              onClick={toggleLanguage}
-              className="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              {language === 'en' ? '中文' : 'EN'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={signOut}
+                className="px-3 py-1 text-sm font-medium text-red-500 bg-white border border-gray-300 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                {t('auth.signOut')}
+              </button>
+              <button
+                onClick={toggleLanguage}
+                className="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                {language === 'en' ? '中文' : 'EN'}
+              </button>
+            </div>
           </div>
 
           {activeTab === 'practice' && (

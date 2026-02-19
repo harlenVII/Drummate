@@ -40,80 +40,142 @@ This preserves the existing offline-first PWA experience while adding cloud sync
 
 ---
 
-## Phase 1: PocketBase Server Setup
+## Phase 1: PocketBase Server Setup (AWS EC2 — Singapore)
 
-### 1.1 Hosting Options
+### 1.1 Why AWS
 
-| Option | Cost | Region | Notes |
-|--------|------|--------|-------|
-| **Fly.io** | ~$2-3/mo | Singapore (`sin`) | Closest to HK. No free tier for new accounts (trial: 2hrs or 7 days) |
-| **Railway** | Free tier → $5/mo | Varies | 500 hrs/mo free, but sleeps on inactivity |
-| **Any VPS** | ~$3-5/mo | Singapore/HK | DigitalOcean, Vultr, Linode all have SG regions |
+| | **AWS EC2 (t4g.small)** | Oracle Free Tier | Fly.io |
+|--|--|--|--|
+| **Cost** | **$0 through Dec 2026** (free trial), then ~$6/mo | $0 forever | ~$5/mo |
+| **Singapore region** | **Yes** (`ap-southeast-1`) | Yes | Yes |
+| **Always-on** | **Yes** | Yes | Yes |
+| **Specs** | ARM Graviton2, 2 vCPU, 2GB RAM | ARM 1 OCPU, 6GB RAM | Shared 256MB |
+| **Storage** | 30GB EBS (free tier) | 50GB | 1-3GB |
+| **Outbound data** | 100 GB/mo free | 10 TB/mo | 100GB/mo |
+| **Signup** | **US address OK** | US address OK | Any |
 
-> **Recommendation:** Fly.io Singapore. Cheapest option with persistent volumes and no sleep behavior. HK is not a Fly.io region, but Singapore latency to China is ~50-80ms (acceptable).
+> **Recommendation:** AWS EC2 t4g.small in Singapore (`ap-southeast-1`). The T4g free trial gives 750 hours/month free through Dec 31, 2026 — enough to run one instance 24/7 at $0. ARM Graviton2 runs PocketBase natively (Go supports arm64). After the free trial, t4g.micro (~$3/mo) is more than enough for PocketBase.
 
-### 1.2 Dockerfile
+### 1.2 AWS Free Tier Details
 
-```dockerfile
-FROM alpine:latest
+- **T4g free trial:** 750 hours/month of `t4g.small` (2 vCPU, 2GB RAM) — extended through **December 31, 2026**
+- **EBS storage:** 30 GB of General Purpose (gp3) — free for 12 months
+- **Elastic IP:** 1 public IPv4 — free while attached to a running instance
+- **Outbound data:** 100 GB/month free
+- **Region:** Singapore (`ap-southeast-1`) — confirmed eligible for T4g free trial
 
-ARG PB_VERSION=0.36.1
+> **After free trial ends (Jan 2027):** Downgrade to `t4g.micro` (2 vCPU, 1GB RAM) at ~$3/mo, or switch to `t4g.nano` at ~$1.50/mo. PocketBase only needs ~15MB RAM.
 
-RUN apk add --no-cache unzip ca-certificates
+### 1.3 Setup Steps
 
-ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
-RUN unzip /tmp/pb.zip -d /pb/
+#### Step 1: Create AWS Account
 
-EXPOSE 8080
+1. Sign up at [aws.amazon.com](https://aws.amazon.com) with your US address + credit card
+2. Complete identity verification
 
-CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]
-```
+#### Step 2: Launch EC2 Instance
 
-### 1.3 fly.toml
+1. Go to **EC2 → Instances → Launch Instance**
+2. Configure:
+   - **Name:** `drummate-api`
+   - **Region:** Asia Pacific (Singapore) `ap-southeast-1` (select from top-right dropdown)
+   - **AMI:** Ubuntu Server 24.04 LTS (ARM64)
+   - **Instance type:** `t4g.small` (Free trial eligible)
+   - **Key pair:** Create new or select existing `.pem` key
+   - **Network settings:**
+     - Allow SSH (port 22) from your IP
+     - Allow HTTPS (port 443) from anywhere
+     - Allow Custom TCP (port 8080) from anywhere
+   - **Storage:** 30 GB gp3 (free tier)
+3. Click **Launch Instance**
 
-```toml
-app = "drummate-api"
-primary_region = "sin"
+#### Step 3: Allocate Elastic IP (Static Public IP)
 
-[mounts]
-  source = "pb_data"
-  destination = "/pb/pb_data"
+1. Go to **EC2 → Elastic IPs → Allocate Elastic IP address**
+2. Click **Allocate**
+3. Select the new IP → **Actions → Associate Elastic IP address**
+4. Associate with your `drummate-api` instance
 
-[build.args]
-  PB_VERSION = "0.36.1"
+> **Why:** Without an Elastic IP, the public IP changes on every reboot.
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = false   # Keep alive for SSE real-time
-  auto_start_machines = true
-  min_machines_running = 1
-```
-
-### 1.4 Deployment Steps
+#### Step 4: Install PocketBase on the VM
 
 ```bash
-# 1. Install flyctl & login
-curl -L https://fly.io/install.sh | sh
-flyctl auth login
+# SSH into the instance
+ssh -i ~/your-key.pem ubuntu@<your-elastic-ip>
 
-# 2. Launch app (from directory with Dockerfile + fly.toml)
-flyctl launch --build-only
+# Update system
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y unzip
 
-# 3. Create persistent volume (1GB)
-flyctl volumes create pb_data --size=1 --region=sin
+# Download PocketBase (ARM64 build for Graviton)
+PB_VERSION=0.36.1
+wget https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_arm64.zip
+unzip pocketbase_${PB_VERSION}_linux_arm64.zip -d ~/pocketbase
+rm pocketbase_${PB_VERSION}_linux_arm64.zip
 
-# 4. Deploy
-flyctl deploy
-
-# 5. Check logs for superuser setup URL
-flyctl logs
-# Visit: https://drummate-api.fly.dev/_/
+# Test it works
+~/pocketbase/pocketbase serve --http=0.0.0.0:8080
+# Visit: http://<your-elastic-ip>:8080/_/
+# Ctrl+C to stop
 ```
 
-### 1.5 Admin Setup
+#### Step 5: Run PocketBase as a systemd Service
 
-1. Open `https://drummate-api.fly.dev/_/` (PocketBase admin UI)
+```bash
+# Create systemd service file
+sudo tee /etc/systemd/system/pocketbase.service > /dev/null <<EOF
+[Unit]
+Description=PocketBase
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/home/ubuntu/pocketbase/pocketbase serve --http=0.0.0.0:8080
+WorkingDirectory=/home/ubuntu/pocketbase
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable pocketbase
+sudo systemctl start pocketbase
+
+# Check status
+sudo systemctl status pocketbase
+```
+
+#### Step 6: (Optional) HTTPS with Caddy
+
+```bash
+# Install Caddy
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install -y caddy
+
+# Configure reverse proxy
+sudo tee /etc/caddy/Caddyfile > /dev/null <<EOF
+drummate-api.yourdomain.com {
+    reverse_proxy localhost:8080
+}
+EOF
+
+# Restart Caddy
+sudo systemctl restart caddy
+```
+
+> With Caddy, PocketBase is accessible at `https://drummate-api.yourdomain.com`. Point your domain's DNS A record to the Elastic IP. Caddy handles TLS certificates automatically via Let's Encrypt.
+
+### 1.4 Admin Setup
+
+1. Open `http://<your-elastic-ip>:8080/_/` (or `https://drummate-api.yourdomain.com/_/` if using Caddy)
 2. Create superuser account
 3. Create collections (Phase 2)
 4. Set API rules (Phase 3)
@@ -218,7 +280,7 @@ npm install pocketbase
 ```javascript
 import PocketBase from 'pocketbase';
 
-const POCKETBASE_URL = import.meta.env.VITE_POCKETBASE_URL || 'https://drummate-api.fly.dev';
+const POCKETBASE_URL = import.meta.env.VITE_POCKETBASE_URL || 'https://drummate-api.yourdomain.com';
 
 export const pb = new PocketBase(POCKETBASE_URL);
 ```
@@ -227,7 +289,7 @@ export const pb = new PocketBase(POCKETBASE_URL);
 
 Add to `.env`:
 ```
-VITE_POCKETBASE_URL=https://drummate-api.fly.dev
+VITE_POCKETBASE_URL=https://drummate-api.yourdomain.com
 ```
 
 > **Note:** PocketBase SDK is 14 KB gzipped (vs Firebase's 70 KB). Auth tokens are auto-persisted to localStorage by the SDK.
@@ -775,7 +837,7 @@ dexie         # Still the local database (offline-first)
 
 | Step | Task | Files |
 |---|---|---|
-| 1 | Deploy PocketBase to Fly.io Singapore | `Dockerfile`, `fly.toml` (server-side) |
+| 1 | Deploy PocketBase to AWS EC2 t4g.small (Singapore) | AWS console setup (server-side) |
 | 2 | Create collections + API rules in PocketBase admin | PocketBase admin UI |
 | 3 | Install `pocketbase` SDK, create config | `package.json`, `src/services/pocketbase.js`, `.env` |
 | 4 | Create `AuthContext.jsx` | `src/contexts/AuthContext.jsx` |
@@ -846,10 +908,10 @@ const top10 = await pb.collection('leaderboard').getList(1, 10, {
 | Risk | Mitigation |
 |---|---|
 | PocketBase is single-developer project | Open source, can self-maintain fork if abandoned; data is just SQLite |
-| Fly.io Singapore latency from China | ~50-80ms is acceptable for async sync; local Dexie keeps UI instant |
+| AWS Singapore latency from China | ~50-80ms is acceptable for async sync; local Dexie keeps UI instant |
 | Sync conflicts (same record edited on two devices) | Last-write-wins; for a practice tracker, conflicts are near-impossible (no collaborative editing) |
-| Fly.io costs increase | PocketBase is just a binary — trivially migrate to any $3 VPS |
-| SSE disconnects on Fly.io | PocketBase SDK auto-reconnects; 60-second idle timeout is harmless |
+| T4g free trial ends (Jan 2027) | Downgrade to t4g.micro (~$3/mo) or t4g.nano (~$1.50/mo); PocketBase only needs ~15MB RAM |
+| SSE disconnects | PocketBase SDK auto-reconnects; idle timeout is harmless |
 | Migration loses data | Dexie data is never deleted; unsynced records retry on next sign-in |
 
 ---
@@ -861,7 +923,7 @@ const top10 = await pb.collection('leaderboard').getList(1, 10, {
 | **Works in China** | No | **Yes** (Singapore server) |
 | **Offline support** | Built-in (Firestore cache) | Dexie.js (already exists) |
 | **Bundle size increase** | +70 KB | **+14 KB** |
-| **Hosting cost** | Free | ~$2-3/mo |
+| **Hosting cost** | Free | **$0** (AWS T4g free trial through Dec 2026, then ~$3/mo) |
 | **Auth** | Google + email | Email only (Google blocked in China) |
 | **database.js changes** | Full rewrite (new API) | **Minimal** (add remoteId field) |
 | **App.jsx changes** | All DB calls get userId param | Add sync hooks only |
@@ -873,7 +935,7 @@ const top10 = await pb.collection('leaderboard').getList(1, 10, {
 
 ## Checklist Before Shipping
 
-- [ ] PocketBase deployed and accessible from China (test with Chinese IP/VPN)
+- [ ] PocketBase deployed on AWS EC2 Singapore and accessible from China (test with Chinese IP/VPN)
 - [ ] API rules locked down (users only see own data)
 - [ ] Offline writes work (airplane mode → practice → reconnect → synced)
 - [ ] Cross-device sync works (log on phone → appears on laptop)
@@ -887,4 +949,4 @@ const top10 = await pb.collection('leaderboard').getList(1, 10, {
 
 ---
 
-*Last updated: 2026-02-14*
+*Last updated: 2026-02-18*
