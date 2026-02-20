@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function AuthScreen() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, sessionExpired } = useAuth();
   const { t, language, toggleLanguage } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -45,6 +45,12 @@ export default function AuthScreen() {
             {language === 'en' ? '中文' : 'EN'}
           </button>
         </div>
+
+        {sessionExpired && (
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm text-center">
+            {t('auth.sessionExpired')}
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-6">

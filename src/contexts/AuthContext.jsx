@@ -5,14 +5,19 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(pb.authStore.record);
-  const loading = !pb.authStore.isValid && !user;
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const loading = false;
 
   useEffect(() => {
     if (pb.authStore.isValid) {
       // Token exists locally — show app immediately, refresh silently
       pb.collection('users').authRefresh()
         .then(() => setUser(pb.authStore.record))
-        .catch(() => { pb.authStore.clear(); setUser(null); });
+        .catch(() => {
+          pb.authStore.clear();
+          setUser(null);
+          setSessionExpired(true);
+        });
     }
 
     const unsubscribe = pb.authStore.onChange((_token, record) => {
@@ -37,7 +42,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, sessionExpired, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
