@@ -5,16 +5,14 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(pb.authStore.record);
-  const [loading, setLoading] = useState(true);
+  const loading = !pb.authStore.isValid && !user;
 
   useEffect(() => {
     if (pb.authStore.isValid) {
+      // Token exists locally — show app immediately, refresh silently
       pb.collection('users').authRefresh()
         .then(() => setUser(pb.authStore.record))
-        .catch(() => { pb.authStore.clear(); setUser(null); })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+        .catch(() => { pb.authStore.clear(); setUser(null); });
     }
 
     const unsubscribe = pb.authStore.onChange((_token, record) => {
