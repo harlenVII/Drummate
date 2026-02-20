@@ -288,6 +288,12 @@ function App() {
     const elapsed = elapsedTime;
     const itemId = activeItemId;
 
+    if (itemId != null) {
+      await db.practiceItems.update(itemId, {
+        metronomeSettings: { bpm: metronomeBpm, timeSignature: metronomeTimeSignature, subdivision: metronomeSubdivision, soundType: metronomeSoundType },
+      });
+    }
+
     if (elapsed > 0 && itemId != null) {
       const logId = await addLog(itemId, elapsed);
       await loadData();
@@ -301,13 +307,16 @@ function App() {
       setActiveItemId(null);
       setElapsedTime(0);
     }
-  }, [activeItemId, elapsedTime, stopTimer, loadData, user]);
+  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType]);
 
   const handleStart = useCallback(
     async (itemId) => {
-      // If another item is running, save it first
+      // If another item is running, save it first (including its metronome settings)
       if (activeItemId != null) {
         stopTimer();
+        await db.practiceItems.update(activeItemId, {
+          metronomeSettings: { bpm: metronomeBpm, timeSignature: metronomeTimeSignature, subdivision: metronomeSubdivision, soundType: metronomeSoundType },
+        });
         if (elapsedTime > 0) {
           const logId = await addLog(activeItemId, elapsedTime);
           if (user) {
@@ -315,6 +324,16 @@ function App() {
             pushLog(log, user.id).catch(console.error);
           }
         }
+      }
+
+      // Load metronome settings saved for this item
+      const item = await db.practiceItems.get(itemId);
+      if (item?.metronomeSettings) {
+        const { bpm, timeSignature, subdivision, soundType } = item.metronomeSettings;
+        if (bpm != null) setMetronomeBpm(bpm);
+        if (timeSignature != null) setMetronomeTimeSignature(timeSignature);
+        if (subdivision != null) setMetronomeSubdivision(subdivision);
+        if (soundType != null) setMetronomeSoundType(soundType);
       }
 
       setActiveItemId(itemId);
@@ -328,7 +347,7 @@ function App() {
         await loadData();
       }
     },
-    [activeItemId, elapsedTime, stopTimer, loadData, user],
+    [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType],
   );
 
   const handleStop = useCallback(async () => {
