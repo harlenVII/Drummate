@@ -25,7 +25,7 @@ import { getTodayString } from './utils/dateHelpers';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, authReady, signOut } = useAuth();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -177,9 +177,9 @@ function App() {
     loadData();
   }, [loadData]);
 
-  // Sync with PocketBase on sign-in
+  // Sync with PocketBase on sign-in (wait for token refresh to complete)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !authReady) return;
 
     let unsubscribe = null;
     let cancelled = false;
@@ -204,7 +204,7 @@ function App() {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
-  }, [user, loadData]);
+  }, [user, authReady, loadData]);
 
   // Initialize metronome engine once
   useEffect(() => {

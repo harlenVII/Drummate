@@ -6,6 +6,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(pb.authStore.record);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [authReady, setAuthReady] = useState(!pb.authStore.isValid);
   const loading = false;
 
   useEffect(() => {
@@ -19,7 +20,8 @@ export function AuthProvider({ children }) {
           pb.authStore.clear();
           setUser(null);
           setSessionExpired(true);
-        });
+        })
+        .finally(() => setAuthReady(true));
     }
 
     const unsubscribe = pb.authStore.onChange((_token, record) => {
@@ -45,7 +47,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, sessionExpired, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, authReady, sessionExpired, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
