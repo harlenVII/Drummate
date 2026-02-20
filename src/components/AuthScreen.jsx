@@ -30,10 +30,14 @@ export default function AuthScreen() {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-gray-100 px-4">
+    <div className="min-h-[100dvh] flex flex-col items-center bg-gray-100 px-4 pt-20 pb-8">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">{t('appName')}</h1>
+        {/* Brand header */}
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">🥁</span>
+            <h1 className="text-3xl font-bold text-gray-800">{t('appName')}</h1>
+          </div>
           <button
             onClick={toggleLanguage}
             className="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
@@ -54,7 +58,8 @@ export default function AuthScreen() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('auth.name')}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                autoComplete="name"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             )}
 
@@ -64,7 +69,9 @@ export default function AuthScreen() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t('auth.email')}
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              inputMode="email"
+              autoComplete="email"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
             <input
@@ -74,7 +81,8 @@ export default function AuthScreen() {
               placeholder={t('auth.password')}
               required
               minLength={8}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
             {error && (
