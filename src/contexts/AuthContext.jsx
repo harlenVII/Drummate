@@ -11,9 +11,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (pb.authStore.isValid) {
       // Token exists locally — show app immediately, refresh silently
-      pb.collection('users').authRefresh()
+      pb.collection('users').authRefresh({ requestKey: 'auth-refresh' })
         .then(() => setUser(pb.authStore.record))
-        .catch(() => {
+        .catch((err) => {
+          // Ignore auto-cancelled requests (e.g. React StrictMode double-firing)
+          if (err?.isAbort) return;
           pb.authStore.clear();
           setUser(null);
           setSessionExpired(true);
@@ -27,6 +29,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signIn = useCallback(async (email, password) => {
+    setSessionExpired(false);
     await pb.collection('users').authWithPassword(email, password);
   }, []);
 
