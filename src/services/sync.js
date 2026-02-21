@@ -1,6 +1,10 @@
 import { pb } from './pocketbase';
 import { db } from './database';
 
+// All PocketBase API calls use requestKey: null to disable auto-cancellation.
+// Without this, the SDK cancels pending requests to the same endpoint when a
+// new one is made, causing lost syncs when items are created rapidly.
+
 // --- Push local changes to PocketBase ---
 
 export async function pushItem(localItem, userId) {
@@ -8,13 +12,14 @@ export async function pushItem(localItem, userId) {
     // Check if this item already exists remotely by name
     const existing = await pb.collection('practice_items').getList(1, 1, {
       filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: localItem.name }),
+      requestKey: null,
     });
     if (existing.totalItems > 0) return; // Already exists remotely
 
     await pb.collection('practice_items').create({
       name: localItem.name,
       user: userId,
-    });
+    }, { requestKey: null });
   } catch (err) {
     if (!navigator.onLine) {
       await queueSync('create_item', { name: localItem.name });
@@ -32,12 +37,14 @@ export async function pushLog(localLog, userId) {
     // Check if this log already exists remotely by uid
     const existing = await pb.collection('practice_logs').getList(1, 1, {
       filter: pb.filter('uid = {:uid}', { uid: localLog.uid }),
+      requestKey: null,
     });
     if (existing.totalItems > 0) return; // Already exists remotely
 
     // Find the remote item by name to get the relation
     const remoteItems = await pb.collection('practice_items').getList(1, 1, {
       filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: item.name }),
+      requestKey: null,
     });
     if (remoteItems.totalItems === 0) {
       // Remote item doesn't exist yet, queue for later
@@ -53,7 +60,7 @@ export async function pushLog(localLog, userId) {
       date: localLog.date,
       duration: localLog.duration,
       uid: localLog.uid,
-    });
+    }, { requestKey: null });
   } catch (err) {
     if (!navigator.onLine) {
       const item = await db.practiceItems.get(localLog.itemId);
@@ -70,9 +77,12 @@ export async function pushDeleteItem(name, userId) {
   try {
     const remoteItems = await pb.collection('practice_items').getList(1, 1, {
       filter: pb.filter('user = {:userId} && name = {:name}', { userId, name }),
+      requestKey: null,
     });
     if (remoteItems.totalItems > 0) {
-      await pb.collection('practice_items').delete(remoteItems.items[0].id);
+      await pb.collection('practice_items').delete(remoteItems.items[0].id, {
+        requestKey: null,
+      });
     }
   } catch (err) {
     if (!navigator.onLine) {
@@ -87,9 +97,12 @@ export async function pushRenameItem(oldName, newName, userId) {
   try {
     const remoteItems = await pb.collection('practice_items').getList(1, 1, {
       filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: oldName }),
+      requestKey: null,
     });
     if (remoteItems.totalItems > 0) {
-      await pb.collection('practice_items').update(remoteItems.items[0].id, { name: newName });
+      await pb.collection('practice_items').update(remoteItems.items[0].id, { name: newName }, {
+        requestKey: null,
+      });
     }
   } catch (err) {
     if (!navigator.onLine) {
@@ -140,6 +153,7 @@ export async function pullAll(userId) {
   const remoteItems = await pb.collection('practice_items').getFullList({
     filter: pb.filter('user = {:userId}', { userId }),
     sort: 'created',
+    requestKey: null,
   });
 
   for (const remote of remoteItems) {
@@ -152,6 +166,7 @@ export async function pullAll(userId) {
 
   const remoteLogs = await pb.collection('practice_logs').getFullList({
     filter: pb.filter('user = {:userId}', { userId }),
+    requestKey: null,
   });
 
   for (const remote of remoteLogs) {
@@ -214,6 +229,7 @@ export function subscribeToChanges(onDataChanged) {
         // Fetch all remote items to find which local item was renamed
         const remoteItems = await pb.collection('practice_items').getFullList({
           filter: pb.filter('user = {:userId}', { userId: e.record.user }),
+          requestKey: null,
         });
         const remoteNames = new Set(remoteItems.map(r => r.name));
         const localItems = await db.practiceItems.toArray();
@@ -241,7 +257,9 @@ export function subscribeToChanges(onDataChanged) {
         .where('uid').equals(e.record.uid).first();
       if (!existing) {
         // Find local item — we need to look up the remote item to get its name
-        const remoteItem = await pb.collection('practice_items').getOne(e.record.item);
+        const remoteItem = await pb.collection('practice_items').getOne(e.record.item, {
+          requestKey: null,
+        });
         const localItem = await db.practiceItems
           .where('name').equals(remoteItem.name).first();
         if (localItem) {
