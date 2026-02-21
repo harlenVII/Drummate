@@ -1,268 +1,265 @@
-# Voice Command Integration for Drummate — Technical Research
+# Voice Commands for Drummate — Simple Commands (No LLM)
+
+This document covers **structured voice commands** that map directly to app actions. These are fast, deterministic, and require no LLM.
+
+For the on-device LLM agent (encouragement generation, ambiguous command handling, practice insights), see [VOICE_AI_AGENT_RESEARCH.md](./VOICE_AI_AGENT_RESEARCH.md).
+
+---
+
+## Scope
+
+Commands that have a **clear intent and predictable structure**:
+
+- "start the metronome" → start playback
+- "set tempo to 120" → change BPM
+- "stop" → stop whatever is running
+- "generate daily report" → show today's report
+
+These don't need AI — regex/keyword matching responds in <100ms.
+
+---
 
 ## Constraints
 
-1. **All commands are structured intents** — e.g., "set tempo to 120", "generate daily report of yesterday"
-2. **PWA support is a must** — must work installed on iOS Safari, Chrome Android, and desktop
-3. **Wake word activation required** — hands-free "Hey Drummate" trigger, no UI button
-4. **Encouragement feature** — after generating a daily report, Drummate speaks personalized encouraging words based on the practice data
+1. **PWA support** — must work in iOS Safari PWA, Chrome Android, and desktop
+2. **Wake word activation** — "Drummate" trigger word, no UI button
+3. **Offline** — all processing on-device, no server calls
+4. **Fast** — command response in <1 second
+5. **Open source** — no vendor lock-in, no user/device limits
+6. **Free for distribution** — ~50 users, some in China, non-commercial
 
 ---
 
-## Architecture Overview
-
-The full system needs **four capabilities**:
+## Architecture
 
 ```
-[Microphone always on]
-    → 1. WAKE WORD detection ("Hey Drummate")
-    → 2. SPEECH-TO-TEXT (transcribe user's command)
-    → 3. INTENT PARSING (extract action + parameters)
-    → 4. TEXT-TO-SPEECH (speak encouragement back to user)
+[Microphone listening — "Hands-Free Mode" enabled by user]
+    → 1. WAKE WORD detection ("Drummate")   — see Wake Word section
+    → 2. SPEECH-TO-TEXT (transcribe command)  — Whisper Tiny (WASM)
+    → 3. INTENT PARSING (extract action)     — Regex / keyword matcher
+    → 4. ACTION DISPATCH                     — App executes the command
+    → 5. VOICE FEEDBACK (optional)           — Browser speechSynthesis
 ```
 
-Plus one **generation capability**:
+### Component Breakdown
 
-```
-[Practice data from IndexedDB]
-    → 5. ENCOURAGEMENT GENERATION (create personalized message)
-    → 4. TEXT-TO-SPEECH (speak it aloud)
-```
+| Component | Technology | Download | Latency |
+|-----------|-----------|----------|---------|
+| Wake word | openWakeWord or TF.js Speech Commands | 5–15 MB | Real-time |
+| Speech-to-text | Whisper Tiny (WASM) | ~100 MB | 1–3s |
+| Intent parsing | Regex / keyword matcher | 0 KB | <1ms |
+| Voice feedback | Browser `speechSynthesis` | 0 KB | Instant |
+| **Total** | | **~105–115 MB** | **1–3s end-to-end** |
 
 ---
 
-## Is an LLM Necessary?
+## Wake Word Detection
 
-### Per-capability breakdown:
+### Why Not Picovoice Porcupine?
 
-| Capability | LLM needed? | Best non-LLM alternative | Notes |
-|-----------|-------------|--------------------------|-------|
-| Wake word | No | Picovoice Porcupine | Purpose-built, ~1 MB |
-| Speech-to-text | No | Whisper Tiny (WASM) | ~50–100 MB |
-| Intent parsing | No | Regex / keyword matcher | Structured commands are trivially parseable |
-| Text-to-speech | No | Browser `speechSynthesis` API | Built-in, zero download, works in iOS PWA |
-| **Encouragement generation** | **It depends** | **Template engine** | See comparison below |
+Picovoice Porcupine was the initial choice but is **not viable** for this project:
 
-### The encouragement question: Templates vs LLM
+- **Not open source** — proprietary engine, requires AccessKey
+- **Free tier limited to 3 active devices** — we need ~50 users
+- **AccessKey phones home** — engines call Picovoice servers to validate, not purely on-device. Users in China may have connectivity issues.
+- **Paid plans start at ~$6,000** — not feasible for a free personal project
 
-#### Option A: Template Engine (No LLM)
+### Option A: openWakeWord + onnxruntime-web (Recommended)
+
+**License:** Apache 2.0 — no user limits, no server calls, fully open source.
+
+[openWakeWord](https://github.com/dscripka/openWakeWord) is a purpose-built wake word engine with models exported as ONNX files, runnable in-browser via [onnxruntime-web](https://www.npmjs.com/package/onnxruntime-web).
+
+#### How It Works
+
+Three-stage ONNX pipeline, all running in-browser:
+
+```
+Raw PCM audio (16kHz, 80ms chunks)
+    → 1. melspectrogram.onnx — converts audio to mel features
+    → 2. embedding_model.onnx — produces 96-dim feature vectors
+    → 3. drummate.onnx — classifies: wake word or not?
+    + silero_vad.onnx — voice activity detection (filters silence)
+```
+
+#### Training "Drummate" Model
+
+- Train via Python pipeline (Google Colab, ~1 hour)
+- **100% synthetic data** — Piper TTS generates thousands of varied pronunciations, zero real recordings needed
+- Outputs a small `.onnx` file (~200 KB)
+- Bundle with your app — users download nothing extra
+
+#### Accuracy
+
+- Target: **<0.5 false activations per hour** (purpose-built for wake word detection)
+- The "alexa" model reportedly outperforms Picovoice Porcupine on benchmarks
+- Single words have slightly higher false-positive risk than multi-word phrases, but "Drummate" is unique enough to compensate
+
+#### onnxruntime-web Browser Support
+
+```bash
+npm install onnxruntime-web
+```
+
+| Backend | iOS Safari | Android | Desktop | Notes |
+|---------|-----------|---------|---------|-------|
+| **WebGL** | **Yes** | Yes | Yes | Stable, works for embedding + classifier models |
+| **WASM** | Yes (with workarounds) | Yes | Yes | Needed for mel spectrogram model (audio operators not supported in WebGL) |
+| **WebGPU** | **No** | Partial | Yes | iOS Safari has WebGPU API since 18.2, but onnxruntime-web doesn't support it on iOS yet |
+
+**Hybrid backend approach** (documented by [Deep Core Labs](https://deepcorelabs.com/open-wake-word-on-the-web/)):
+- Mel spectrogram model → **WASM** (small model, fast even on CPU; uses audio operators unsupported by WebGL)
+- Embedding + classifier models → **WebGL** (GPU accelerated)
+
+#### Existing React Wrapper
+
+[openwakeword_wasm](https://github.com/dnavarrom/openwakeword_wasm) (`openwakeword-wasm-browser` on npm) provides a working starting point:
 
 ```javascript
-// Example template system
-const templates = [
-  "Great session! You practiced {totalTime} across {itemCount} skills today.",
-  "Nice work on {longestItem} — {longestTime} of focused practice!",
-  "{totalTime} today! That's {delta} more than yesterday. Keep it up!",
-  "You've been consistent with {streakDays} days in a row. Impressive!",
-  "Solid {longestItem} session. Every minute of practice counts!",
-];
-// Pick random template, fill in data from report
+const engine = new WakeWordEngine({
+  keywords: ['drummate'],
+  baseAssetUrl: '/models',
+  detectionThreshold: 0.5,
+  executionProviders: ['wasm'],
+});
+
+await engine.load();
+await engine.start();
+engine.on('detect', ({ keyword, score }) => { /* wake word detected! */ });
 ```
 
-**Advantages:**
-- Zero additional download
-- Instant generation (<1ms)
-- Predictable, safe output — no hallucinations
-- Easy to translate (just add Chinese templates)
-- Works offline on every device
+**Assessment of the wrapper:** It's a proof-of-concept (~300 lines, 8 commits in one day, 1 star) but the code is clean and the pipeline implementation is correct. **Recommended approach: vendor the source** (copy `WakeWordEngine.js` into your project) rather than depend on the npm package. Key improvements needed:
 
-**Disadvantages:**
-- Gets repetitive after ~2 weeks of daily use
-- Limited to scenarios you've pre-written
-- Can't comment on nuanced patterns ("I notice you've been skipping rudiments lately")
-- Adding variety requires writing more templates manually
-- Feels mechanical — users may sense the pattern
+1. **Move inference to a Web Worker** — currently runs on main thread, could cause metronome timing jitter
+2. **Add WebGL backend** for embedding/classifier models (currently WASM only)
+3. **Test on iOS Safari** — no iOS testing done by the author
+4. **Coordinate AudioContext** — engine creates its own at 16kHz alongside metronome's
 
-**Practical capacity:** ~50–100 well-crafted templates with conditional logic can cover most scenarios for months before feeling stale.
+#### Download Size
 
-#### Option B: Small On-Device LLM
+| Component | Size |
+|-----------|------|
+| melspectrogram.onnx | ~small |
+| embedding_model.onnx | ~10–15 MB |
+| drummate.onnx (custom keyword) | ~200 KB |
+| silero_vad.onnx | ~2 MB |
+| onnxruntime-web WASM binary | ~5–8 MB (gzipped) |
+| **Total** | **~15–25 MB** |
 
-```javascript
-// Example: SmolLM2 135M generating encouragement
-const prompt = `Based on this drum practice report, write one short encouraging sentence:
-- Total: 45 minutes
-- Rudiments: 20 min (44%)
-- Paradiddles: 15 min (33%)
-- Fills: 10 min (22%)
-- Yesterday total: 30 min`;
-// → "45 minutes today — that's 50% more than yesterday! Your rudiments are really coming along."
-```
+#### Integration Effort
 
-| Model | Download size | WASM (no WebGPU) | Quality |
-|-------|-------------|------------------|---------|
-| **SmolLM2 135M** | ~138 MB (Q8) | Yes, works everywhere | Basic but functional |
-| **SmolLM2 360M** | ~200 MB (Q8) | Yes | Better variety |
-| **Qwen2.5 0.5B** | ~300 MB (Q4) | Yes, but slower | Good natural language |
-| **Phi-3 Mini 3.8B** | ~1.8 GB (Q4) | Too slow on CPU | Excellent quality |
-
-**Advantages:**
-- Every response is unique and natural
-- Can notice patterns across data ("You doubled your rudiments time this week!")
-- Scales to more complex insights without more code
-- Feels genuinely personalized
-- Foundation for Phase 8 (practice recommendations)
-
-**Disadvantages:**
-- 138–300 MB additional download on top of Whisper (~100 MB)
-- 2–5 second generation time on mobile (WASM CPU)
-- 3–10 second cold start when model first loads
-- Small models can produce awkward or generic text
-- Occasional hallucination ("You practiced 2 hours!" when it was 45 min)
-- Needs prompt engineering to get consistent quality
-- Higher battery drain
-
-#### Option C: Hybrid (Recommended)
-
-Use **templates as primary**, with an **optional LLM enhancement** that users can enable:
-
-```
-[Default — always works]
-Template engine → speechSynthesis → instant encouragement
-
-[Optional — user opts in]
-Small LLM (SmolLM2 135M) → speechSynthesis → richer encouragement
-Downloaded on demand, cached in IndexedDB
-```
-
-**Why this is the best approach:**
-- App works great out of the box with zero AI download
-- Power users who want richer responses can opt into the LLM
-- Progressive enhancement — doesn't penalize users on slow connections
-- You build the template system first (simpler), LLM second (additive)
-- If the LLM is slow or fails, templates are the fallback
+~2–3 days of focused work:
+- Vendor WakeWordEngine.js, adapt for Vite + React 19
+- Move inference to Web Worker
+- Configure Vite for WASM file serving
+- Add `.onnx` and `.wasm` to PWA service worker cache
+- Test on iOS Safari
 
 ---
 
-## Viable Solutions (Updated)
+### Option B: TensorFlow.js Speech Commands (Alternative)
 
-> Solution 3 (Push-to-Talk) removed per user requirement for wake word activation.
+**License:** Apache 2.0 — no limits.
 
-### Solution 1: Porcupine + Whisper + Regex + Templates
+[`@tensorflow-models/speech-commands`](https://www.npmjs.com/package/@tensorflow-models/speech-commands) — transfer learning on Google's speech commands model to recognize "Drummate."
 
-```
-[Always on] → [Porcupine] → "Hey Drummate" detected
-           → [Whisper Tiny WASM] → "generate daily report"
-           → [Regex Parser] → { action: "report.generate", date: "today" }
-           → [App generates report from IndexedDB]
-           → [Template engine] → "Great session! 45 minutes across 3 skills today!"
-           → [speechSynthesis] → speaks aloud
-```
+#### How It Works
 
-| Aspect | Details |
-|--------|---------|
-| **Download** | ~100 MB (Porcupine 1 MB + Whisper ~100 MB) |
-| **Encouragement** | Template-based, instant, always works |
-| **TTS** | Browser built-in `speechSynthesis` (0 KB) |
-| **Offline** | Yes |
-| **PWA** | Yes, all browsers |
-| **LLM required** | No |
+- Base model (~5–7 MB from CDN) trained on 20 English words
+- Transfer learning: freeze base layers, retrain final layer for "Drummate"
+- Can train **entirely in-browser** — no Python needed
 
----
+#### Training Options
 
-### Solution 2: Porcupine + Whisper + Regex + LLM + TTS
+**Developer pre-trains (recommended):**
+1. Collect ~50–100 samples from diverse speakers (English + Chinese accented)
+2. Train in browser (~15 seconds)
+3. Export weights (~10–50 KB), bundle in `public/`
+4. End users load pre-trained model — no recording needed
 
-```
-[Always on] → [Porcupine] → "Hey Drummate" detected
-           → [Whisper Tiny WASM] → "generate daily report"
-           → [Regex Parser] → { action: "report.generate", date: "today" }
-           → [App generates report from IndexedDB]
-           → [SmolLM2 135M] → "Awesome — 45 min today, 50% more than yesterday! Your rudiments really improved."
-           → [speechSynthesis] → speaks aloud
-```
+**Optional user personalization:**
+- Users record 5–10 samples to fine-tune for their voice
+- Quick retrain (~5 seconds), saved to IndexedDB
 
-| Aspect | Details |
-|--------|---------|
-| **Download** | ~240 MB (Porcupine 1 MB + Whisper ~100 MB + SmolLM2 ~138 MB) |
-| **Encouragement** | LLM-generated, unique each time |
-| **TTS** | Browser built-in `speechSynthesis` (0 KB) |
-| **Offline** | Yes |
-| **PWA** | Yes (WASM fallback, no WebGPU required for SmolLM2 135M) |
-| **LLM required** | Yes |
+#### Accuracy
 
----
+| Metric | Controlled | Real-world |
+|--------|-----------|------------|
+| True positive rate | 85–95% | 70–85% |
+| False positive rate | 1–5% per hour | 5–15% per hour |
 
-### Solution 3: Picovoice Rhino + Templates
+Lower accuracy than openWakeWord — not purpose-built for wake word detection.
 
-```
-[Always on] → [Porcupine] → "Hey Drummate" detected
-           → [Rhino] → { action: "report.generate", date: "today" }
-           → [App generates report from IndexedDB]
-           → [Template engine] → "Nice work! 45 min today!"
-           → [speechSynthesis] → speaks aloud
-```
+#### Chinese Accent Handling
 
-| Aspect | Details |
-|--------|---------|
-| **Download** | ~3 MB (Porcupine 1 MB + Rhino 2 MB) |
-| **Encouragement** | Template-based |
-| **TTS** | Browser built-in `speechSynthesis` (0 KB) |
-| **Offline** | Yes |
-| **PWA** | Yes |
-| **LLM required** | No |
-| **Trade-off** | Smallest download, but commands locked to Picovoice-defined intents |
+Better than openWakeWord for accents because:
+- Transfer learning lets you include Chinese-accented samples in training data
+- Optional user personalization naturally adapts to any accent
+- openWakeWord uses English-only synthetic TTS for training
+
+#### iOS Safari
+
+Reliable — TF.js WebGL backend is mature and well-tested on iOS Safari.
+
+#### Download Size
+
+~5–7 MB (base model) + ~50 KB (custom weights)
+
+#### Integration Effort
+
+~1–2 days — well-documented npm package with working examples.
 
 ---
 
-### Solution 4: Picovoice Rhino + LLM
+### Wake Word Comparison
 
-```
-[Always on] → [Porcupine] → "Hey Drummate" detected
-           → [Rhino] → { action: "report.generate", date: "today" }
-           → [App generates report from IndexedDB]
-           → [SmolLM2 135M] → "You crushed it today — 45 minutes!"
-           → [speechSynthesis] → speaks aloud
-```
+| | openWakeWord + ONNX RT Web | TF.js Speech Commands |
+|--|---------------------------|----------------------|
+| **Accuracy** | Higher (<0.5 false/hour) | Lower (5–15 false/hour) |
+| **Training** | Python (Colab, synthetic) | In-browser (real recordings) |
+| **User setup** | None — pre-trained | None if dev pre-trains; optional personalization |
+| **Download** | ~15–25 MB | ~5–7 MB |
+| **iOS Safari** | Works (hybrid WASM+WebGL) — needs testing | Works — battle-tested |
+| **Chinese accents** | Weaker (English-only TTS) | Better (can include accent samples) |
+| **Integration effort** | 2–3 days | 1–2 days |
+| **Battery impact** | Moderate (efficient pipeline) | Moderate–High (15–30% extra/hour) |
 
-| Aspect | Details |
-|--------|---------|
-| **Download** | ~141 MB (Porcupine 1 MB + Rhino 2 MB + SmolLM2 ~138 MB) |
-| **Encouragement** | LLM-generated |
-| **TTS** | Browser built-in `speechSynthesis` (0 KB) |
-| **Offline** | Yes |
-| **PWA** | Yes |
-| **LLM required** | Yes |
+### Recommendation
 
----
+**Start with openWakeWord (Option A)** for better accuracy and no user training required. Fall back to TF.js Speech Commands (Option B) if iOS Safari testing reveals blocking issues.
 
-## Comparison
-
-| | Sol 1: Whisper + Templates | Sol 2: Whisper + LLM | Sol 3: Rhino + Templates | Sol 4: Rhino + LLM |
-|--|---------------------------|---------------------|-------------------------|-------------------|
-| **Total download** | ~100 MB | ~240 MB | ~3 MB | ~141 MB |
-| **Encouragement quality** | Repetitive after weeks | Unique every time | Repetitive after weeks | Unique every time |
-| **Encouragement latency** | <1ms | 2–5s (mobile WASM) | <1ms | 2–5s (mobile WASM) |
-| **Command flexibility** | Medium (regex) | Medium (regex) | Low (predefined) | Low (predefined) |
-| **Adding new commands** | Edit regex code | Edit regex code | Retrain on Picovoice | Retrain on Picovoice |
-| **Vendor dependency** | Picovoice (wake word) | Picovoice (wake word) | Picovoice (full) | Picovoice (full) |
-| **Complexity** | Medium | High | Low–Medium | Medium–High |
-| **Device support** | All | All (WASM) | All | All (WASM) |
-| **Future-proof** | Add LLM later | Ready for Phase 8 | Add LLM later | Ready for Phase 8 |
+Both options can be swapped without changing the rest of the pipeline (Whisper + Regex + speechSynthesis).
 
 ---
 
-## TTS: Browser speechSynthesis API
+### iOS Limitation (Applies to ALL Wake Word Solutions)
 
-Good news — the **output** side (TTS) works well in PWA mode, unlike the input side (Speech Recognition):
+**Wake word only works while the app is in the foreground.** iOS suspends microphone access when the PWA is backgrounded or the phone is locked. This is a platform-level restriction no engine can work around.
 
-| Platform | speechSynthesis in PWA | Notes |
-|----------|----------------------|-------|
-| iOS Safari PWA | Yes | Must trigger from user action; 36 voices available |
-| Chrome Android | Yes | Full support |
-| Desktop browsers | Yes | Full support, many voices |
+For Drummate this is acceptable — users are actively practicing with the app open.
 
-**Usage:**
-```javascript
-const utterance = new SpeechSynthesisUtterance("Great practice today!");
-utterance.rate = 1.0;
-utterance.pitch = 1.0;
-speechSynthesis.speak(utterance);
-```
-
-No model download needed. If you want higher-quality or offline-guaranteed TTS, **Piper TTS** (WASM, ~75 MB, 904 voices, MIT license) is the best alternative.
+**Recommended UX:**
+- "Hands-Free Mode" toggle — not always-on by default (saves battery)
+- Mic indicator when listening (privacy + UX)
+- Manual toggle to enable/disable voice detection
 
 ---
 
-## Example Command Vocabulary
+## Speech-to-Text: Whisper Tiny (WASM)
+
+- OpenAI Whisper Tiny model compiled to WASM
+- ~100 MB download (one-time, cached)
+- Runs entirely in-browser, no server needed
+- Activated only after wake word detected (not always-on)
+- Transcription takes 1–3 seconds for short commands
+
+---
+
+## Intent Parsing: Regex / Keyword Matcher
+
+Fast, deterministic parsing for structured commands. No ML needed.
+
+### Command Vocabulary
 
 ```
 Metronome:
@@ -291,28 +288,136 @@ Settings:
   "switch language"              → { action: "toggleLanguage" }
 ```
 
+### Example Regex Patterns
+
+```javascript
+function parseIntent(text) {
+  const t = text.toLowerCase().trim();
+
+  // Metronome start
+  if (/start\s+(the\s+)?(metronome|click|beat)/i.test(t))
+    return { action: 'metronome.start' };
+
+  // Stop (universal)
+  if (/^(stop|pause|quiet)/i.test(t))
+    return { action: 'metronome.stop' };
+
+  // Set BPM
+  const bpmMatch = t.match(/(?:set\s+)?(?:tempo|bpm)\s+(?:to\s+)?(\d+)/i);
+  if (bpmMatch)
+    return { action: 'metronome.setTempo', value: parseInt(bpmMatch[1]) };
+
+  // Adjust BPM
+  const adjustMatch = t.match(/(increase|decrease|raise|lower)\s+(?:the\s+)?(?:tempo|bpm)\s+(?:by\s+)?(\d+)/i);
+  if (adjustMatch) {
+    const delta = parseInt(adjustMatch[2]);
+    const sign = /increase|raise/i.test(adjustMatch[1]) ? 1 : -1;
+    return { action: 'metronome.adjustTempo', delta: sign * delta };
+  }
+
+  // Time signature
+  const tsMatch = t.match(/(?:set\s+)?(?:time\s+signature)\s+(?:to\s+)?(\d+)\s*[\/over]\s*(\d+)/i);
+  if (tsMatch)
+    return { action: 'metronome.setTimeSignature', value: [parseInt(tsMatch[1]), parseInt(tsMatch[2])] };
+
+  // Subdivision
+  const subMap = { triplet: 'triplet', triplets: 'triplet', eighth: 'eighth', sixteenth: 'sixteenth', quarter: 'quarter' };
+  const subMatch = t.match(/(?:switch\s+to|set)\s+(triplets?|eighth|sixteenth|quarter)/i);
+  if (subMatch)
+    return { action: 'metronome.setSubdivision', value: subMap[subMatch[1].toLowerCase()] };
+
+  // Practice start
+  const practiceMatch = t.match(/start\s+(?:practicing?\s+)?(.+)/i);
+  if (practiceMatch && !/(metronome|click|beat)/i.test(practiceMatch[1]))
+    return { action: 'practice.start', item: practiceMatch[1].trim() };
+
+  // Report
+  const reportMatch = t.match(/(?:generate|show|get)\s+(?:the\s+)?(?:daily\s+)?report\s*(?:of|for)?\s*(today|yesterday|.+)?/i);
+  if (reportMatch)
+    return { action: 'report.generate', date: reportMatch[1]?.trim() || 'today' };
+
+  // Navigation
+  const navMatch = t.match(/(?:go\s+to|switch\s+to|open)\s+(practice|metronome|report|sequencer)/i);
+  if (navMatch)
+    return { action: 'navigate', tab: navMatch[1].toLowerCase() };
+
+  // Language toggle
+  if (/switch\s+language|toggle\s+language|change\s+language/i.test(t))
+    return { action: 'toggleLanguage' };
+
+  // Unrecognized — could be forwarded to LLM agent if available
+  return { action: 'unknown', text: t };
+}
+```
+
+### Handling "Unknown" Commands
+
+When regex can't parse a command, two options:
+
+1. **Without LLM agent:** Voice feedback says "Sorry, I didn't understand that command"
+2. **With LLM agent installed:** Forward to the on-device LLM for interpretation (see [VOICE_AI_AGENT_RESEARCH.md](./VOICE_AI_AGENT_RESEARCH.md))
+
 ---
 
-## Recommendation
+## Voice Feedback: Browser speechSynthesis API
 
-### Recommended path: Solution 1 now → Solution 2 later
+For confirming commands ("Tempo set to 120") and simple encouragement templates.
 
-**Phase 1 — Ship voice commands (Solution 1):**
-- Porcupine wake word + Whisper WASM + Regex + Template encouragement
-- ~100 MB download, works everywhere, no LLM needed
-- Build 50–100 encouragement templates with conditional logic
-- Use browser `speechSynthesis` for TTS
+| Platform | speechSynthesis in PWA | Notes |
+|----------|----------------------|-------|
+| iOS Safari PWA | Yes | Must trigger from user action; 36 voices available |
+| Chrome Android | Yes | Full support |
+| Desktop browsers | Yes | Full support, many voices |
 
-**Phase 2 — Add LLM encouragement (upgrade to Solution 2):**
-- Add SmolLM2 135M as opt-in download (~138 MB extra)
-- Template system stays as fallback
-- Progressive enhancement: LLM generates richer, more varied encouragement
-- This also becomes the foundation for Phase 8 (practice insights)
+```javascript
+function speak(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  speechSynthesis.speak(utterance);
+}
+```
 
-### Bottom line: Is LLM a must?
-
-**No, not for v1.** A well-crafted template system with 50–100 templates covering different scenarios (improved vs declined, streak milestones, item-specific praise, time-of-day variations) can feel personalized for weeks. But an LLM will feel meaningfully better after ~1 month of daily use when templates start repeating. The good news: the architecture is the same either way — you're just swapping the text generation step.
+For higher-quality or offline-guaranteed TTS, **Piper TTS** (WASM, ~75 MB, 904 voices, MIT license) is an alternative.
 
 ---
 
-*Last updated: 2026-02-11*
+## Template-Based Encouragement (for Reports)
+
+When a report is generated via voice command, the app can speak a template-based encouragement:
+
+```javascript
+const templates = [
+  "Great session! You practiced {totalTime} across {itemCount} skills today.",
+  "Nice work on {longestItem} — {longestTime} of focused practice!",
+  "{totalTime} today! That's {delta} more than yesterday. Keep it up!",
+  "You've been consistent with {streakDays} days in a row. Impressive!",
+  "Solid {longestItem} session. Every minute of practice counts!",
+];
+```
+
+- Zero download, instant (<1ms)
+- Predictable, no hallucinations
+- Easy to translate (add Chinese templates)
+- 50–100 well-crafted templates cover months of daily use
+- Can be upgraded to LLM-generated encouragement later (see [VOICE_AI_AGENT_RESEARCH.md](./VOICE_AI_AGENT_RESEARCH.md))
+
+---
+
+## Summary
+
+| Aspect | Details |
+|--------|---------|
+| **Total download** | ~105–125 MB (wake word 5–25 MB + Whisper ~100 MB) |
+| **End-to-end latency** | 1–3 seconds (wake word → action executed) |
+| **Offline** | Yes, fully — no server calls |
+| **PWA** | Yes, all platforms (foreground only for mic) |
+| **LLM required** | No |
+| **User/device limits** | None — fully open source |
+| **Command flexibility** | Medium — adding commands = adding regex patterns |
+| **Encouragement** | Template-based, instant |
+| **Future upgrade path** | Unknown commands can be routed to LLM agent |
+
+---
+
+*Last updated: 2026-02-20*
