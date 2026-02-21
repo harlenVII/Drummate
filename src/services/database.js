@@ -14,6 +14,24 @@ db.version(3).stores({
   syncQueue: '++id, action, collection, localId',
 });
 
+db.version(4).stores({
+  practiceItems: '++id, name',
+  practiceLogs: '++id, itemId, date, duration, uid',
+  syncQueue: '++id, action, collection, localId',
+}).upgrade(tx => {
+  // Remove remoteId from existing records
+  tx.table('practiceItems').toCollection().modify(item => {
+    delete item.remoteId;
+  });
+  tx.table('practiceLogs').toCollection().modify(log => {
+    delete log.remoteId;
+    // Generate uid for existing logs that don't have one
+    if (!log.uid) {
+      log.uid = crypto.randomUUID();
+    }
+  });
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -37,7 +55,8 @@ export const deleteItem = async (id) => {
 
 export const addLog = async (itemId, duration, date) => {
   if (!date) date = getTodayString();
-  return await db.practiceLogs.add({ itemId, date, duration });
+  const uid = crypto.randomUUID();
+  return await db.practiceLogs.add({ itemId, date, duration, uid });
 };
 
 export const getTodaysLogs = async () => {

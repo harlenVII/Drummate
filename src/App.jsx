@@ -20,7 +20,7 @@ import {
   getTodaysLogs,
   getLogsByDate,
 } from './services/database';
-import { pushItem, pushLog, pushDeleteItem, pushRenameItem, pullAll, pushAllUnsynced, flushSyncQueue, subscribeToChanges } from './services/sync';
+import { pushItem, pushLog, pushDeleteItem, pushRenameItem, pullAll, pushAllLocal, flushSyncQueue, subscribeToChanges } from './services/sync';
 import { getTodayString } from './utils/dateHelpers';
 
 function App() {
@@ -187,7 +187,7 @@ function App() {
     const init = async () => {
       try {
         await flushSyncQueue(user.id);
-        await pushAllUnsynced(user.id);
+        await pushAllLocal(user.id);
         await pullAll(user.id);
         await loadData();
       } catch (err) {
@@ -195,7 +195,7 @@ function App() {
       }
       // Subscribe to real-time changes only after initial sync completes
       if (!cancelled) {
-        unsubscribe = subscribeToChanges(user.id, loadData);
+        unsubscribe = subscribeToChanges(loadData);
       }
     };
     init();
@@ -371,8 +371,8 @@ function App() {
       const item = await db.practiceItems.get(id);
       await renameItem(id, newName);
       await loadData();
-      if (user && item?.remoteId) {
-        pushRenameItem(item.remoteId, newName).catch(console.error);
+      if (user && item) {
+        pushRenameItem(item.name, newName, user.id).catch(console.error);
       }
     },
     [loadData, user],
@@ -388,8 +388,8 @@ function App() {
       const item = await db.practiceItems.get(id);
       await deleteItem(id);
       await loadData();
-      if (user && item?.remoteId) {
-        pushDeleteItem(item.remoteId).catch(console.error);
+      if (user && item) {
+        pushDeleteItem(item.name, user.id).catch(console.error);
       }
     },
     [activeItemId, stopTimer, loadData, user],

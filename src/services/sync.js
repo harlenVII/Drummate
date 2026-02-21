@@ -5,22 +5,19 @@ import { db } from './database';
 
 export async function pushItem(localItem, userId) {
   try {
-    if (localItem.remoteId) {
-      await pb.collection('practice_items').update(localItem.remoteId, {
-        name: localItem.name,
-      });
-    } else {
-      const record = await pb.collection('practice_items').create({
-        name: localItem.name,
-        user: userId,
-      });
-      await db.practiceItems.update(localItem.id, { remoteId: record.id });
-    }
+    // Check if this item already exists remotely by name
+    const existing = await pb.collection('practice_items').getList(1, 1, {
+      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: localItem.name }),
+    });
+    if (existing.totalItems > 0) return; // Already exists remotely
+
+    await pb.collection('practice_items').create({
+      name: localItem.name,
+      user: userId,
+    });
   } catch (err) {
     if (!navigator.onLine) {
-      await queueSync('create_item', 'practice_items', localItem.id, {
-        name: localItem.name,
-      });
+      await queueSync('create_item', { name: localItem.name });
     } else {
       throw err;
     }
@@ -30,25 +27,38 @@ export async function pushItem(localItem, userId) {
 export async function pushLog(localLog, userId) {
   try {
     const item = await db.practiceItems.get(localLog.itemId);
-    const remoteItemId = item?.remoteId;
-    if (!remoteItemId) {
-      await queueSync('create_log', 'practice_logs', localLog.id, {
-        itemId: localLog.itemId, date: localLog.date, duration: localLog.duration,
+    if (!item) return;
+
+    // Check if this log already exists remotely by uid
+    const existing = await pb.collection('practice_logs').getList(1, 1, {
+      filter: pb.filter('uid = {:uid}', { uid: localLog.uid }),
+    });
+    if (existing.totalItems > 0) return; // Already exists remotely
+
+    // Find the remote item by name to get the relation
+    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
+      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: item.name }),
+    });
+    if (remoteItems.totalItems === 0) {
+      // Remote item doesn't exist yet, queue for later
+      await queueSync('create_log', {
+        itemName: item.name, date: localLog.date, duration: localLog.duration, uid: localLog.uid,
       });
       return;
     }
 
-    const record = await pb.collection('practice_logs').create({
-      item: remoteItemId,
+    await pb.collection('practice_logs').create({
+      item: remoteItems.items[0].id,
       user: userId,
       date: localLog.date,
       duration: localLog.duration,
+      uid: localLog.uid,
     });
-    await db.practiceLogs.update(localLog.id, { remoteId: record.id });
   } catch (err) {
     if (!navigator.onLine) {
-      await queueSync('create_log', 'practice_logs', localLog.id, {
-        itemId: localLog.itemId, date: localLog.date, duration: localLog.duration,
+      const item = await db.practiceItems.get(localLog.itemId);
+      await queueSync('create_log', {
+        itemName: item?.name, date: localLog.date, duration: localLog.duration, uid: localLog.uid,
       });
     } else {
       throw err;
@@ -56,28 +66,34 @@ export async function pushLog(localLog, userId) {
   }
 }
 
-export async function pushDeleteItem(remoteId) {
+export async function pushDeleteItem(name, userId) {
   try {
-    if (remoteId) {
-      await pb.collection('practice_items').delete(remoteId);
+    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
+      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name }),
+    });
+    if (remoteItems.totalItems > 0) {
+      await pb.collection('practice_items').delete(remoteItems.items[0].id);
     }
   } catch (err) {
     if (!navigator.onLine) {
-      await queueSync('delete_item', 'practice_items', null, { remoteId });
+      await queueSync('delete_item', { name });
     } else {
       throw err;
     }
   }
 }
 
-export async function pushRenameItem(remoteId, newName) {
+export async function pushRenameItem(oldName, newName, userId) {
   try {
-    if (remoteId) {
-      await pb.collection('practice_items').update(remoteId, { name: newName });
+    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
+      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: oldName }),
+    });
+    if (remoteItems.totalItems > 0) {
+      await pb.collection('practice_items').update(remoteItems.items[0].id, { name: newName });
     }
   } catch (err) {
     if (!navigator.onLine) {
-      await queueSync('rename_item', 'practice_items', null, { remoteId, newName });
+      await queueSync('rename_item', { oldName, newName });
     } else {
       throw err;
     }
@@ -86,8 +102,8 @@ export async function pushRenameItem(remoteId, newName) {
 
 // --- Sync queue for offline writes ---
 
-async function queueSync(action, collection, localId, payload) {
-  await db.syncQueue.add({ action, collection, localId, payload });
+async function queueSync(action, payload) {
+  await db.syncQueue.add({ action, payload });
 }
 
 export async function flushSyncQueue(userId) {
@@ -95,21 +111,20 @@ export async function flushSyncQueue(userId) {
   for (const entry of pending) {
     try {
       if (entry.action === 'create_item') {
-        const localItem = await db.practiceItems.get(entry.localId);
-        if (localItem) await pushItem(localItem, userId);
+        await pushItem({ name: entry.payload.name }, userId);
       } else if (entry.action === 'create_log') {
-        const localLog = await db.practiceLogs.get(entry.localId);
-        if (localLog) await pushLog(localLog, userId);
+        const localItem = await db.practiceItems
+          .where('name').equals(entry.payload.itemName).first();
+        if (localItem) {
+          await pushLog({
+            itemId: localItem.id, date: entry.payload.date,
+            duration: entry.payload.duration, uid: entry.payload.uid,
+          }, userId);
+        }
       } else if (entry.action === 'delete_item') {
-        if (entry.payload.remoteId) {
-          await pb.collection('practice_items').delete(entry.payload.remoteId);
-        }
+        await pushDeleteItem(entry.payload.name, userId);
       } else if (entry.action === 'rename_item') {
-        if (entry.payload.remoteId) {
-          await pb.collection('practice_items').update(entry.payload.remoteId, {
-            name: entry.payload.newName,
-          });
-        }
+        await pushRenameItem(entry.payload.oldName, entry.payload.newName, userId);
       }
       await db.syncQueue.delete(entry.id);
     } catch (err) {
@@ -129,14 +144,9 @@ export async function pullAll(userId) {
 
   for (const remote of remoteItems) {
     const existing = await db.practiceItems
-      .where('remoteId').equals(remote.id).first();
-    if (existing) {
-      await db.practiceItems.update(existing.id, { name: remote.name });
-    } else {
-      await db.practiceItems.add({
-        name: remote.name,
-        remoteId: remote.id,
-      });
+      .where('name').equals(remote.name).first();
+    if (!existing) {
+      await db.practiceItems.add({ name: remote.name });
     }
   }
 
@@ -145,59 +155,65 @@ export async function pullAll(userId) {
   });
 
   for (const remote of remoteLogs) {
+    if (!remote.uid) continue; // Skip legacy logs without uid
     const existing = await db.practiceLogs
-      .where('remoteId').equals(remote.id).first();
+      .where('uid').equals(remote.uid).first();
     if (!existing) {
+      // Find local item by looking up the remote item's name
+      const remoteItem = remoteItems.find(ri => ri.id === remote.item);
+      if (!remoteItem) continue;
       const localItem = await db.practiceItems
-        .where('remoteId').equals(remote.item).first();
+        .where('name').equals(remoteItem.name).first();
       if (localItem) {
         await db.practiceLogs.add({
           itemId: localItem.id,
           date: remote.date,
           duration: remote.duration,
-          remoteId: remote.id,
+          uid: remote.uid,
         });
       }
     }
   }
 }
 
-// --- Push all unsynced local data (migration on first sign-in) ---
+// --- Push all local data (on first sign-in) ---
 
-export async function pushAllUnsynced(userId) {
-  const unsyncedItems = await db.practiceItems
-    .filter(item => !item.remoteId).toArray();
-  for (const item of unsyncedItems) {
+export async function pushAllLocal(userId) {
+  const items = await db.practiceItems.toArray();
+  for (const item of items) {
     await pushItem(item, userId);
   }
 
-  const unsyncedLogs = await db.practiceLogs
-    .filter(log => !log.remoteId).toArray();
-  for (const log of unsyncedLogs) {
+  const logs = await db.practiceLogs.toArray();
+  for (const log of logs) {
     await pushLog(log, userId);
   }
 }
 
 // --- Real-time subscriptions ---
 
-export function subscribeToChanges(userId, onDataChanged) {
-  // Only handle update and delete events via SSE.
-  // Create events from this client are handled by pushItem/pushLog directly.
-  // Create events from other devices are handled by pullAll on app load.
-  // This avoids race conditions where the SSE 'create' event arrives before
-  // the local push function has finished setting remoteId, causing duplicates.
+export function subscribeToChanges(onDataChanged) {
+  // Handle create, update, and delete events via SSE for real-time sync.
+  // Deduplication: items by name, logs by uid.
 
   pb.collection('practice_items').subscribe('*', async (e) => {
-    if (e.action === 'update') {
+    if (e.action === 'create') {
       const existing = await db.practiceItems
-        .where('remoteId').equals(e.record.id).first();
-      if (existing) {
-        await db.practiceItems.update(existing.id, { name: e.record.name });
+        .where('name').equals(e.record.name).first();
+      if (!existing) {
+        await db.practiceItems.add({ name: e.record.name });
         onDataChanged();
       }
+    } else if (e.action === 'update') {
+      // For renames, find by old name — the record's id won't help us locally.
+      // Instead, we rely on the SSE providing the updated record. We need to
+      // find which local item had the old name. Since we don't know the old name
+      // from the SSE event, we pull all items to reconcile.
+      // Simpler approach: just reload all data.
+      onDataChanged();
     } else if (e.action === 'delete') {
       const existing = await db.practiceItems
-        .where('remoteId').equals(e.record.id).first();
+        .where('name').equals(e.record.name).first();
       if (existing) {
         await db.practiceLogs.where('itemId').equals(existing.id).delete();
         await db.practiceItems.delete(existing.id);
@@ -207,9 +223,27 @@ export function subscribeToChanges(userId, onDataChanged) {
   });
 
   pb.collection('practice_logs').subscribe('*', async (e) => {
-    if (e.action === 'delete') {
+    if (e.action === 'create' && e.record.uid) {
       const existing = await db.practiceLogs
-        .where('remoteId').equals(e.record.id).first();
+        .where('uid').equals(e.record.uid).first();
+      if (!existing) {
+        // Find local item — we need to look up the remote item to get its name
+        const remoteItem = await pb.collection('practice_items').getOne(e.record.item);
+        const localItem = await db.practiceItems
+          .where('name').equals(remoteItem.name).first();
+        if (localItem) {
+          await db.practiceLogs.add({
+            itemId: localItem.id,
+            date: e.record.date,
+            duration: e.record.duration,
+            uid: e.record.uid,
+          });
+          onDataChanged();
+        }
+      }
+    } else if (e.action === 'delete' && e.record.uid) {
+      const existing = await db.practiceLogs
+        .where('uid').equals(e.record.uid).first();
       if (existing) {
         await db.practiceLogs.delete(existing.id);
         onDataChanged();
