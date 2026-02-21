@@ -356,6 +356,13 @@ function App() {
 
   const handleAddItem = useCallback(
     async (name) => {
+      const duplicate = items.some(
+        (item) => item.name.toLowerCase() === name.toLowerCase(),
+      );
+      if (duplicate) {
+        alert(t('duplicateItem'));
+        return;
+      }
       const localId = await addItem(name);
       await loadData();
       if (user) {
@@ -363,7 +370,7 @@ function App() {
         pushItem(item, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [items, loadData, user, t],
   );
 
   const handleRenameItem = useCallback(
