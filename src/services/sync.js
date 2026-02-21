@@ -205,11 +205,24 @@ export function subscribeToChanges(onDataChanged) {
         onDataChanged();
       }
     } else if (e.action === 'update') {
-      // For renames, find by old name — the record's id won't help us locally.
-      // Instead, we rely on the SSE providing the updated record. We need to
-      // find which local item had the old name. Since we don't know the old name
-      // from the SSE event, we pull all items to reconcile.
-      // Simpler approach: just reload all data.
+      // We don't know the old name from the SSE event, so check if the new
+      // name already exists locally. If not, a rename happened on another
+      // device — find the local item that doesn't match any remote record.
+      const alreadyExists = await db.practiceItems
+        .where('name').equals(e.record.name).first();
+      if (!alreadyExists) {
+        // Fetch all remote items to find which local item was renamed
+        const remoteItems = await pb.collection('practice_items').getFullList({
+          filter: pb.filter('user = {:userId}', { userId: e.record.user }),
+        });
+        const remoteNames = new Set(remoteItems.map(r => r.name));
+        const localItems = await db.practiceItems.toArray();
+        // The renamed item is the local one whose name no longer exists remotely
+        const staleItem = localItems.find(li => !remoteNames.has(li.name));
+        if (staleItem) {
+          await db.practiceItems.update(staleItem.id, { name: e.record.name });
+        }
+      }
       onDataChanged();
     } else if (e.action === 'delete') {
       const existing = await db.practiceItems
