@@ -1,6 +1,18 @@
 import { useLanguage } from '../contexts/LanguageContext';
 
-function SettingsPanel({ isOpen, onClose, signOut, language, toggleLanguage, user }) {
+function SettingsPanel({
+  isOpen,
+  onClose,
+  signOut,
+  language,
+  toggleLanguage,
+  user,
+  handsFreeMode,
+  onToggleHandsFree,
+  wakeWordLoading,
+  wakeWordDetected,
+  wakeWordError,
+}) {
   const { t } = useLanguage();
 
   return (
@@ -66,6 +78,56 @@ function SettingsPanel({ isOpen, onClose, signOut, language, toggleLanguage, use
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Hands-Free Mode */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">{t('handsFree.title')}</span>
+                {handsFreeMode && (
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={onToggleHandsFree}
+                disabled={wakeWordLoading}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  handsFreeMode ? 'bg-blue-600' : 'bg-gray-300'
+                } ${wakeWordLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                role="switch"
+                aria-checked={handsFreeMode}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    handsFreeMode ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {wakeWordLoading && (
+              <p className="text-xs text-blue-500">{t('handsFree.loading')}</p>
+            )}
+
+            {wakeWordDetected && (
+              <p className="text-xs text-green-600 font-medium">{t('handsFree.detected')}</p>
+            )}
+
+            {wakeWordError === 'mic_permission' && (
+              <p className="text-xs text-red-500">{t('handsFree.micPermission')}</p>
+            )}
+
+            {wakeWordError && wakeWordError !== 'mic_permission' && (
+              <p className="text-xs text-red-500">{t('handsFree.error')}</p>
+            )}
+
+            {!wakeWordLoading && !wakeWordError && (
+              <p className="text-xs text-gray-400">{t('handsFree.description')}</p>
+            )}
           </div>
         </div>
 

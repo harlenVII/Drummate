@@ -37,6 +37,25 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Don't precache ONNX models and WASM binaries (too large).
+        // They're cached on first use via runtime caching instead.
+        navigateFallbackDenylist: [/^\/models\//],
+        runtimeCaching: [
+          {
+            urlPattern: /\.(?:onnx|wasm)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'wakeword-models',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
     }),
   ],

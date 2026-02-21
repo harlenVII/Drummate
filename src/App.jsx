@@ -10,6 +10,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
+import { createWakeWordEngine } from './audio/wakeWordEngine';
 import {
   db,
   getItems,
@@ -121,6 +122,14 @@ function App() {
     }
   });
   const [sequencerPlayingSlot, setSequencerPlayingSlot] = useState(-1);
+
+  // Wake word (hands-free mode) state
+  const wakeWordEngineRef = useRef(null);
+  const [handsFreeMode, setHandsFreeMode] = useState(false);
+  const [wakeWordLoading, setWakeWordLoading] = useState(false);
+  const [wakeWordReady, setWakeWordReady] = useState(false);
+  const [wakeWordDetected, setWakeWordDetected] = useState(false);
+  const [wakeWordError, setWakeWordError] = useState(null);
   const sequencerNextIdRef = useRef(null);
   if (sequencerNextIdRef.current === null) {
     try {
@@ -452,6 +461,69 @@ function App() {
     [metronomeIsPlaying],
   );
 
+  // Wake word toggle handler
+  const handleToggleHandsFree = useCallback(async () => {
+    if (handsFreeMode) {
+      // Turning off
+      if (wakeWordEngineRef.current) {
+        await wakeWordEngineRef.current.stop();
+      }
+      setHandsFreeMode(false);
+      setWakeWordDetected(false);
+      setWakeWordError(null);
+      return;
+    }
+
+    // Turning on
+    setWakeWordError(null);
+    try {
+      if (!wakeWordEngineRef.current) {
+        wakeWordEngineRef.current = createWakeWordEngine();
+      }
+
+      if (!wakeWordEngineRef.current.isLoaded) {
+        setWakeWordLoading(true);
+        await wakeWordEngineRef.current.load();
+        setWakeWordReady(true);
+        setWakeWordLoading(false);
+      }
+
+      wakeWordEngineRef.current.onDetected(({ keyword, score }) => {
+        setWakeWordDetected(true);
+        // Clear detected state after 2 seconds
+        setTimeout(() => setWakeWordDetected(false), 2000);
+        // TODO: Phase 2 — trigger STT pipeline here
+        console.log(`Wake word "${keyword}" detected (score: ${score.toFixed(3)})`);
+      });
+
+      wakeWordEngineRef.current.onError((err) => {
+        console.error('Wake word error:', err);
+        setWakeWordError(err.message || 'Unknown error');
+      });
+
+      await wakeWordEngineRef.current.start();
+      setHandsFreeMode(true);
+    } catch (err) {
+      setWakeWordLoading(false);
+      if (err.name === 'NotAllowedError') {
+        setWakeWordError('mic_permission');
+      } else {
+        setWakeWordError(err.message || 'Failed to start');
+      }
+      console.error('Failed to start hands-free mode:', err);
+    }
+  }, [handsFreeMode]);
+
+  // Clean up wake word engine on unmount
+  useEffect(() => {
+    return () => {
+      if (wakeWordEngineRef.current) {
+        wakeWordEngineRef.current.destroy();
+        wakeWordEngineRef.current = null;
+      }
+    };
+  }, []);
+
   // Global tab-switching shortcuts: 1 = Practice, 2 = Metronome, 3 = Report
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -590,6 +662,11 @@ function App() {
         language={language}
         toggleLanguage={toggleLanguage}
         user={user}
+        handsFreeMode={handsFreeMode}
+        onToggleHandsFree={handleToggleHandsFree}
+        wakeWordLoading={wakeWordLoading}
+        wakeWordDetected={wakeWordDetected}
+        wakeWordError={wakeWordError}
       />
 
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />

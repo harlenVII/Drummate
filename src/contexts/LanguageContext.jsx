@@ -70,6 +70,14 @@ const translations = {
     },
     settings: 'Settings',
     language: 'Language',
+    handsFree: {
+      title: 'Hands-Free Mode',
+      description: 'Say "Hey Jarvis" to activate',
+      detected: 'Listening...',
+      micPermission: 'Microphone permission required',
+      loading: 'Loading voice models...',
+      error: 'Voice detection error',
+    },
   },
   zh: {
     appName: 'Drummate',
@@ -140,6 +148,14 @@ const translations = {
     },
     settings: '设置',
     language: '语言',
+    handsFree: {
+      title: '免提模式',
+      description: '说 "Hey Jarvis" 来激活',
+      detected: '正在听...',
+      micPermission: '需要麦克风权限',
+      loading: '正在加载语音模型...',
+      error: '语音检测错误',
+    },
   },
 };
 
