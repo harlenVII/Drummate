@@ -58,21 +58,29 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 
 ### Database Layer (database.js)
 
-Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, version 2.
+Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, version 4.
 
 **Tables:**
-- `practiceItems` — Schema: `'++id, name'`
-- `practiceLogs` — Schema: `'++id, itemId, date, duration'`
+- `practiceItems` — Schema: `'++id, name'` (name is unique, used as dedup key for sync)
+- `practiceLogs` — Schema: `'++id, itemId, date, duration, uid'` (uid is a UUID generated on creation, used as dedup key for sync)
+- `syncQueue` — Schema: `'++id, action, collection, localId'` (offline retry queue)
 
-All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs.
+All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs. Practice item names must be unique (case-insensitive check in UI).
 
 ### Data Sync (PocketBase)
 
 Cross-device sync via self-hosted PocketBase:
 - `src/services/pocketbase.js` — PocketBase client singleton (configured via `VITE_POCKETBASE_URL`)
 - `src/contexts/AuthContext.jsx` — Auth state provider (`useAuth()` hook) with login/signup/signout
-- `src/services/sync.js` — Bidirectional sync: `pushItem`/`pushLog` to remote, `pullAll` from remote, offline queue for failed operations
-- Local items get a `remoteId` field after first sync to track the PocketBase↔IndexedDB mapping
+- `src/services/sync.js` — Bidirectional real-time sync with offline queue
+
+**Sync deduplication:** Items deduplicate by `name`, logs by `uid` (UUID). No `remoteId` tracking — push functions are idempotent (check if record exists remotely before creating).
+
+**Real-time sync:** SSE subscriptions handle `create`, `update`, and `delete` events. New items/logs from other devices appear without page refresh.
+
+**Key functions:** `pushItem`, `pushLog`, `pushDeleteItem`, `pushRenameItem`, `pullAll`, `pushAllLocal`, `flushSyncQueue`, `subscribeToChanges`
+
+**Important:** All PocketBase API calls use `requestKey: null` to disable SDK auto-cancellation, which otherwise cancels concurrent requests to the same endpoint.
 
 ### Internationalization (LanguageContext.jsx)
 
@@ -108,6 +116,8 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 6. **Date strings must be YYYY-MM-DD** — use `dateHelpers.js`
 7. **All user-facing text must use `t()` function** for bilingual support
 8. **Metronome state is global in App.jsx** — persists across tab switches
+9. **PocketBase auto-cancellation** — always use `requestKey: null` on API calls in sync.js to prevent the SDK from cancelling concurrent requests
+10. **Practice item names are unique** — enforced with case-insensitive check in `handleAddItem`
 
 ## File Naming
 

@@ -67,21 +67,29 @@ Drummate/
 
 ## Database Schema
 
-**IndexedDB via Dexie.js** (`src/services/database.js`) — Database name: `DrummateDB`, Version: 2
+**IndexedDB via Dexie.js** (`src/services/database.js`) — Database name: `DrummateDB`, Version: 4
 
 ```javascript
 // Table: practiceItems (schema: '++id, name')
 {
   id: number (auto-increment),
-  name: string (indexed)
+  name: string (indexed, unique — used as sync dedup key)
 }
 
-// Table: practiceLogs (schema: '++id, itemId, date, duration')
+// Table: practiceLogs (schema: '++id, itemId, date, duration, uid')
 {
   id: number (auto-increment),
   itemId: number (foreign key → practiceItems.id),
   duration: number (seconds),
-  date: string (YYYY-MM-DD, indexed)
+  date: string (YYYY-MM-DD, indexed),
+  uid: string (UUID, generated on creation — used as sync dedup key)
+}
+
+// Table: syncQueue (schema: '++id, action, collection, localId')
+{
+  id: number (auto-increment),
+  action: string ('create_item' | 'create_log' | 'delete_item' | 'rename_item'),
+  payload: object (action-specific data)
 }
 ```
 
@@ -163,10 +171,13 @@ Drummate/
 - Toggle button in app header
 - Defaults to English (no persistence on refresh)
 
-**Data Sync (In Progress):**
+**Data Sync (Complete):**
 - PocketBase client integration (`src/services/pocketbase.js`)
 - Auth context with login/signup (`src/contexts/AuthContext.jsx`, `src/components/AuthScreen.jsx`)
-- Bidirectional sync logic (`src/services/sync.js`)
+- Real-time bidirectional sync via SSE (`src/services/sync.js`)
+- Deduplication: items by unique name, logs by UUID (`uid`)
+- Offline queue with automatic retry on next app load
+- All PocketBase API calls use `requestKey: null` to prevent SDK auto-cancellation of concurrent requests
 - Settings panel (`src/components/SettingsPanel.jsx`)
 
 **Global State** (`src/App.jsx`):
@@ -304,6 +315,6 @@ vercel
 
 ---
 
-**Last Updated:** 2026-02-20
-**Current Phase:** Phase 5 Complete, Phase 6 In Progress
-**Next Phase:** Phase 6 (Data Sync Across Devices) — see [PROJECT_PLAN.md](./PROJECT_PLAN.md)
+**Last Updated:** 2026-02-21
+**Current Phase:** Phase 6 Complete
+**Next Phase:** Phase 7 (Voice-Controlled Metronome) — see [PROJECT_PLAN.md](./PROJECT_PLAN.md)

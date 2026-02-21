@@ -9,28 +9,11 @@
 | 3 | Metronome (BPM dial, time signatures, subdivisions) | Done |
 | 4 | Rhythm Sequencer | Done |
 | 5 | Bilingual Support (EN/ZH) | Done |
+| 6 | Data Sync Across Devices | Done |
 
 ---
 
 ## Upcoming Phases
-
-### Phase 6 — Data Sync Across Devices
-
-Sync practice data across browsers and devices via PocketBase (self-hosted).
-
-| Task | Status |
-|------|--------|
-| PocketBase server setup (Singapore VPS) | Not started |
-| Auth integration (email/password) | Not started |
-| Real-time sync for practiceItems & practiceLogs | Not started |
-| Offline-first with conflict resolution | Not started |
-| Multi-device testing (iOS Safari, Android Chrome, Desktop) | Not started |
-
-**Design docs:**
-- [DATA_SYNC_RESEARCH.md](./DATA_SYNC_RESEARCH.md) — Technical research & solution comparison
-- [POCKETBASE_INTEGRATION_PLAN.md](./POCKETBASE_INTEGRATION_PLAN.md) — Detailed integration plan
-
----
 
 ### Phase 7 — Voice-Controlled Metronome & Voice Commands
 
