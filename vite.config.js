@@ -42,12 +42,26 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/models\//],
         runtimeCaching: [
           {
-            urlPattern: /\.(?:onnx|wasm)$/,
+            urlPattern: /\.onnx$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'wakeword-models',
               expiration: {
                 maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /cdn\.jsdelivr\.net\/npm\/onnxruntime-web/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ort-wasm-cdn',
+              expiration: {
+                maxEntries: 5,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
               cacheableResponse: {

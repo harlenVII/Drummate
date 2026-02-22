@@ -9,7 +9,15 @@
  *   await engine.stop();          // releases mic
  */
 
+import * as ort from 'onnxruntime-web';
 import { WakeWordEngine } from 'openwakeword-wasm-browser';
+
+// Configure ORT before any session is created:
+// - Load WASM runtime from CDN to avoid Vite bundling/import issues
+// - Single-threaded to reduce complexity
+// - Service worker caches these files after first load for offline use
+ort.env.wasm.numThreads = 1;
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/';
 
 const WAKE_WORD = 'hey_jarvis';
 
@@ -55,6 +63,10 @@ export function createWakeWordEngine() {
     async start() {
       if (!loaded) throw new Error('Wake word engine not loaded. Call load() first.');
       if (listening) return;
+      // Safari: switch audio session to allow mic capture (metronome sets it to 'playback')
+      if (navigator.audioSession) {
+        try { navigator.audioSession.type = 'play-and-record'; } catch { /* ignore */ }
+      }
       await engine.start();
       listening = true;
     },
@@ -64,6 +76,10 @@ export function createWakeWordEngine() {
       if (!listening) return;
       await engine.stop();
       listening = false;
+      // Safari: restore audio session to playback-only (for silent mode bypass)
+      if (navigator.audioSession) {
+        try { navigator.audioSession.type = 'playback'; } catch { /* ignore */ }
+      }
     },
 
     /** Register a callback for wake word detection. */
