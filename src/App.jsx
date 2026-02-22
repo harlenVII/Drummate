@@ -10,7 +10,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
-import { createWakeWordEngine } from './audio/wakeWordEngine';
+
 import {
   db,
   getItems,
@@ -478,6 +478,7 @@ function App() {
     setWakeWordError(null);
     try {
       if (!wakeWordEngineRef.current) {
+        const { createWakeWordEngine } = await import('./audio/wakeWordEngine');
         wakeWordEngineRef.current = createWakeWordEngine();
       }
 
