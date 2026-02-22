@@ -19,7 +19,7 @@ import { WakeWordEngine } from 'openwakeword-wasm-browser';
 ort.env.wasm.numThreads = 1;
 ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.2/dist/';
 
-const WAKE_WORD = 'hey_jarvis';
+const WAKE_WORD = 'drummate';
 
 export function createWakeWordEngine() {
   let engine = null;
@@ -37,6 +37,7 @@ export function createWakeWordEngine() {
 
       engine = new WakeWordEngine({
         keywords: [WAKE_WORD],
+        modelFiles: { drummate: 'drummate.onnx' },
         baseAssetUrl: '/models',
         detectionThreshold: 0.5,
         cooldownMs: 2000,

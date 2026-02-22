@@ -1,7 +1,7 @@
 # Phase 1: Wake Word Detection
 
 ## Context
-Adding "Hands-Free Mode" to Drummate — a toggle that activates wake word listening using openWakeWord (ONNX) in the browser. Phase 1 focuses on wake word detection only (no STT or intent parsing yet). Uses `hey_jarvis` as a placeholder model until a custom "Drummate" model is trained.
+Adding "Hands-Free Mode" to Drummate — a toggle that activates wake word listening using openWakeWord (ONNX) in the browser. Phase 1 focuses on wake word detection only (no STT or intent parsing yet). Uses a custom-trained `drummate` wake word model.
 
 ## Steps
 
@@ -15,7 +15,7 @@ From the `dnavarrom/openwakeword_wasm` repo or openWakeWord v0.5.1 release:
 - `melspectrogram.onnx` (shared, always required)
 - `embedding_model.onnx` (shared, always required)
 - `silero_vad.onnx` (VAD, always required)
-- `hey_jarvis_v0.1.onnx` (placeholder wake word)
+- `drummate.onnx` (custom-trained wake word model)
 
 ### 3. Create wake word service — `src/audio/wakeWordEngine.js`
 Thin wrapper around `WakeWordEngine` from the npm package:
@@ -38,7 +38,7 @@ No Web Worker optimization yet — the npm package runs inference on the main th
 
 ### 5. Add i18n keys to `LanguageContext.jsx`
 - `handsFreeMode` / "Hands-Free Mode" / "免提模式"
-- `handsFreeDescription` / "Say 'Hey Jarvis' to activate" / "说 'Hey Jarvis' 来激活"
+- `handsFreeDescription` / "Say 'Drummate' to activate" / "说 'Drummate' 来激活"
 - `wakeWordDetected` / "Listening..." / "正在听..."
 - `micPermissionNeeded` / "Microphone permission required" / "需要麦克风权限"
 
@@ -68,7 +68,7 @@ No Web Worker optimization yet — the npm package runs inference on the main th
 ## Verification
 1. `npm run build` succeeds
 2. Toggle "Hands-Free Mode" on → mic permission prompt → models load → listening state shown
-3. Say "Hey Jarvis" → console.log fires + brief UI feedback
+3. Say "Drummate" → console.log fires + brief UI feedback
 4. Toggle off → mic released, listening stops
 5. Toggle on again → no re-download (models cached)
 6. Metronome still works normally while hands-free mode is active (separate AudioContexts)

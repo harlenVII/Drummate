@@ -72,7 +72,7 @@ const translations = {
     language: 'Language',
     handsFree: {
       title: 'Hands-Free Mode',
-      description: 'Say "Hey Jarvis" to activate',
+      description: 'Say "Drummate" to activate',
       detected: 'Listening...',
       micPermission: 'Microphone permission required',
       loading: 'Loading voice models...',
@@ -150,7 +150,7 @@ const translations = {
     language: '语言',
     handsFree: {
       title: '免提模式',
-      description: '说 "Hey Jarvis" 来激活',
+      description: '说 "Drummate" 来激活',
       detected: '正在听...',
       micPermission: '需要麦克风权限',
       loading: '正在加载语音模型...',
