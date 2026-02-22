@@ -39,7 +39,7 @@ export function createWakeWordEngine() {
         keywords: [WAKE_WORD],
         modelFiles: { drummate: 'drummate.onnx' },
         baseAssetUrl: '/models',
-        detectionThreshold: 0.5,
+        detectionThreshold: 0.4,
         cooldownMs: 2000,
         executionProviders: ['wasm'],
         debug: false,
