@@ -77,6 +77,7 @@ const translations = {
       micPermission: 'Microphone permission required',
       loading: 'Loading voice models...',
       error: 'Voice detection error',
+      unsupportedBrowser: 'Hands-free mode is only supported in Chrome.',
     },
   },
   zh: {
@@ -155,6 +156,7 @@ const translations = {
       micPermission: '需要麦克风权限',
       loading: '正在加载语音模型...',
       error: '语音检测错误',
+      unsupportedBrowser: '免提模式仅支持 Chrome 浏览器。',
     },
   },
 };

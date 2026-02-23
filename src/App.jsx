@@ -474,7 +474,13 @@ function App() {
       return;
     }
 
-    // Turning on
+    // Turning on — only supported in Chrome (ONNX WASM issues on Safari/Firefox)
+    const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
+    if (!isChrome) {
+      setWakeWordError('unsupported_browser');
+      return;
+    }
+
     setWakeWordError(null);
     try {
       if (!wakeWordEngineRef.current) {

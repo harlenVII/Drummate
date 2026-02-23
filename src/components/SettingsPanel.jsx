@@ -14,6 +14,7 @@ function SettingsPanel({
   wakeWordError,
 }) {
   const { t } = useLanguage();
+  const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
 
   return (
     <>
@@ -94,10 +95,10 @@ function SettingsPanel({
               </div>
               <button
                 onClick={onToggleHandsFree}
-                disabled={wakeWordLoading}
+                disabled={wakeWordLoading || !isChrome}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
                   handsFreeMode ? 'bg-blue-600' : 'bg-gray-300'
-                } ${wakeWordLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                } ${wakeWordLoading || !isChrome ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 role="switch"
                 aria-checked={handsFreeMode}
               >
@@ -109,24 +110,30 @@ function SettingsPanel({
               </button>
             </div>
 
-            {wakeWordLoading && (
-              <p className="text-xs text-blue-500">{t('handsFree.loading')}</p>
-            )}
+            {!isChrome ? (
+              <p className="text-xs text-red-500">{t('handsFree.unsupportedBrowser')}</p>
+            ) : (
+              <>
+                {wakeWordLoading && (
+                  <p className="text-xs text-blue-500">{t('handsFree.loading')}</p>
+                )}
 
-            {wakeWordDetected && (
-              <p className="text-xs text-green-600 font-medium">{t('handsFree.detected')}</p>
-            )}
+                {wakeWordDetected && (
+                  <p className="text-xs text-green-600 font-medium">{t('handsFree.detected')}</p>
+                )}
 
-            {wakeWordError === 'mic_permission' && (
-              <p className="text-xs text-red-500">{t('handsFree.micPermission')}</p>
-            )}
+                {wakeWordError === 'mic_permission' && (
+                  <p className="text-xs text-red-500">{t('handsFree.micPermission')}</p>
+                )}
 
-            {wakeWordError && wakeWordError !== 'mic_permission' && (
-              <p className="text-xs text-red-500">{t('handsFree.error')}</p>
-            )}
+                {wakeWordError && wakeWordError !== 'mic_permission' && (
+                  <p className="text-xs text-red-500">{t('handsFree.error')}</p>
+                )}
 
-            {!wakeWordLoading && !wakeWordError && (
-              <p className="text-xs text-gray-400">{t('handsFree.description')}</p>
+                {!wakeWordLoading && !wakeWordError && (
+                  <p className="text-xs text-gray-400">{t('handsFree.description')}</p>
+                )}
+              </>
             )}
           </div>
         </div>
