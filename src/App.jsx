@@ -10,6 +10,10 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
+import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
+import { createSttService } from './services/sttService';
+import { parseIntent, findBestItemMatch } from './services/intentParser';
+import { speak, getLang } from './services/voiceFeedback';
 
 import {
   db,
@@ -125,11 +129,14 @@ function App() {
 
   // Wake word (hands-free mode) state
   const wakeWordEngineRef = useRef(null);
+  const sttServiceRef = useRef(null);
   const [handsFreeMode, setHandsFreeMode] = useState(false);
   const [wakeWordLoading, setWakeWordLoading] = useState(false);
   const [wakeWordReady, setWakeWordReady] = useState(false);
   const [wakeWordDetected, setWakeWordDetected] = useState(false);
   const [wakeWordError, setWakeWordError] = useState(null);
+  const [listeningState, setListeningState] = useState('idle'); // 'idle'|'listening'|'processing'|'feedback'|'error'
+  const [voiceTranscript, setVoiceTranscript] = useState(null);
   const sequencerNextIdRef = useRef(null);
   if (sequencerNextIdRef.current === null) {
     try {
@@ -461,6 +468,132 @@ function App() {
     [metronomeIsPlaying],
   );
 
+  // Voice command dispatcher — called after STT transcription
+  const dispatchVoiceCommand = useCallback(async (intent) => {
+    const lang = getLang(language);
+
+    switch (intent.action) {
+      case 'metronome.start': {
+        if (metronomeIsPlaying) {
+          speak(language === 'zh' ? '已经在播放' : 'Metronome is already running', { lang });
+          return;
+        }
+        const engine = metronomeEngineRef.current;
+        if (!engine) return;
+        engine.setSequence(null);
+        noSleepRef.current.enable();
+        await engine.start();
+        setMetronomeIsPlaying(true);
+        setActiveTab('metronome');
+        setMetronomeSubpage('metronome');
+        speak(language === 'zh' ? '节拍器已启动' : 'Metronome started', { lang });
+        break;
+      }
+
+      case 'metronome.stop': {
+        const engine = metronomeEngineRef.current;
+        if (engine && metronomeIsPlaying) {
+          engine.stop();
+          setMetronomeIsPlaying(false);
+          setMetronomeCurrentBeat(-1);
+          noSleepRef.current.disable();
+          speak(language === 'zh' ? '节拍器已停止' : 'Metronome stopped', { lang });
+        } else {
+          speak(language === 'zh' ? '节拍器没有在运行' : 'Metronome is not running', { lang });
+        }
+        break;
+      }
+
+      case 'metronome.setTempo': {
+        const bpm = Math.max(30, Math.min(300, intent.value));
+        setMetronomeBpm(bpm);
+        metronomeEngineRef.current?.setBpm(bpm);
+        speak(language === 'zh' ? `速度已设置为 ${bpm}` : `Tempo set to ${bpm}`, { lang });
+        break;
+      }
+
+      case 'metronome.adjustTempo': {
+        const currentBpm = metronomeEngineRef.current?.bpm ?? metronomeBpm;
+        const newBpm = Math.max(30, Math.min(300, currentBpm + intent.delta));
+        setMetronomeBpm(newBpm);
+        metronomeEngineRef.current?.setBpm(newBpm);
+        const direction = intent.delta > 0
+          ? (language === 'zh' ? '加速' : 'Increased')
+          : (language === 'zh' ? '减速' : 'Decreased');
+        speak(language === 'zh' ? `${direction}到 ${newBpm}` : `${direction} tempo to ${newBpm}`, { lang });
+        break;
+      }
+
+      case 'metronome.setTimeSignature': {
+        setMetronomeTimeSignature(intent.value);
+        metronomeEngineRef.current?.setBeatsPerMeasure(intent.value[0]);
+        speak(language === 'zh'
+          ? `拍号设为 ${intent.value[0]} 比 ${intent.value[1]}`
+          : `Time signature set to ${intent.value[0]} over ${intent.value[1]}`, { lang });
+        break;
+      }
+
+      case 'metronome.setSubdivision': {
+        setMetronomeSubdivision(intent.value);
+        speak(language === 'zh' ? `切换到${intent.value}` : `Switched to ${intent.value}`, { lang });
+        break;
+      }
+
+      case 'practice.start': {
+        const match = findBestItemMatch(intent.itemQuery, items);
+        if (!match) {
+          speak(language === 'zh'
+            ? `找不到练习项目：${intent.itemQuery}`
+            : `No practice item found for: ${intent.itemQuery}`, { lang });
+          return;
+        }
+        setActiveTab('practice');
+        await handleStart(match.id);
+        speak(language === 'zh' ? `开始练习 ${match.name}` : `Starting practice: ${match.name}`, { lang });
+        break;
+      }
+
+      case 'practice.stop': {
+        if (activeItemId == null) {
+          speak(language === 'zh' ? '没有正在进行的练习' : 'No practice session is running', { lang });
+          return;
+        }
+        await handleStop();
+        speak(language === 'zh' ? '练习已保存' : 'Practice session saved', { lang });
+        break;
+      }
+
+      case 'report.generate': {
+        handleTabChange('report');
+        speak(language === 'zh' ? '打开报告' : 'Opening report', { lang });
+        break;
+      }
+
+      case 'navigate': {
+        if (intent.subpage) {
+          handleTabChange(intent.tab);
+          handleSubpageChange(intent.subpage);
+        } else {
+          handleTabChange(intent.tab);
+        }
+        speak(language === 'zh' ? `切换到${intent.tab}` : `Navigating to ${intent.tab}`, { lang });
+        break;
+      }
+
+      case 'toggleLanguage': {
+        toggleLanguage();
+        speak('Language switched', { lang: 'en-US' });
+        break;
+      }
+
+      case 'unknown':
+      default: {
+        speak(language === 'zh' ? '我没听懂，请再说一遍' : "Sorry, I didn't understand that", { lang });
+        break;
+      }
+    }
+  }, [language, metronomeIsPlaying, metronomeBpm, items, activeItemId, handleStart, handleStop, handleTabChange, handleSubpageChange, toggleLanguage]);
+
   // Wake word toggle handler
   const handleToggleHandsFree = useCallback(async () => {
     if (handsFreeMode) {
@@ -495,12 +628,54 @@ function App() {
         setWakeWordLoading(false);
       }
 
-      wakeWordEngineRef.current.onDetected(({ keyword, score }) => {
-        setWakeWordDetected(true);
-        // Clear detected state after 2 seconds
-        setTimeout(() => setWakeWordDetected(false), 2000);
-        // TODO: Phase 2 — trigger STT pipeline here
+      // Initialize STT service if not already done
+      if (!sttServiceRef.current) {
+        sttServiceRef.current = createSttService();
+      }
+
+      wakeWordEngineRef.current.onDetected(async ({ keyword, score }) => {
         console.log(`Wake word "${keyword}" detected (score: ${score.toFixed(3)})`);
+        setWakeWordDetected(true);
+
+        if (!sttServiceRef.current) {
+          setTimeout(() => setWakeWordDetected(false), 2000);
+          return;
+        }
+
+        setListeningState('listening');
+        setVoiceTranscript(null);
+
+        try {
+          const sttLang = language === 'zh' ? 'zh-CN' : 'en-US';
+          const transcript = await sttServiceRef.current.listenOnce({
+            language: sttLang,
+            timeoutMs: 7000,
+          });
+
+          setListeningState('processing');
+          setVoiceTranscript(transcript);
+
+          const intent = parseIntent(transcript);
+          await dispatchVoiceCommand(intent);
+
+          setListeningState('feedback');
+          setTimeout(() => {
+            setListeningState('idle');
+            setWakeWordDetected(false);
+            setVoiceTranscript(null);
+          }, 2500);
+        } catch (err) {
+          const noSpeech = err === 'no-speech' || err === 'timeout';
+          setListeningState('error');
+          if (!noSpeech) {
+            console.error('STT error:', err);
+          }
+          setTimeout(() => {
+            setListeningState('idle');
+            setWakeWordDetected(false);
+            setVoiceTranscript(null);
+          }, 2500);
+        }
       });
 
       wakeWordEngineRef.current.onError((err) => {
@@ -519,7 +694,7 @@ function App() {
       }
       console.error('Failed to start hands-free mode:', err);
     }
-  }, [handsFreeMode]);
+  }, [handsFreeMode, language, dispatchVoiceCommand]);
 
   // Clean up wake word engine on unmount
   useEffect(() => {
@@ -674,7 +849,16 @@ function App() {
         wakeWordLoading={wakeWordLoading}
         wakeWordDetected={wakeWordDetected}
         wakeWordError={wakeWordError}
+        listeningState={listeningState}
+        voiceTranscript={voiceTranscript}
       />
+
+      {handsFreeMode && (
+        <FloatingVoiceIndicator
+          listeningState={listeningState}
+          transcript={voiceTranscript}
+        />
+      )}
 
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>

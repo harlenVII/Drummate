@@ -12,6 +12,8 @@ function SettingsPanel({
   wakeWordLoading,
   wakeWordDetected,
   wakeWordError,
+  listeningState,
+  voiceTranscript,
 }) {
   const { t } = useLanguage();
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
@@ -118,8 +120,20 @@ function SettingsPanel({
                   <p className="text-xs text-blue-500">{t('handsFree.loading')}</p>
                 )}
 
-                {wakeWordDetected && (
+                {wakeWordDetected && listeningState === 'listening' && (
+                  <p className="text-xs text-green-600 font-medium">{t('handsFree.listening')}</p>
+                )}
+
+                {listeningState === 'processing' && voiceTranscript && (
+                  <p className="text-xs text-blue-600 font-medium">&ldquo;{voiceTranscript}&rdquo;</p>
+                )}
+
+                {wakeWordDetected && listeningState === 'idle' && (
                   <p className="text-xs text-green-600 font-medium">{t('handsFree.detected')}</p>
+                )}
+
+                {listeningState === 'error' && (
+                  <p className="text-xs text-red-500">{t('handsFree.commandError')}</p>
                 )}
 
                 {wakeWordError === 'mic_permission' && (
