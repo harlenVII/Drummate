@@ -228,18 +228,32 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
           {cells.map(({ date, col: c, row: r }) => {
             const seconds = dayTotals[date] || 0;
             const isToday = date === today;
+            const dayNum = parseInt(date.split('-')[2], 10);
+            const cx = PADDING + c * (CELL + GAP);
+            const cy = r * (CELL + GAP) + HEADER_H;
+            const isDark = seconds > p50;
             return (
-              <rect
-                key={date}
-                x={PADDING + c * (CELL + GAP)}
-                y={r * (CELL + GAP) + HEADER_H}
-                width={CELL}
-                height={CELL}
-                rx={4}
-                fill={intensityColor(seconds)}
-                stroke={isToday ? '#3b82f6' : 'none'}
-                strokeWidth={isToday ? 2 : 0}
-              />
+              <g key={date}>
+                <rect
+                  x={cx}
+                  y={cy}
+                  width={CELL}
+                  height={CELL}
+                  rx={4}
+                  fill={intensityColor(seconds)}
+                  stroke={isToday ? '#3b82f6' : 'none'}
+                  strokeWidth={isToday ? 2 : 0}
+                />
+                <text
+                  x={cx + CELL / 2}
+                  y={cy + CELL / 2 + 4}
+                  textAnchor="middle"
+                  fontSize="11"
+                  fill={isDark ? '#ffffff' : '#6b7280'}
+                >
+                  {dayNum}
+                </text>
+              </g>
             );
           })}
         </svg>
