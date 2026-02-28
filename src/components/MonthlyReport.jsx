@@ -93,8 +93,9 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
   const CELL = 32;
   const GAP = 4;
   const HEADER_H = 20;
-  const gridW = 7 * (CELL + GAP) - GAP;
-  const gridH = (row + 1) * (CELL + GAP) - GAP + HEADER_H;
+  const PADDING = 2; // extra space for today's stroke ring
+  const gridW = 7 * (CELL + GAP) - GAP + PADDING * 2;
+  const gridH = (row + 1) * (CELL + GAP) - GAP + HEADER_H + PADDING;
 
   // --- Trend chart: week-by-week totals ---
   const weekStarts = [];
@@ -211,7 +212,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
           {WEEKDAY_KEYS.map((key, i) => (
             <text
               key={key}
-              x={i * (CELL + GAP) + CELL / 2}
+              x={PADDING + i * (CELL + GAP) + CELL / 2}
               y={14}
               textAnchor="middle"
               fontSize="10"
@@ -227,7 +228,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
             return (
               <rect
                 key={date}
-                x={c * (CELL + GAP)}
+                x={PADDING + c * (CELL + GAP)}
                 y={r * (CELL + GAP) + HEADER_H}
                 width={CELL}
                 height={CELL}
