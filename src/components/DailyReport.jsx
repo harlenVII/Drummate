@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { formatTime, formatMinutes } from '../utils/formatTime';
+import { formatTime, formatMinutes, formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 
-function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
+function DailyReport({ items, reportDate, reportLogs, onDateChange, timeUnit }) {
   const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -94,7 +94,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
       <div className="bg-white rounded-lg shadow-sm p-6 text-center">
         <p className="text-sm text-gray-500 font-medium">{t('totalPracticeTime')}</p>
         <p className="text-3xl font-mono text-gray-800 mt-1">
-          {formatMinutes(grandTotal)} {t('minutes')}
+          {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (
           <p className="text-sm text-gray-400 mt-2">{t('noPracticeRecorded')}</p>
@@ -112,7 +112,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
               </span>
               <div className={`text-right ${entry.duration > 0 ? 'text-gray-600' : 'text-gray-400'}`}>
                 <div>
-                  {entry.duration > 0 ? formatMinutes(entry.duration) : 0} {t('minutes')}
+                  {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0} {t(timeUnit)}
                 </div>
                 {entry.duration > 0 && (
                   <div className="text-xs text-gray-500">({percentage}%)</div>
@@ -159,12 +159,12 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
           >
             <h2 className="text-lg font-bold text-gray-800">{t('dailyReport')}</h2>
             <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap select-text">
-              {generateReportText(reportDate, grandTotal, breakdown, t)}
+              {generateReportText(reportDate, grandTotal, breakdown, t, timeUnit)}
             </pre>
             <button
               onClick={async () => {
                 await navigator.clipboard.writeText(
-                  generateReportText(reportDate, grandTotal, breakdown, t)
+                  generateReportText(reportDate, grandTotal, breakdown, t, timeUnit)
                 );
                 setCopied(true);
               }}
@@ -189,18 +189,18 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
   );
 }
 
-function generateReportText(reportDate, grandTotal, breakdown, t) {
+function generateReportText(reportDate, grandTotal, breakdown, t, timeUnit) {
   // Format date as YYYY/MM/DD
   const [year, month, day] = reportDate.split('-');
   const formattedDate = `${year}/${month}/${day}`;
 
   const lines = [
     `${t('date')}: ${formattedDate}`,
-    `${t('total')}: ${formatMinutes(grandTotal)} ${t('minutes')}`,
+    `${t('total')}: ${formatDuration(grandTotal, timeUnit)} ${t(timeUnit)}`,
   ];
   for (const entry of breakdown) {
     if (entry.duration > 0) {
-      lines.push(`${entry.name}: ${formatMinutes(entry.duration)} ${t('minutes')}`);
+      lines.push(`${entry.name}: ${formatDuration(entry.duration, timeUnit)} ${t(timeUnit)}`);
     }
   }
   return lines.join('\n');

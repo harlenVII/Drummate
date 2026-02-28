@@ -44,6 +44,14 @@ function App() {
   const activeItemIdRef = useRef(null);
   const [activeTab, setActiveTab] = useState('practice');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [timeUnit, setTimeUnit] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_time_unit');
+      return saved === 'hours' ? 'hours' : 'minutes';
+    } catch {
+      return 'minutes';
+    }
+  });
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
   const [reportSubpage, setReportSubpage] = useState('daily');
@@ -171,6 +179,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('drummate_metronome_subdivision', metronomeSubdivision);
   }, [metronomeSubdivision]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_time_unit', timeUnit);
+  }, [timeUnit]);
 
   // Persist sequencer settings to localStorage
   useEffect(() => {
@@ -889,6 +901,7 @@ function App() {
                   reportDate={reportDate}
                   reportLogs={reportLogs}
                   onDateChange={handleReportDateChange}
+                  timeUnit={timeUnit}
                 />
               )}
 
@@ -898,6 +911,7 @@ function App() {
                   weekStart={weekStart}
                   weekLogs={weekLogs}
                   onWeekChange={handleWeekChange}
+                  timeUnit={timeUnit}
                 />
               )}
 
@@ -907,6 +921,7 @@ function App() {
                   monthStart={monthStart}
                   monthLogs={monthLogs}
                   onMonthChange={handleMonthChange}
+                  timeUnit={timeUnit}
                 />
               )}
             </>
@@ -921,6 +936,8 @@ function App() {
         language={language}
         toggleLanguage={toggleLanguage}
         user={user}
+        timeUnit={timeUnit}
+        onToggleTimeUnit={() => setTimeUnit((u) => (u === 'minutes' ? 'hours' : 'minutes'))}
         handsFreeMode={handsFreeMode}
         onToggleHandsFree={handleToggleHandsFree}
         wakeWordLoading={wakeWordLoading}

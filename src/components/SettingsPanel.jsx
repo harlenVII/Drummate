@@ -7,6 +7,8 @@ function SettingsPanel({
   language,
   toggleLanguage,
   user,
+  timeUnit,
+  onToggleTimeUnit,
   handsFreeMode,
   onToggleHandsFree,
   wakeWordLoading,
@@ -78,6 +80,26 @@ function SettingsPanel({
                   }`}
                 >
                   {lang === 'en' ? 'EN' : '中文'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time Unit */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">{t('timeUnit')}</span>
+            <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+              {['minutes', 'hours'].map((unit) => (
+                <button
+                  key={unit}
+                  onClick={() => timeUnit !== unit && onToggleTimeUnit()}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    timeUnit === unit
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {t(unit)}
                 </button>
               ))}
             </div>

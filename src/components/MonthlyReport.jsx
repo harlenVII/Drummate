@@ -1,4 +1,4 @@
-import { formatMinutes } from '../utils/formatTime';
+import { formatMinutes, formatDuration } from '../utils/formatTime';
 import {
   getMonthEnd,
   getMonthStart,
@@ -11,7 +11,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
+function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, timeUnit }) {
   const { t } = useLanguage();
   const monthEnd = getMonthEnd(monthStart);
   const monthDays = getDaysInRange(monthStart, monthEnd);
@@ -199,7 +199,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
           {t('analytics.totalThisMonth')}
         </p>
         <p className="text-3xl font-mono text-gray-800 mt-1">
-          {formatMinutes(grandTotal)} {t('minutes')}
+          {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (
           <p className="text-sm text-gray-400 mt-2">
@@ -291,7 +291,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
                     fontSize="9"
                     fill="#6b7280"
                   >
-                    {formatMinutes(weekTotals[i])}
+                    {formatDuration(weekTotals[i], timeUnit)}
                   </text>
                 </g>
               );
@@ -318,8 +318,8 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
                 className={`text-right ${entry.duration > 0 ? 'text-gray-600' : 'text-gray-400'}`}
               >
                 <div>
-                  {entry.duration > 0 ? formatMinutes(entry.duration) : 0}{' '}
-                  {t('minutes')}
+                  {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0}{' '}
+                  {t(timeUnit)}
                 </div>
                 {entry.duration > 0 && (
                   <div className="text-xs text-gray-500">({percentage}%)</div>
