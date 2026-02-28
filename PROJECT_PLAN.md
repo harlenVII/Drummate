@@ -10,6 +10,7 @@
 | 4 | Rhythm Sequencer | Done |
 | 5 | Bilingual Support (EN/ZH) | Done |
 | 6 | Data Sync Across Devices | Done |
+| 9 | Weekly/Monthly Analytics | Done |
 
 ---
 
@@ -21,13 +22,21 @@ Simple voice commands (no LLM) to control the metronome and practice timer hands
 
 | Task | Status |
 |------|--------|
-| Web Speech API integration | Not started |
-| Command grammar (start/stop, set BPM, switch items) | Not started |
-| Visual feedback for voice recognition state | Not started |
-| Bilingual voice command support (EN/ZH) | Not started |
+| Wake word detection ("Drummate" via openWakeWord ONNX) | Done |
+| Web Speech API integration (STT after wake word) | Done |
+| Intent parser (regex-based command extraction) | Done |
+| Voice command dispatch (metronome, practice, navigation) | Done |
+| Voice feedback (speechSynthesis confirmations) | Done |
+| Visual feedback for voice recognition state (FloatingVoiceIndicator) | Done |
+| Fuzzy matching for practice item names (Levenshtein) | Done |
+| Bilingual voice feedback (EN/ZH) | Done |
+| Chinese-language command patterns (ZH regex) | Not started |
+| Whisper WASM fallback for offline/cross-browser STT | Not started |
 
-**Design doc:**
-- [VOICE_COMMANDS_RESEARCH.md](./VOICE_COMMANDS_RESEARCH.md) — Simple structured commands (no LLM)
+**Design docs:**
+- [VOICE_COMMANDS_RESEARCH.md](./VOICE_COMMANDS_RESEARCH.md) — Research & design options
+- [VOICE_COMMANDS_IMPLEMENTATION.md](./VOICE_COMMANDS_IMPLEMENTATION.md) — Implementation details
+- [WAKE_WORD.md](./WAKE_WORD.md) — Wake word engine setup
 
 ---
 
@@ -54,11 +63,11 @@ Rich analytics dashboard with practice trends, streaks, and goal tracking.
 
 | Task | Status |
 |------|--------|
-| Weekly summary view (total time, per-item breakdown) | Not started |
-| Monthly summary view with calendar heatmap | Not started |
-| Practice streak tracking (consecutive days) | Not started |
-| Trend charts (time over weeks/months) | Not started |
-| Personal best & milestone notifications | Not started |
+| Weekly summary view (total time, per-item breakdown) | Done |
+| Monthly summary view with calendar heatmap | Done |
+| ~~Practice streak tracking (consecutive days)~~ | Removed |
+| Trend charts (time over weeks/months) | Done |
+| Personal best & milestone notifications | Deferred |
 
 **Design doc:** _To be created_
 
