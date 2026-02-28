@@ -43,3 +43,52 @@ export function formatDateLabel(dateString, t) {
     year: 'numeric',
   });
 }
+
+/**
+ * Returns the Monday of the week containing dateString (week starts Monday).
+ */
+export function getWeekStart(dateString) {
+  const date = new Date(dateString + 'T12:00:00');
+  const day = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return toDateString(date);
+}
+
+/**
+ * Returns the Sunday ending the week containing dateString.
+ */
+export function getWeekEnd(dateString) {
+  return shiftDate(getWeekStart(dateString), 6);
+}
+
+/**
+ * Returns the first day of the month containing dateString.
+ */
+export function getMonthStart(dateString) {
+  const [year, month] = dateString.split('-');
+  return `${year}-${month}-01`;
+}
+
+/**
+ * Returns the last day of the month containing dateString.
+ */
+export function getMonthEnd(dateString) {
+  const date = new Date(dateString.slice(0, 7) + '-01T12:00:00');
+  date.setMonth(date.getMonth() + 1);
+  date.setDate(0);
+  return toDateString(date);
+}
+
+/**
+ * Returns an array of all YYYY-MM-DD strings from startDate to endDate inclusive.
+ */
+export function getDaysInRange(startDate, endDate) {
+  const days = [];
+  let current = startDate;
+  while (current <= endDate) {
+    days.push(current);
+    current = shiftDate(current, 1);
+  }
+  return days;
+}

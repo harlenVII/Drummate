@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
-import { formatTime } from '../utils/formatTime';
+import { formatTime, formatMinutes } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
-
-function formatMinutes(totalSeconds) {
-  return Math.round(totalSeconds / 60);
-}
 
 function DailyReport({ items, reportDate, reportLogs, onDateChange }) {
   const { t } = useLanguage();

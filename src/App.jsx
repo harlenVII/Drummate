@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import NoSleep from 'nosleep.js';
 import PracticeItemList from './components/PracticeItemList';
 import DailyReport from './components/DailyReport';
+import WeeklyReport from './components/WeeklyReport';
+import MonthlyReport from './components/MonthlyReport';
 import Metronome from './components/Metronome';
 import SequencerPage from './components/SequencerPage';
 import TabBar from './components/TabBar';
@@ -24,9 +26,10 @@ import {
   addLog,
   getTodaysLogs,
   getLogsByDate,
+  getLogsByDateRange,
 } from './services/database';
 import { pushItem, pushLog, pushDeleteItem, pushRenameItem, pullAll, pushAllLocal, flushSyncQueue, subscribeToChanges } from './services/sync';
-import { getTodayString } from './utils/dateHelpers';
+import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd } from './utils/dateHelpers';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
@@ -43,6 +46,11 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
+  const [reportSubpage, setReportSubpage] = useState('daily');
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(getTodayString()));
+  const [weekLogs, setWeekLogs] = useState([]);
+  const [monthStart, setMonthStart] = useState(() => getMonthStart(getTodayString()));
+  const [monthLogs, setMonthLogs] = useState([]);
 
   // Metronome state (persists across tab changes and page reloads)
   const noSleepRef = useRef(new NoSleep());
@@ -433,6 +441,18 @@ function App() {
     setReportLogs(logs);
   }, []);
 
+  const loadWeekData = useCallback(async (weekStartStr) => {
+    const weekEndStr = getWeekEnd(weekStartStr);
+    const logs = await getLogsByDateRange(weekStartStr, weekEndStr);
+    setWeekLogs(logs);
+  }, []);
+
+  const loadMonthData = useCallback(async (monthStartStr) => {
+    const monthEndStr = getMonthEnd(monthStartStr);
+    const logs = await getLogsByDateRange(monthStartStr, monthEndStr);
+    setMonthLogs(logs);
+  }, []);
+
   const handleReportDateChange = useCallback(
     async (dateString) => {
       setReportDate(dateString);
@@ -441,16 +461,34 @@ function App() {
     [loadReportData],
   );
 
+  const handleWeekChange = useCallback(async (newWeekStart) => {
+    setWeekStart(newWeekStart);
+    await loadWeekData(newWeekStart);
+  }, [loadWeekData]);
+
+  const handleMonthChange = useCallback(async (newMonthStart) => {
+    setMonthStart(newMonthStart);
+    await loadMonthData(newMonthStart);
+  }, [loadMonthData]);
+
   const handleTabChange = useCallback(
     async (tab) => {
       setActiveTab(tab);
       if (tab === 'report') {
         const today = getTodayString();
+        const wStart = getWeekStart(today);
+        const mStart = getMonthStart(today);
         setReportDate(today);
-        await loadReportData(today);
+        setWeekStart(wStart);
+        setMonthStart(mStart);
+        await Promise.all([
+          loadReportData(today),
+          loadWeekData(wStart),
+          loadMonthData(mStart),
+        ]);
       }
     },
-    [loadReportData],
+    [loadReportData, loadWeekData, loadMonthData],
   );
 
   const handleSubpageChange = useCallback(
@@ -827,12 +865,51 @@ function App() {
           )}
 
           {activeTab === 'report' && (
-            <DailyReport
-              items={items}
-              reportDate={reportDate}
-              reportLogs={reportLogs}
-              onDateChange={handleReportDateChange}
-            />
+            <>
+              {/* Report subpage toggle */}
+              <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+                {['daily', 'weekly', 'monthly'].map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setReportSubpage(page)}
+                    className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      reportSubpage === page
+                        ? 'bg-white text-gray-800 shadow-sm'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {t(`reportSubpages.${page}`)}
+                  </button>
+                ))}
+              </div>
+
+              {reportSubpage === 'daily' && (
+                <DailyReport
+                  items={items}
+                  reportDate={reportDate}
+                  reportLogs={reportLogs}
+                  onDateChange={handleReportDateChange}
+                />
+              )}
+
+              {reportSubpage === 'weekly' && (
+                <WeeklyReport
+                  items={items}
+                  weekStart={weekStart}
+                  weekLogs={weekLogs}
+                  onWeekChange={handleWeekChange}
+                />
+              )}
+
+              {reportSubpage === 'monthly' && (
+                <MonthlyReport
+                  items={items}
+                  monthStart={monthStart}
+                  monthLogs={monthLogs}
+                  onMonthChange={handleMonthChange}
+                />
+              )}
+            </>
           )}
         </div>
       </div>

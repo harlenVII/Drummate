@@ -67,3 +67,10 @@ export const getTodaysLogs = async () => {
 export const getLogsByDate = async (dateString) => {
   return await db.practiceLogs.where('date').equals(dateString).toArray();
 };
+
+export const getLogsByDateRange = async (startDate, endDate) => {
+  return await db.practiceLogs
+    .where('date')
+    .between(startDate, endDate, true, true)
+    .toArray();
+};
