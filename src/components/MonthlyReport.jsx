@@ -114,15 +114,18 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
   });
 
   const maxWeek = Math.max(...weekTotals, 1);
+  const TREND_PAD_X = 6; // horizontal padding for dot radius
+  const TREND_PAD_TOP = 16; // space for label text above dots
+  const TREND_PAD_BOTTOM = 6;
   const TREND_W = 280;
   const TREND_H = 60;
 
   const trendPoints = weekTotals.map((v, i) => ({
     x:
       weekTotals.length === 1
-        ? TREND_W / 2
-        : (i / (weekTotals.length - 1)) * TREND_W,
-    y: TREND_H - (v / maxWeek) * (TREND_H - 10) - 5,
+        ? (TREND_W + TREND_PAD_X * 2) / 2
+        : TREND_PAD_X + (i / (weekTotals.length - 1)) * TREND_W,
+    y: TREND_PAD_TOP + TREND_H - (v / maxWeek) * TREND_H,
   }));
 
   const polylineStr = trendPoints.map((p) => `${p.x},${p.y}`).join(' ');
@@ -248,7 +251,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
           <p className="text-sm text-gray-500 font-medium mb-2">
             {t('analytics.weeklyTrend')}
           </p>
-          <svg viewBox={`0 0 ${TREND_W} ${TREND_H}`} className="w-full">
+          <svg viewBox={`0 0 ${TREND_W + TREND_PAD_X * 2} ${TREND_PAD_TOP + TREND_H + TREND_PAD_BOTTOM}`} className="w-full">
             <polyline
               points={polylineStr}
               fill="none"
@@ -257,20 +260,28 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange }) {
               strokeLinejoin="round"
               strokeLinecap="round"
             />
-            {trendPoints.map((p, i) => (
-              <g key={i}>
-                <circle cx={p.x} cy={p.y} r={4} fill="#3b82f6" />
-                <text
-                  x={p.x}
-                  y={p.y - 8}
-                  textAnchor="middle"
-                  fontSize="9"
-                  fill="#6b7280"
-                >
-                  {formatMinutes(weekTotals[i])}
-                </text>
-              </g>
-            ))}
+            {trendPoints.map((p, i) => {
+              const anchor =
+                i === 0
+                  ? 'start'
+                  : i === trendPoints.length - 1
+                    ? 'end'
+                    : 'middle';
+              return (
+                <g key={i}>
+                  <circle cx={p.x} cy={p.y} r={4} fill="#3b82f6" />
+                  <text
+                    x={p.x}
+                    y={p.y - 8}
+                    textAnchor={anchor}
+                    fontSize="9"
+                    fill="#6b7280"
+                  >
+                    {formatMinutes(weekTotals[i])}
+                  </text>
+                </g>
+              );
+            })}
           </svg>
         </div>
       )}
