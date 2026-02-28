@@ -59,6 +59,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange }) {
   const BAR_GAP = 16;
   const CHART_W = 7 * (BAR_W + BAR_GAP);
   const CHART_H = 80;
+  const LABEL_TOP = 16; // space above bars for minute labels
 
   return (
     <div className="flex flex-col gap-4">
@@ -133,7 +134,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange }) {
       {grandTotal > 0 && (
         <div className="bg-white rounded-lg shadow-sm p-4">
           <svg
-            viewBox={`0 0 ${CHART_W} ${CHART_H + 24}`}
+            viewBox={`0 0 ${CHART_W} ${LABEL_TOP + CHART_H + 24}`}
             className="w-full"
           >
             {weekDays.map((day, i) => {
@@ -141,7 +142,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange }) {
               const barH =
                 seconds > 0 ? Math.max(4, (seconds / maxDay) * CHART_H) : 4;
               const x = i * (BAR_W + BAR_GAP) + BAR_GAP / 2;
-              const y = CHART_H - barH;
+              const y = LABEL_TOP + CHART_H - barH;
               const isToday = day === today;
 
               return (
@@ -173,7 +174,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange }) {
                   )}
                   <text
                     x={x + BAR_W / 2}
-                    y={CHART_H + 16}
+                    y={LABEL_TOP + CHART_H + 16}
                     textAnchor="middle"
                     fontSize="10"
                     fill={isToday ? '#3b82f6' : '#9ca3af'}
