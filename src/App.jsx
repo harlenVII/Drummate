@@ -17,7 +17,7 @@ import EncouragementButton from './components/EncouragementButton';
 import EncouragementModal from './components/EncouragementModal';
 import { createSttService } from './services/sttService';
 import { parseIntent, findBestItemMatch } from './services/intentParser';
-import { speak, getLang } from './services/voiceFeedback';
+import { speak, getLang, cancelSpeech } from './services/voiceFeedback';
 
 import {
   db,
@@ -1061,7 +1061,7 @@ function App() {
         progress={llmProgress}
         message={llmMessage}
         error={llmError}
-        onClose={() => setLlmModalOpen(false)}
+        onClose={() => { setLlmModalOpen(false); cancelSpeech(); }}
         onDownload={handleLlmDownload}
         onRegenerate={generateEncouragement}
       />
