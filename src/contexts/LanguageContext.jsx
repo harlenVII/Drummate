@@ -250,10 +250,16 @@ const translations = {
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('drummate_language') || 'en';
+  });
 
   const toggleLanguage = useCallback(() => {
-    setLanguage((prev) => (prev === 'en' ? 'zh' : 'en'));
+    setLanguage((prev) => {
+      const next = prev === 'en' ? 'zh' : 'en';
+      localStorage.setItem('drummate_language', next);
+      return next;
+    });
   }, []);
 
   const t = useCallback(
