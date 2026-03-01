@@ -665,6 +665,7 @@ function App() {
       const message = await llmServiceRef.current.generateEncouragement(context, language);
       setLlmMessage(message);
       setLlmStatus('ready');
+      speak(message, { lang: getLang(language), rate: 0.95 });
     } catch (err) {
       console.error('LLM generation error:', err);
       setLlmStatus('error');
@@ -689,6 +690,7 @@ function App() {
       const message = await llmServiceRef.current.generateEncouragement(context, language);
       setLlmMessage(message);
       setLlmStatus('ready');
+      speak(message, { lang: getLang(language), rate: 0.95 });
     } catch (err) {
       console.error('LLM download/load error:', err);
       setLlmStatus('error');
