@@ -13,6 +13,8 @@ import { useAuth } from './contexts/AuthContext';
 import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
 import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
+import EncouragementButton from './components/EncouragementButton';
+import EncouragementModal from './components/EncouragementModal';
 import { createSttService } from './services/sttService';
 import { parseIntent, findBestItemMatch } from './services/intentParser';
 import { speak, getLang } from './services/voiceFeedback';
@@ -153,6 +155,14 @@ function App() {
   const [wakeWordError, setWakeWordError] = useState(null);
   const [listeningState, setListeningState] = useState('idle'); // 'idle'|'listening'|'processing'|'feedback'|'error'
   const [voiceTranscript, setVoiceTranscript] = useState(null);
+
+  // LLM encouragement state
+  const llmServiceRef = useRef(null);
+  const [llmStatus, setLlmStatus] = useState('idle'); // 'idle'|'downloading'|'loading'|'ready'|'generating'|'error'
+  const [llmProgress, setLlmProgress] = useState({ text: '', percentage: 0 });
+  const [llmMessage, setLlmMessage] = useState(null);
+  const [llmError, setLlmError] = useState(null);
+  const [llmModalOpen, setLlmModalOpen] = useState(false);
   const sequencerNextIdRef = useRef(null);
   if (sequencerNextIdRef.current === null) {
     try {
@@ -644,6 +654,62 @@ function App() {
     }
   }, [language, metronomeIsPlaying, metronomeBpm, items, activeItemId, handleStart, handleStop, handleTabChange, handleSubpageChange, toggleLanguage]);
 
+  // LLM encouragement handlers
+  const generateEncouragement = useCallback(async () => {
+    if (!llmServiceRef.current?.isReady) return;
+    try {
+      setLlmStatus('generating');
+      setLlmMessage(null);
+      const { buildPracticeContext } = await import('./utils/practiceStats');
+      const context = await buildPracticeContext({ items, totals, activeItemId, elapsedTime });
+      const message = await llmServiceRef.current.generateEncouragement(context, language);
+      setLlmMessage(message);
+      setLlmStatus('ready');
+    } catch (err) {
+      console.error('LLM generation error:', err);
+      setLlmStatus('error');
+      setLlmError(err.message);
+    }
+  }, [items, totals, activeItemId, elapsedTime, language]);
+
+  const handleLlmDownload = useCallback(async () => {
+    try {
+      const { createLlmService } = await import('./services/llmService');
+      llmServiceRef.current = createLlmService();
+      setLlmStatus('downloading');
+      setLlmError(null);
+      await llmServiceRef.current.load(({ text, percentage }) => {
+        setLlmProgress({ text, percentage });
+      });
+      setLlmStatus('ready');
+      // Auto-generate after download
+      setLlmStatus('generating');
+      const { buildPracticeContext } = await import('./utils/practiceStats');
+      const context = await buildPracticeContext({ items, totals, activeItemId, elapsedTime });
+      const message = await llmServiceRef.current.generateEncouragement(context, language);
+      setLlmMessage(message);
+      setLlmStatus('ready');
+    } catch (err) {
+      console.error('LLM download/load error:', err);
+      setLlmStatus('error');
+      setLlmError(err.message);
+    }
+  }, [items, totals, activeItemId, elapsedTime, language]);
+
+  const handleEncouragementPress = useCallback(() => {
+    setLlmModalOpen(true);
+    // If already in a transient state, just show the modal
+    if (llmStatus === 'generating' || llmStatus === 'downloading' || llmStatus === 'loading') return;
+    // If ready with a message, just show it
+    if (llmStatus === 'ready' && llmMessage) return;
+    // If ready but no message, generate one
+    if (llmServiceRef.current?.isReady) {
+      generateEncouragement();
+      return;
+    }
+    // Otherwise show download consent (status stays 'idle')
+  }, [llmStatus, llmMessage, generateEncouragement]);
+
   // Wake word toggle handler
   const handleToggleHandsFree = useCallback(async () => {
     if (handsFreeMode) {
@@ -746,12 +812,16 @@ function App() {
     }
   }, [handsFreeMode, language, dispatchVoiceCommand]);
 
-  // Clean up wake word engine on unmount
+  // Clean up wake word engine and LLM service on unmount
   useEffect(() => {
     return () => {
       if (wakeWordEngineRef.current) {
         wakeWordEngineRef.current.destroy();
         wakeWordEngineRef.current = null;
+      }
+      if (llmServiceRef.current) {
+        llmServiceRef.current.destroy();
+        llmServiceRef.current = null;
       }
     };
   }, []);
@@ -953,6 +1023,22 @@ function App() {
           transcript={voiceTranscript}
         />
       )}
+
+      <EncouragementButton
+        status={llmStatus}
+        onPress={handleEncouragementPress}
+      />
+
+      <EncouragementModal
+        isOpen={llmModalOpen}
+        status={llmStatus}
+        progress={llmProgress}
+        message={llmMessage}
+        error={llmError}
+        onClose={() => setLlmModalOpen(false)}
+        onDownload={handleLlmDownload}
+        onRegenerate={generateEncouragement}
+      />
 
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
