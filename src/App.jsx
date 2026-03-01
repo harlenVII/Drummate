@@ -673,17 +673,19 @@ function App() {
     }
   }, [items, totals, activeItemId, elapsedTime, language]);
 
-  const handleLlmDownload = useCallback(async () => {
+  const loadAndGenerate = useCallback(async (fromCache) => {
     try {
       const { createLlmService } = await import('./services/llmService');
       llmServiceRef.current = createLlmService();
-      setLlmStatus('downloading');
       setLlmError(null);
-      await llmServiceRef.current.load(({ text, percentage }) => {
+      if (fromCache) {
+        setLlmStatus('loading');
+      } else {
+        setLlmStatus('downloading');
+      }
+      await llmServiceRef.current.load(fromCache ? null : ({ text, percentage }) => {
         setLlmProgress({ text, percentage });
       });
-      setLlmStatus('ready');
-      // Auto-generate after download
       setLlmStatus('generating');
       const { buildPracticeContext } = await import('./utils/practiceStats');
       const context = await buildPracticeContext({ items, totals, activeItemId, elapsedTime });
@@ -692,25 +694,47 @@ function App() {
       setLlmStatus('ready');
       speak(message, { lang: getLang(language), rate: 0.95 });
     } catch (err) {
-      console.error('LLM download/load error:', err);
+      console.error('LLM load/generate error:', err);
       setLlmStatus('error');
       setLlmError(err.message);
     }
   }, [items, totals, activeItemId, elapsedTime, language]);
 
-  const handleEncouragementPress = useCallback(() => {
-    setLlmModalOpen(true);
+  const handleLlmDownload = useCallback(() => {
+    loadAndGenerate(false);
+  }, [loadAndGenerate]);
+
+  const handleEncouragementPress = useCallback(async () => {
     // If already in a transient state, just show the modal
-    if (llmStatus === 'generating' || llmStatus === 'downloading' || llmStatus === 'loading') return;
+    if (llmStatus === 'generating' || llmStatus === 'downloading' || llmStatus === 'loading') {
+      setLlmModalOpen(true);
+      return;
+    }
     // If ready with a message, just show it
-    if (llmStatus === 'ready' && llmMessage) return;
+    if (llmStatus === 'ready' && llmMessage) {
+      setLlmModalOpen(true);
+      return;
+    }
     // If ready but no message, generate one
     if (llmServiceRef.current?.isReady) {
+      setLlmModalOpen(true);
       generateEncouragement();
       return;
     }
-    // Otherwise show download consent (status stays 'idle')
-  }, [llmStatus, llmMessage, generateEncouragement]);
+    // Check if model is already cached — if so, load directly (no consent)
+    try {
+      const { isModelCached } = await import('./services/llmService');
+      if (await isModelCached()) {
+        setLlmModalOpen(true);
+        loadAndGenerate(true);
+        return;
+      }
+    } catch {
+      // Fall through to show download consent
+    }
+    // Not cached — show download consent
+    setLlmModalOpen(true);
+  }, [llmStatus, llmMessage, generateEncouragement, loadAndGenerate]);
 
   // Wake word toggle handler
   const handleToggleHandsFree = useCallback(async () => {

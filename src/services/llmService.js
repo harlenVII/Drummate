@@ -69,6 +69,20 @@ function getRandomFallback(language) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+/**
+ * Check if the model is already cached in OPFS (no full wllama init needed).
+ */
+export async function isModelCached() {
+  try {
+    const { Wllama, LoggerWithoutDebug } = await import('@wllama/wllama');
+    const temp = new Wllama(WASM_PATHS, { logger: LoggerWithoutDebug });
+    const blob = await temp.cacheManager.open(MODEL_URL);
+    return blob !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function createLlmService() {
   let wllama = null;
   let loaded = false;
