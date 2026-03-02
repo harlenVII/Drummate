@@ -37,6 +37,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB — allows large dynamic-import chunks
         // Don't precache ONNX models and WASM binaries (too large).
         // They're cached on first use via runtime caching instead.
         navigateFallbackDenylist: [/^\/models\//],

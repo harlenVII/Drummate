@@ -106,6 +106,14 @@ const translations = {
         sun: 'Sun',
       },
     },
+    naturalVoice: {
+      title: 'Natural Voice (AI)',
+      description: 'Use AI-powered natural voice instead of system voice',
+      size: 'One-time download: ~86 MB',
+      downloading: 'Downloading voice model...',
+      ready: 'Ready',
+      error: 'Failed to load voice model',
+    },
     llmCoach: {
       buttonLabel: 'AI Coach',
       modalTitle: 'Drummate says...',
@@ -227,6 +235,14 @@ const translations = {
         sat: '六',
         sun: '日',
       },
+    },
+    naturalVoice: {
+      title: '自然语音（AI）',
+      description: '使用AI自然语音替代系统语音',
+      size: '一次性下载：约86 MB',
+      downloading: '正在下载语音模型...',
+      ready: '已就绪',
+      error: '语音模型加载失败',
     },
     llmCoach: {
       buttonLabel: 'AI教练',

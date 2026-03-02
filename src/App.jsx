@@ -156,6 +156,14 @@ function App() {
   const [listeningState, setListeningState] = useState('idle'); // 'idle'|'listening'|'processing'|'feedback'|'error'
   const [voiceTranscript, setVoiceTranscript] = useState(null);
 
+  // Kokoro TTS state
+  const ttsServiceRef = useRef(null);
+  const [kokoroEnabled, setKokoroEnabled] = useState(() => {
+    try { return localStorage.getItem('drummate_kokoro_tts') === 'true'; } catch { return false; }
+  });
+  const [kokoroStatus, setKokoroStatus] = useState('idle'); // 'idle'|'downloading'|'ready'|'error'
+  const [kokoroProgress, setKokoroProgress] = useState({ percentage: 0 });
+
   // LLM encouragement state
   const llmServiceRef = useRef(null);
   const [llmStatus, setLlmStatus] = useState('idle'); // 'idle'|'downloading'|'loading'|'ready'|'generating'|'error'
@@ -528,14 +536,70 @@ function App() {
     [metronomeIsPlaying],
   );
 
+  // TTS wrappers — use Kokoro if enabled and ready, else speechSynthesis
+  const speakText = useCallback((text, lang) => {
+    if (kokoroEnabled && ttsServiceRef.current?.isReady) {
+      ttsServiceRef.current.speak(text, language);
+    } else {
+      speak(text, { lang: lang || getLang(language) });
+    }
+  }, [kokoroEnabled, language]);
+
+  const stopSpeech = useCallback(() => {
+    cancelSpeech();
+    if (ttsServiceRef.current) ttsServiceRef.current.stop();
+  }, []);
+
+  // Load Kokoro TTS model
+  const loadKokoroTts = useCallback(async () => {
+    try {
+      setKokoroStatus('downloading');
+      const { createTtsService } = await import('./services/ttsService');
+      ttsServiceRef.current = createTtsService();
+      await ttsServiceRef.current.load(({ percentage }) => {
+        setKokoroProgress({ percentage });
+      });
+      setKokoroStatus('ready');
+    } catch (err) {
+      console.error('Kokoro TTS load error:', err);
+      setKokoroStatus('error');
+    }
+  }, []);
+
+  // Toggle handler for Kokoro TTS setting
+  const handleToggleKokoro = useCallback(async () => {
+    if (kokoroEnabled) {
+      setKokoroEnabled(false);
+      localStorage.setItem('drummate_kokoro_tts', 'false');
+      return;
+    }
+    setKokoroEnabled(true);
+    localStorage.setItem('drummate_kokoro_tts', 'true');
+    if (!ttsServiceRef.current?.isReady) {
+      await loadKokoroTts();
+    }
+  }, [kokoroEnabled, loadKokoroTts]);
+
+  // Auto-load Kokoro TTS on mount if enabled
+  useEffect(() => {
+    if (!kokoroEnabled) return;
+    if (ttsServiceRef.current?.isReady) return;
+    (async () => {
+      try {
+        const { isTtsCached } = await import('./services/ttsService');
+        if (await isTtsCached()) {
+          await loadKokoroTts();
+        }
+      } catch {}
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Voice command dispatcher — called after STT transcription
   const dispatchVoiceCommand = useCallback(async (intent) => {
-    const lang = getLang(language);
-
     switch (intent.action) {
       case 'metronome.start': {
         if (metronomeIsPlaying) {
-          speak(language === 'zh' ? '已经在播放' : 'Metronome is already running', { lang });
+          speakText(language === 'zh' ? '已经在播放' : 'Metronome is already running');
           return;
         }
         const engine = metronomeEngineRef.current;
@@ -546,7 +610,7 @@ function App() {
         setMetronomeIsPlaying(true);
         setActiveTab('metronome');
         setMetronomeSubpage('metronome');
-        speak(language === 'zh' ? '节拍器已启动' : 'Metronome started', { lang });
+        speakText(language === 'zh' ? '节拍器已启动' : 'Metronome started');
         break;
       }
 
@@ -557,9 +621,9 @@ function App() {
           setMetronomeIsPlaying(false);
           setMetronomeCurrentBeat(-1);
           noSleepRef.current.disable();
-          speak(language === 'zh' ? '节拍器已停止' : 'Metronome stopped', { lang });
+          speakText(language === 'zh' ? '节拍器已停止' : 'Metronome stopped');
         } else {
-          speak(language === 'zh' ? '节拍器没有在运行' : 'Metronome is not running', { lang });
+          speakText(language === 'zh' ? '节拍器没有在运行' : 'Metronome is not running');
         }
         break;
       }
@@ -568,7 +632,7 @@ function App() {
         const bpm = Math.max(30, Math.min(300, intent.value));
         setMetronomeBpm(bpm);
         metronomeEngineRef.current?.setBpm(bpm);
-        speak(language === 'zh' ? `速度已设置为 ${bpm}` : `Tempo set to ${bpm}`, { lang });
+        speakText(language === 'zh' ? `速度已设置为 ${bpm}` : `Tempo set to ${bpm}`);
         break;
       }
 
@@ -580,52 +644,52 @@ function App() {
         const direction = intent.delta > 0
           ? (language === 'zh' ? '加速' : 'Increased')
           : (language === 'zh' ? '减速' : 'Decreased');
-        speak(language === 'zh' ? `${direction}到 ${newBpm}` : `${direction} tempo to ${newBpm}`, { lang });
+        speakText(language === 'zh' ? `${direction}到 ${newBpm}` : `${direction} tempo to ${newBpm}`);
         break;
       }
 
       case 'metronome.setTimeSignature': {
         setMetronomeTimeSignature(intent.value);
         metronomeEngineRef.current?.setBeatsPerMeasure(intent.value[0]);
-        speak(language === 'zh'
+        speakText(language === 'zh'
           ? `拍号设为 ${intent.value[0]} 比 ${intent.value[1]}`
-          : `Time signature set to ${intent.value[0]} over ${intent.value[1]}`, { lang });
+          : `Time signature set to ${intent.value[0]} over ${intent.value[1]}`);
         break;
       }
 
       case 'metronome.setSubdivision': {
         setMetronomeSubdivision(intent.value);
-        speak(language === 'zh' ? `切换到${intent.value}` : `Switched to ${intent.value}`, { lang });
+        speakText(language === 'zh' ? `切换到${intent.value}` : `Switched to ${intent.value}`);
         break;
       }
 
       case 'practice.start': {
         const match = findBestItemMatch(intent.itemQuery, items);
         if (!match) {
-          speak(language === 'zh'
+          speakText(language === 'zh'
             ? `找不到练习项目：${intent.itemQuery}`
-            : `No practice item found for: ${intent.itemQuery}`, { lang });
+            : `No practice item found for: ${intent.itemQuery}`);
           return;
         }
         setActiveTab('practice');
         await handleStart(match.id);
-        speak(language === 'zh' ? `开始练习 ${match.name}` : `Starting practice: ${match.name}`, { lang });
+        speakText(language === 'zh' ? `开始练习 ${match.name}` : `Starting practice: ${match.name}`);
         break;
       }
 
       case 'practice.stop': {
         if (activeItemId == null) {
-          speak(language === 'zh' ? '没有正在进行的练习' : 'No practice session is running', { lang });
+          speakText(language === 'zh' ? '没有正在进行的练习' : 'No practice session is running');
           return;
         }
         await handleStop();
-        speak(language === 'zh' ? '练习已保存' : 'Practice session saved', { lang });
+        speakText(language === 'zh' ? '练习已保存' : 'Practice session saved');
         break;
       }
 
       case 'report.generate': {
         handleTabChange('report');
-        speak(language === 'zh' ? '打开报告' : 'Opening report', { lang });
+        speakText(language === 'zh' ? '打开报告' : 'Opening report');
         break;
       }
 
@@ -636,23 +700,23 @@ function App() {
         } else {
           handleTabChange(intent.tab);
         }
-        speak(language === 'zh' ? `切换到${intent.tab}` : `Navigating to ${intent.tab}`, { lang });
+        speakText(language === 'zh' ? `切换到${intent.tab}` : `Navigating to ${intent.tab}`);
         break;
       }
 
       case 'toggleLanguage': {
         toggleLanguage();
-        speak('Language switched', { lang: 'en-US' });
+        speakText('Language switched');
         break;
       }
 
       case 'unknown':
       default: {
-        speak(language === 'zh' ? '我没听懂，请再说一遍' : "Sorry, I didn't understand that", { lang });
+        speakText(language === 'zh' ? '我没听懂，请再说一遍' : "Sorry, I didn't understand that");
         break;
       }
     }
-  }, [language, metronomeIsPlaying, metronomeBpm, items, activeItemId, handleStart, handleStop, handleTabChange, handleSubpageChange, toggleLanguage]);
+  }, [language, metronomeIsPlaying, metronomeBpm, items, activeItemId, handleStart, handleStop, handleTabChange, handleSubpageChange, toggleLanguage, speakText]);
 
   // LLM encouragement handlers
   const generateEncouragement = useCallback(async () => {
@@ -665,13 +729,13 @@ function App() {
       const message = await llmServiceRef.current.generateEncouragement(context, language);
       setLlmMessage(message);
       setLlmStatus('ready');
-      speak(message, { lang: getLang(language), rate: 0.95 });
+      speakText(message);
     } catch (err) {
       console.error('LLM generation error:', err);
       setLlmStatus('error');
       setLlmError(err.message);
     }
-  }, [items, totals, activeItemId, elapsedTime, language]);
+  }, [items, totals, activeItemId, elapsedTime, language, speakText]);
 
   const loadAndGenerate = useCallback(async (fromCache) => {
     try {
@@ -692,13 +756,13 @@ function App() {
       const message = await llmServiceRef.current.generateEncouragement(context, language);
       setLlmMessage(message);
       setLlmStatus('ready');
-      speak(message, { lang: getLang(language), rate: 0.95 });
+      speakText(message);
     } catch (err) {
       console.error('LLM load/generate error:', err);
       setLlmStatus('error');
       setLlmError(err.message);
     }
-  }, [items, totals, activeItemId, elapsedTime, language]);
+  }, [items, totals, activeItemId, elapsedTime, language, speakText]);
 
   const handleLlmDownload = useCallback(() => {
     loadAndGenerate(false);
@@ -848,6 +912,10 @@ function App() {
       if (llmServiceRef.current) {
         llmServiceRef.current.destroy();
         llmServiceRef.current = null;
+      }
+      if (ttsServiceRef.current) {
+        ttsServiceRef.current.destroy();
+        ttsServiceRef.current = null;
       }
     };
   }, []);
@@ -1034,6 +1102,10 @@ function App() {
         user={user}
         timeUnit={timeUnit}
         onToggleTimeUnit={() => setTimeUnit((u) => (u === 'minutes' ? 'hours' : 'minutes'))}
+        kokoroEnabled={kokoroEnabled}
+        kokoroStatus={kokoroStatus}
+        kokoroProgress={kokoroProgress}
+        onToggleKokoro={handleToggleKokoro}
         handsFreeMode={handsFreeMode}
         onToggleHandsFree={handleToggleHandsFree}
         wakeWordLoading={wakeWordLoading}
@@ -1061,7 +1133,7 @@ function App() {
         progress={llmProgress}
         message={llmMessage}
         error={llmError}
-        onClose={() => { setLlmModalOpen(false); cancelSpeech(); }}
+        onClose={() => { setLlmModalOpen(false); stopSpeech(); }}
         onDownload={handleLlmDownload}
         onRegenerate={generateEncouragement}
       />

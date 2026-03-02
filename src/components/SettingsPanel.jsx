@@ -9,6 +9,10 @@ function SettingsPanel({
   user,
   timeUnit,
   onToggleTimeUnit,
+  kokoroEnabled,
+  kokoroStatus,
+  kokoroProgress,
+  onToggleKokoro,
   handsFreeMode,
   onToggleHandsFree,
   wakeWordLoading,
@@ -103,6 +107,56 @@ function SettingsPanel({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Natural Voice (AI) */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">{t('naturalVoice.title')}</span>
+              <button
+                onClick={onToggleKokoro}
+                disabled={kokoroStatus === 'downloading'}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  kokoroEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                } ${kokoroStatus === 'downloading' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                role="switch"
+                aria-checked={kokoroEnabled}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    kokoroEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {kokoroStatus === 'downloading' && (
+              <div className="flex flex-col gap-1">
+                <p className="text-xs text-blue-500">{t('naturalVoice.downloading')}</p>
+                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                    style={{ width: `${kokoroProgress.percentage}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {kokoroStatus === 'ready' && kokoroEnabled && (
+              <p className="text-xs text-green-600">{t('naturalVoice.ready')}</p>
+            )}
+
+            {kokoroStatus === 'error' && (
+              <p className="text-xs text-red-500">{t('naturalVoice.error')}</p>
+            )}
+
+            {kokoroStatus === 'idle' && !kokoroEnabled && (
+              <p className="text-xs text-gray-400">{t('naturalVoice.description')}</p>
+            )}
+
+            {kokoroStatus === 'idle' && !kokoroEnabled && (
+              <p className="text-xs text-gray-400">{t('naturalVoice.size')}</p>
+            )}
           </div>
 
           {/* Hands-Free Mode */}
