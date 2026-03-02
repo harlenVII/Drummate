@@ -1,12 +1,12 @@
 /**
  * ttsService.js — Kokoro.js TTS wrapper for natural on-device speech synthesis.
  * Uses WASM backend for iOS Safari compatibility.
+ * Uses streaming API to avoid blocking the main thread on long text.
  */
 
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 const DTYPE = 'q8';
 const DEVICE = 'wasm';
-const SAMPLE_RATE = 24000;
 
 const VOICES = {
   en: 'af_bella',
@@ -34,6 +34,7 @@ export function createTtsService() {
   let loaded = false;
   let audioCtx = null;
   let currentSource = null;
+  let stopped = false;
 
   return {
     get isReady() {
@@ -62,37 +63,46 @@ export function createTtsService() {
       if (!tts || !loaded) return;
 
       // Stop any current playback
-      if (currentSource) {
-        try { currentSource.stop(); } catch {}
-        currentSource = null;
-      }
-
-      const voice = VOICES[language] || VOICES.en;
-      const audio = await tts.generate(text, { voice });
+      this.stop();
+      stopped = false;
 
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-
-      // Resume if suspended (iOS requires user gesture)
       if (audioCtx.state === 'suspended') {
         await audioCtx.resume();
       }
 
-      const buffer = audioCtx.createBuffer(1, audio.audio.length, SAMPLE_RATE);
-      buffer.getChannelData(0).set(audio.audio);
+      const voice = VOICES[language] || VOICES.en;
 
-      const source = audioCtx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioCtx.destination);
-      source.onended = () => {
-        if (currentSource === source) currentSource = null;
-      };
-      currentSource = source;
-      source.start(0);
+      // Use streaming to process text in chunks, reducing main-thread blocking
+      const stream = tts.stream(text, { voice });
+      for await (const { audio } of stream) {
+        if (stopped) break;
+
+        const sampleRate = audio.sampling_rate || 24000;
+        const buffer = audioCtx.createBuffer(1, audio.audio.length, sampleRate);
+        buffer.getChannelData(0).set(audio.audio);
+
+        // Play this chunk and wait for it to finish before the next
+        await new Promise((resolve) => {
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.connect(audioCtx.destination);
+          source.onended = () => {
+            if (currentSource === source) currentSource = null;
+            resolve();
+          };
+          currentSource = source;
+          source.start(0);
+        });
+
+        if (stopped) break;
+      }
     },
 
     stop() {
+      stopped = true;
       if (currentSource) {
         try { currentSource.stop(); } catch {}
         currentSource = null;

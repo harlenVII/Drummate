@@ -539,7 +539,10 @@ function App() {
   // TTS wrappers — use Kokoro if enabled and ready, else speechSynthesis
   const speakText = useCallback((text, lang) => {
     if (kokoroEnabled && ttsServiceRef.current?.isReady) {
-      ttsServiceRef.current.speak(text, language);
+      ttsServiceRef.current.speak(text, language).catch((err) => {
+        console.error('Kokoro TTS error, falling back to system voice:', err);
+        speak(text, { lang: lang || getLang(language) });
+      });
     } else {
       speak(text, { lang: lang || getLang(language) });
     }
