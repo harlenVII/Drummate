@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Drummate is a Progressive Web App (PWA) for drummers to track practice sessions, view reports, and use an integrated metronome with a rhythm sequencer. Built with React 19, Vite 7, Tailwind CSS v4, and Dexie.js (IndexedDB) with PocketBase for cross-device sync.
 
 **Key docs:**
-- [DEVELOPMENT.md](./DEVELOPMENT.md) — Full architecture, project structure, completed phases
-- [PROJECT_PLAN.md](./PROJECT_PLAN.md) — Roadmap with task breakdowns and design doc links
+- [DEVELOPMENT.md](./docs/DEVELOPMENT.md) — Full architecture, project structure, completed phases
+- [PROJECT_PLAN.md](./docs/PROJECT_PLAN.md) — Roadmap with task breakdowns and design doc links
 
 ## Development Commands
 
