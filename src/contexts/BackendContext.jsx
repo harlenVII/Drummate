@@ -5,11 +5,7 @@ import { BACKEND_TYPES } from '../services/backends/backendInterface';
 const BackendContext = createContext();
 
 function getInitialBackend() {
-  try {
-    const saved = localStorage.getItem('drummate_backend');
-    if (saved === BACKEND_TYPES.FIREBASE) return BACKEND_TYPES.FIREBASE;
-  } catch { /* ignore */ }
-  return BACKEND_TYPES.POCKETBASE;
+  return BACKEND_TYPES.FIREBASE;
 }
 
 // Lazy-load firebase backend to avoid loading the Firebase SDK when using PocketBase
