@@ -119,6 +119,10 @@ const translations = {
       ready: 'Ready',
       error: 'Failed to load voice model',
     },
+    aiCoach: {
+      title: 'AI Coach',
+      description: 'Get personalized encouragement based on your practice data',
+    },
     llmCoach: {
       buttonLabel: 'AI Coach',
       modalTitle: 'Drummate says...',
@@ -253,6 +257,10 @@ const translations = {
       downloading: '正在下载语音模型...',
       ready: '已就绪',
       error: '语音模型加载失败',
+    },
+    aiCoach: {
+      title: 'AI教练',
+      description: '基于你的练习数据获取个性化鼓励',
     },
     llmCoach: {
       buttonLabel: 'AI教练',

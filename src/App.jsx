@@ -165,6 +165,11 @@ function App() {
   const [kokoroStatus, setKokoroStatus] = useState('idle'); // 'idle'|'downloading'|'ready'|'error'
   const [kokoroProgress, setKokoroProgress] = useState({ percentage: 0 });
 
+  // AI Coach toggle (off by default)
+  const [aiCoachEnabled, setAiCoachEnabled] = useState(() => {
+    try { return localStorage.getItem('drummate_ai_coach_enabled') === 'true'; } catch { return false; }
+  });
+
   // LLM encouragement state
   const llmServiceRef = useRef(null);
   const [llmStatus, setLlmStatus] = useState('idle'); // 'idle'|'downloading'|'loading'|'ready'|'generating'|'error'
@@ -1110,6 +1115,14 @@ function App() {
         kokoroStatus={kokoroStatus}
         kokoroProgress={kokoroProgress}
         onToggleKokoro={handleToggleKokoro}
+        aiCoachEnabled={aiCoachEnabled}
+        onToggleAiCoach={() => {
+          setAiCoachEnabled((prev) => {
+            const next = !prev;
+            try { localStorage.setItem('drummate_ai_coach_enabled', String(next)); } catch {}
+            return next;
+          });
+        }}
         handsFreeMode={handsFreeMode}
         onToggleHandsFree={handleToggleHandsFree}
         wakeWordLoading={wakeWordLoading}
@@ -1126,21 +1139,25 @@ function App() {
         />
       )}
 
-      <EncouragementButton
-        status={llmStatus}
-        onPress={handleEncouragementPress}
-      />
+      {aiCoachEnabled && (
+        <>
+          <EncouragementButton
+            status={llmStatus}
+            onPress={handleEncouragementPress}
+          />
 
-      <EncouragementModal
-        isOpen={llmModalOpen}
-        status={llmStatus}
-        progress={llmProgress}
-        message={llmMessage}
-        error={llmError}
-        onClose={() => { setLlmModalOpen(false); stopSpeech(); }}
-        onDownload={handleLlmDownload}
-        onRegenerate={generateEncouragement}
-      />
+          <EncouragementModal
+            isOpen={llmModalOpen}
+            status={llmStatus}
+            progress={llmProgress}
+            message={llmMessage}
+            error={llmError}
+            onClose={() => { setLlmModalOpen(false); stopSpeech(); }}
+            onDownload={handleLlmDownload}
+            onRegenerate={generateEncouragement}
+          />
+        </>
+      )}
 
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>

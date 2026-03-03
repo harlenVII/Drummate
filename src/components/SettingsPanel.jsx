@@ -13,6 +13,8 @@ function SettingsPanel({
   kokoroStatus,
   kokoroProgress,
   onToggleKokoro,
+  aiCoachEnabled,
+  onToggleAiCoach,
   handsFreeMode,
   onToggleHandsFree,
   wakeWordLoading,
@@ -156,6 +158,30 @@ function SettingsPanel({
 
             {kokoroStatus === 'idle' && !kokoroEnabled && (
               <p className="text-xs text-gray-400">{t('naturalVoice.size')}</p>
+            )}
+          </div>
+
+          {/* AI Coach */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">{t('aiCoach.title')}</span>
+              <button
+                onClick={onToggleAiCoach}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  aiCoachEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                } cursor-pointer`}
+                role="switch"
+                aria-checked={aiCoachEnabled}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    aiCoachEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {!aiCoachEnabled && (
+              <p className="text-xs text-gray-400">{t('aiCoach.description')}</p>
             )}
           </div>
 
