@@ -237,6 +237,35 @@ function App() {
     loadData();
   }, [loadData]);
 
+  // Refresh practice data when the calendar day changes (app left open past midnight)
+  useEffect(() => {
+    let currentDay = getTodayString();
+
+    const checkDayChange = () => {
+      const now = getTodayString();
+      if (now !== currentDay) {
+        currentDay = now;
+        loadData();
+      }
+    };
+
+    // Check every 30 seconds for a day change
+    const id = setInterval(checkDayChange, 30_000);
+
+    // Also refresh when the tab becomes visible again (e.g. phone unlocked next morning)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkDayChange();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [loadData]);
+
   // Sync with PocketBase on sign-in (wait for token refresh to complete)
   useEffect(() => {
     if (!user || !authReady) return;
