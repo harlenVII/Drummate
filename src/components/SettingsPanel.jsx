@@ -25,6 +25,7 @@ function SettingsPanel({
 }) {
   const { t } = useLanguage();
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
+  const kokoroDisabled = !aiCoachEnabled && !handsFreeMode;
 
   return (
     <>
@@ -117,10 +118,10 @@ function SettingsPanel({
               <span className="text-sm font-medium text-gray-700">{t('naturalVoice.title')}</span>
               <button
                 onClick={onToggleKokoro}
-                disabled={kokoroStatus === 'downloading'}
+                disabled={kokoroStatus === 'downloading' || kokoroDisabled}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
                   kokoroEnabled ? 'bg-blue-600' : 'bg-gray-300'
-                } ${kokoroStatus === 'downloading' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                } ${kokoroStatus === 'downloading' || kokoroDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 role="switch"
                 aria-checked={kokoroEnabled}
               >
@@ -152,11 +153,15 @@ function SettingsPanel({
               <p className="text-xs text-red-500">{t('naturalVoice.error')}</p>
             )}
 
-            {kokoroStatus === 'idle' && !kokoroEnabled && (
+            {kokoroDisabled && (
+              <p className="text-xs text-gray-400">{t('naturalVoice.requires')}</p>
+            )}
+
+            {!kokoroDisabled && kokoroStatus === 'idle' && !kokoroEnabled && (
               <p className="text-xs text-gray-400">{t('naturalVoice.description')}</p>
             )}
 
-            {kokoroStatus === 'idle' && !kokoroEnabled && (
+            {!kokoroDisabled && kokoroStatus === 'idle' && !kokoroEnabled && (
               <p className="text-xs text-gray-400">{t('naturalVoice.size')}</p>
             )}
           </div>

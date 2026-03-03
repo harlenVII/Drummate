@@ -589,6 +589,14 @@ function App() {
     }
   }, [kokoroEnabled, loadKokoroTts]);
 
+  // Auto-disable Kokoro TTS when neither AI Coach nor Hands-Free is on
+  useEffect(() => {
+    if (!aiCoachEnabled && !handsFreeMode && kokoroEnabled) {
+      setKokoroEnabled(false);
+      localStorage.setItem('drummate_kokoro_tts', 'false');
+    }
+  }, [aiCoachEnabled, handsFreeMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-load Kokoro TTS on mount if enabled
   useEffect(() => {
     if (!kokoroEnabled) return;

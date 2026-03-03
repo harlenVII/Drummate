@@ -118,6 +118,7 @@ const translations = {
       downloading: 'Downloading voice model...',
       ready: 'Ready',
       error: 'Failed to load voice model',
+      requires: 'Enable AI Coach or Hands-Free Mode first',
     },
     aiCoach: {
       title: 'AI Coach',
@@ -257,6 +258,7 @@ const translations = {
       downloading: '正在下载语音模型...',
       ready: '已就绪',
       error: '语音模型加载失败',
+      requires: '请先启用AI教练或免提模式',
     },
     aiCoach: {
       title: 'AI教练',
