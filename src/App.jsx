@@ -10,6 +10,7 @@ import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
+import { useBackend } from './contexts/BackendContext';
 import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
 import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
@@ -30,12 +31,12 @@ import {
   getLogsByDate,
   getLogsByDateRange,
 } from './services/database';
-import { pushItem, pushLog, pushDeleteItem, pushRenameItem, pullAll, pushAllLocal, flushSyncQueue, subscribeToChanges } from './services/sync';
 import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd } from './utils/dateHelpers';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
   const { user, loading, authReady, signOut } = useAuth();
+  const { backend } = useBackend();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -240,16 +241,16 @@ function App() {
 
     const init = async () => {
       try {
-        await flushSyncQueue(user.id);
-        await pushAllLocal(user.id);
-        await pullAll(user.id);
+        await backend.flushSyncQueue(user.id);
+        await backend.pushAllLocal(user.id);
+        await backend.pullAll(user.id);
         await loadData();
       } catch (err) {
         console.error('Sync init failed:', err);
       }
       // Subscribe to real-time changes only after initial sync completes
       if (!cancelled) {
-        unsubscribe = subscribeToChanges(loadData);
+        unsubscribe = backend.subscribeToChanges(loadData);
       }
     };
     init();
@@ -258,7 +259,7 @@ function App() {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
-  }, [user, authReady, loadData]);
+  }, [user, authReady, loadData, backend]);
 
   // Initialize metronome engine once
   useEffect(() => {
@@ -355,13 +356,13 @@ function App() {
       setElapsedTime(0);
       if (user) {
         const log = await db.practiceLogs.get(logId);
-        pushLog(log, user.id).catch(console.error);
+        backend.pushLog(log, user.id).catch(console.error);
       }
     } else {
       setActiveItemId(null);
       setElapsedTime(0);
     }
-  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType]);
+  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType, backend]);
 
   const handleStart = useCallback(
     async (itemId) => {
@@ -375,7 +376,7 @@ function App() {
           const logId = await addLog(activeItemId, elapsedTime);
           if (user) {
             const log = await db.practiceLogs.get(logId);
-            pushLog(log, user.id).catch(console.error);
+            backend.pushLog(log, user.id).catch(console.error);
           }
         }
       }
@@ -401,7 +402,7 @@ function App() {
         await loadData();
       }
     },
-    [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType],
+    [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType, backend],
   );
 
   const handleStop = useCallback(async () => {
@@ -421,10 +422,10 @@ function App() {
       await loadData();
       if (user) {
         const item = await db.practiceItems.get(localId);
-        pushItem(item, user.id).catch(console.error);
+        backend.pushItem(item, user.id).catch(console.error);
       }
     },
-    [items, loadData, user, t],
+    [items, loadData, user, t, backend],
   );
 
   const handleRenameItem = useCallback(
@@ -433,10 +434,10 @@ function App() {
       await renameItem(id, newName);
       await loadData();
       if (user && item) {
-        pushRenameItem(item.name, newName, user.id).catch(console.error);
+        backend.pushRenameItem(item.name, newName, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [loadData, user, backend],
   );
 
   const handleDeleteItem = useCallback(
@@ -450,10 +451,10 @@ function App() {
       await deleteItem(id);
       await loadData();
       if (user && item) {
-        pushDeleteItem(item.name, user.id).catch(console.error);
+        backend.pushDeleteItem(item.name, user.id).catch(console.error);
       }
     },
-    [activeItemId, stopTimer, loadData, user],
+    [activeItemId, stopTimer, loadData, user, backend],
   );
 
   const handleSetEditing = useCallback(

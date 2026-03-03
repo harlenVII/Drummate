@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useBackend } from '../contexts/BackendContext';
+import { BACKEND_TYPES } from '../services/backends/backendInterface';
 
 export default function AuthScreen() {
   const { signIn, signUp, sessionExpired } = useAuth();
   const { t, language, toggleLanguage } = useLanguage();
+  const { backendType, switchBackend } = useBackend();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,6 +47,26 @@ export default function AuthScreen() {
           >
             {language === 'en' ? '中文' : 'EN'}
           </button>
+        </div>
+
+        {/* Backend selector */}
+        <div className="flex items-center justify-between mb-4 px-1">
+          <span className="text-sm text-gray-500">{t('backend.label')}</span>
+          <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+            {[BACKEND_TYPES.POCKETBASE, BACKEND_TYPES.FIREBASE].map((type) => (
+              <button
+                key={type}
+                onClick={() => switchBackend(type)}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  backendType === type
+                    ? 'bg-white text-gray-800 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {t(`backend.${type}`)}
+              </button>
+            ))}
+          </div>
         </div>
 
         {sessionExpired && (
