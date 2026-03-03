@@ -6,8 +6,8 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import {
-  collection, query, where, getDocs, addDoc, updateDoc, deleteDoc,
-  onSnapshot, serverTimestamp,
+  collection, query, where, getDocs, setDoc, updateDoc, deleteDoc,
+  onSnapshot, serverTimestamp, doc,
 } from 'firebase/firestore';
 import { getFirebaseApp } from '../firebase';
 import { db } from '../database';
@@ -100,12 +100,12 @@ const firebaseBackend = {
   // Sync — push
   async pushItem(localItem, userId) {
     try {
-      const existing = await findRemoteItemByName(userId, localItem.name);
-      if (existing) return;
-      await addDoc(itemsRef(userId), {
+      // Deterministic doc ID based on name — setDoc is idempotent, prevents duplicates
+      const docId = encodeURIComponent(localItem.name);
+      await setDoc(doc(itemsRef(userId), docId), {
         name: localItem.name,
         created: serverTimestamp(),
-      });
+      }, { merge: true });
     } catch (err) {
       if (!navigator.onLine) {
         await queueSync('create_item', { name: localItem.name });
@@ -120,9 +120,7 @@ const firebaseBackend = {
       const item = await db.practiceItems.get(localLog.itemId);
       if (!item) return;
 
-      const existingLog = await findRemoteLogByUid(userId, localLog.uid);
-      if (existingLog) return;
-
+      const remoteItemDocId = encodeURIComponent(item.name);
       const remoteItem = await findRemoteItemByName(userId, item.name);
       if (!remoteItem) {
         await queueSync('create_log', {
@@ -132,13 +130,15 @@ const firebaseBackend = {
         return;
       }
 
-      await addDoc(logsRef(userId), {
+      // Use uid as doc ID to prevent duplicates from race conditions
+      const logDocRef = doc(logsRef(userId), localLog.uid);
+      await setDoc(logDocRef, {
         item_name: item.name,
         date: localLog.date,
         duration: localLog.duration,
         uid: localLog.uid,
         created: serverTimestamp(),
-      });
+      }, { merge: true });
     } catch (err) {
       if (!navigator.onLine) {
         const item = await db.practiceItems.get(localLog.itemId);
@@ -154,16 +154,14 @@ const firebaseBackend = {
 
   async pushDeleteItem(name, userId) {
     try {
-      const remoteItem = await findRemoteItemByName(userId, name);
-      if (remoteItem) {
-        // Also delete all logs for this item
-        const q = query(logsRef(userId), where('item_name', '==', name));
-        const snap = await getDocs(q);
-        for (const logDoc of snap.docs) {
-          await deleteDoc(logDoc.ref);
-        }
-        await deleteDoc(remoteItem.ref);
+      const docId = encodeURIComponent(name);
+      // Delete all logs for this item
+      const q = query(logsRef(userId), where('item_name', '==', name));
+      const snap = await getDocs(q);
+      for (const logDoc of snap.docs) {
+        await deleteDoc(logDoc.ref);
       }
+      await deleteDoc(doc(itemsRef(userId), docId));
     } catch (err) {
       if (!navigator.onLine) {
         await queueSync('delete_item', { name });
@@ -175,15 +173,20 @@ const firebaseBackend = {
 
   async pushRenameItem(oldName, newName, userId) {
     try {
-      const remoteItem = await findRemoteItemByName(userId, oldName);
-      if (remoteItem) {
-        await updateDoc(remoteItem.ref, { name: newName });
-        // Also update denormalized item_name in logs
-        const q = query(logsRef(userId), where('item_name', '==', oldName));
-        const snap = await getDocs(q);
-        for (const logDoc of snap.docs) {
-          await updateDoc(logDoc.ref, { item_name: newName });
-        }
+      // Delete old doc and create new one with new deterministic ID
+      const oldDocId = encodeURIComponent(oldName);
+      const newDocId = encodeURIComponent(newName);
+      const oldRef = doc(itemsRef(userId), oldDocId);
+      const newRef = doc(itemsRef(userId), newDocId);
+
+      await setDoc(newRef, { name: newName, created: serverTimestamp() }, { merge: true });
+      await deleteDoc(oldRef);
+
+      // Also update denormalized item_name in logs
+      const q = query(logsRef(userId), where('item_name', '==', oldName));
+      const snap = await getDocs(q);
+      for (const logDoc of snap.docs) {
+        await updateDoc(logDoc.ref, { item_name: newName });
       }
     } catch (err) {
       if (!navigator.onLine) {
