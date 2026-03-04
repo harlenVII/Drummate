@@ -32,5 +32,6 @@ coverage/
 
 # Misc
 .cache/
+.worktrees/
 
 drummate.pem
