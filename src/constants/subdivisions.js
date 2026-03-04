@@ -7,5 +7,6 @@ export const SUBDIVISIONS = [
   { key: 'eighthTwoSixteenths', pattern: [0, 0.5, 0.75] },
   { key: 'twoSixteenthsEighth', pattern: [0, 0.25, 0.5] },
   { key: 'sixteenthEighthSixteenth', pattern: [0, 0.25, 0.75] },
+  { key: 'offbeatSixteenths', pattern: [0.25, 0.75] },
   { key: 'rest', pattern: null },
 ];

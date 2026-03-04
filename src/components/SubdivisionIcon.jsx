@@ -166,6 +166,20 @@ function SixteenthEighthSixteenth() {
   );
 }
 
+// Two offbeat sixteenth notes (positions 2 and 4): rest-note-rest-note
+function OffbeatSixteenths() {
+  return (
+    <svg viewBox="0 0 32 32" className="w-8 h-8" fill="none">
+      <Beam x1={9.5} x2={25.5} y={6} />
+      <Beam x1={9.5} x2={25.5} y={9.5} />
+      <Stem x={9.5} bottom={24} top={6} />
+      <Stem x={25.5} bottom={24} top={6} />
+      <Notehead cx={7} cy={24} />
+      <Notehead cx={23} cy={24} />
+    </svg>
+  );
+}
+
 // Quarter rest symbol
 function Rest() {
   return (
@@ -194,6 +208,7 @@ const ICONS = {
   eighthTwoSixteenths: EighthTwoSixteenths,
   twoSixteenthsEighth: TwoSixteenthsEighth,
   sixteenthEighthSixteenth: SixteenthEighthSixteenth,
+  offbeatSixteenths: OffbeatSixteenths,
   rest: Rest,
 };
 

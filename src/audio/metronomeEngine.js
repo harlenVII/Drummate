@@ -549,6 +549,12 @@ export class MetronomeEngine {
           this.onSequenceBeat?.(slotIdx);
         }, delay);
       }
+
+      // Account for patterns that don't start at 0 (e.g. offbeat sixteenths [0.25, 0.75])
+      const newFirstOffset = this.subdivisionPattern[0];
+      if (newFirstOffset > 0) {
+        this.nextNoteTime += newFirstOffset * secondsPerBeat;
+      }
     } else {
       const prevOffset = pattern[this.subdivisionIndex - 1];
       const nextOffset = pattern[this.subdivisionIndex];
