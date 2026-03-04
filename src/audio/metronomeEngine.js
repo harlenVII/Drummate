@@ -303,7 +303,6 @@ export class MetronomeEngine {
 
     this.currentBeat = 0;
     this.subdivisionIndex = 0;
-    this.nextNoteTime = this.audioCtx.currentTime + 0.05;
     this.isPlaying = true;
 
     // Reset sequence to first slot
@@ -318,6 +317,8 @@ export class MetronomeEngine {
         this._isRestBeat = false;
       }
     }
+
+    this.nextNoteTime = this.audioCtx.currentTime + 0.05;
 
     console.log('[Metronome] Scheduling start — nextNoteTime:', this.nextNoteTime.toFixed(4),
       'ctxTime:', this.audioCtx.currentTime.toFixed(4),
@@ -464,8 +465,9 @@ export class MetronomeEngine {
   _scheduleNote(time, beat, subIndex) {
     this._noteCount++;
 
-    // Skip audio for rest beats, but still fire callback
-    if (this._isRestBeat) {
+    // Skip audio for rest beats or per-note rests (negative offsets), but still fire callback
+    const isPerNoteRest = this.subdivisionPattern[subIndex] < 0;
+    if (this._isRestBeat || isPerNoteRest) {
       const delay = Math.max(0, (time - this.audioCtx.currentTime) * 1000);
       setTimeout(() => {
         this.onBeat?.({ beat, subdivisionIndex: subIndex });
@@ -521,7 +523,7 @@ export class MetronomeEngine {
     this.subdivisionIndex++;
 
     if (this.subdivisionIndex >= pattern.length) {
-      const lastOffset = pattern[pattern.length - 1];
+      const lastOffset = Math.abs(pattern[pattern.length - 1]);
       this.nextNoteTime += (1 - lastOffset) * secondsPerBeat;
       this.subdivisionIndex = 0;
       this.currentBeat = (this.currentBeat + 1) % this.beatsPerMeasure;
@@ -550,14 +552,9 @@ export class MetronomeEngine {
         }, delay);
       }
 
-      // Account for patterns that don't start at 0 (e.g. offbeat sixteenths [0.25, 0.75])
-      const newFirstOffset = this.subdivisionPattern[0];
-      if (newFirstOffset > 0) {
-        this.nextNoteTime += newFirstOffset * secondsPerBeat;
-      }
     } else {
-      const prevOffset = pattern[this.subdivisionIndex - 1];
-      const nextOffset = pattern[this.subdivisionIndex];
+      const prevOffset = Math.abs(pattern[this.subdivisionIndex - 1]);
+      const nextOffset = Math.abs(pattern[this.subdivisionIndex]);
       this.nextNoteTime += (nextOffset - prevOffset) * secondsPerBeat;
     }
   }
