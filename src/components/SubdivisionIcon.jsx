@@ -74,13 +74,13 @@ function Sextuplet() {
   return (
     <svg viewBox="0 0 60 36" className="w-15 h-9" fill="none">
       {/* Bracket */}
-      <line x1={5} y1={3} x2={5} y2={6} stroke="currentColor" strokeWidth={1} />
-      <line x1={5} y1={3} x2={19} y2={3} stroke="currentColor" strokeWidth={1} />
-      <text x={27} y={5.5} textAnchor="middle" fill="currentColor" fontSize={7} fontWeight="bold" fontStyle="italic">6</text>
-      <line x1={35} y1={3} x2={55} y2={3} stroke="currentColor" strokeWidth={1} />
-      <line x1={55} y1={3} x2={55} y2={6} stroke="currentColor" strokeWidth={1} />
+      <line x1={8.5} y1={3} x2={8.5} y2={6} stroke="currentColor" strokeWidth={1} />
+      <line x1={8.5} y1={3} x2={27} y2={3} stroke="currentColor" strokeWidth={1} />
+      <text x={32.25} y={5.5} textAnchor="middle" fill="currentColor" fontSize={7} fontWeight="bold" fontStyle="italic">6</text>
+      <line x1={37.5} y1={3} x2={56} y2={3} stroke="currentColor" strokeWidth={1} />
+      <line x1={56} y1={3} x2={56} y2={6} stroke="currentColor" strokeWidth={1} />
       {/* Notes */}
-      <Beam x1={8.5} x2={51.5} y={10} />
+      <Beam x1={8.5} x2={56} y={10} />
       <Stem x={8.5} bottom={28} top={10} />
       <Stem x={18} bottom={28} top={10} />
       <Stem x={27.5} bottom={28} top={10} />
