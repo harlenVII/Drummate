@@ -19,6 +19,7 @@ export async function pushItem(localItem, userId) {
     await pb.collection('practice_items').create({
       name: localItem.name,
       user: userId,
+      sort_order: localItem.sortOrder ?? 0,
     }, { requestKey: null });
   } catch (err) {
     if (!navigator.onLine) {
@@ -113,6 +114,28 @@ export async function pushRenameItem(oldName, newName, userId) {
   }
 }
 
+export async function pushReorder(items, userId) {
+  try {
+    for (const item of items) {
+      const remoteItems = await pb.collection('practice_items').getList(1, 1, {
+        filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: item.name }),
+        requestKey: null,
+      });
+      if (remoteItems.totalItems > 0) {
+        await pb.collection('practice_items').update(remoteItems.items[0].id, {
+          sort_order: item.sortOrder,
+        }, { requestKey: null });
+      }
+    }
+  } catch (err) {
+    if (!navigator.onLine) {
+      await queueSync('reorder', { items: items.map(i => ({ name: i.name, sortOrder: i.sortOrder })) });
+    } else {
+      throw err;
+    }
+  }
+}
+
 // --- Sync queue for offline writes ---
 
 async function queueSync(action, payload) {
@@ -138,6 +161,8 @@ export async function flushSyncQueue(userId) {
         await pushDeleteItem(entry.payload.name, userId);
       } else if (entry.action === 'rename_item') {
         await pushRenameItem(entry.payload.oldName, entry.payload.newName, userId);
+      } else if (entry.action === 'reorder') {
+        await pushReorder(entry.payload.items, userId);
       }
       await db.syncQueue.delete(entry.id);
     } catch (err) {
@@ -152,7 +177,7 @@ export async function flushSyncQueue(userId) {
 export async function pullAll(userId) {
   const remoteItems = await pb.collection('practice_items').getFullList({
     filter: pb.filter('user = {:userId}', { userId }),
-    sort: 'created',
+    sort: 'sort_order',
     requestKey: null,
   });
 
@@ -160,7 +185,9 @@ export async function pullAll(userId) {
     const existing = await db.practiceItems
       .where('name').equals(remote.name).first();
     if (!existing) {
-      await db.practiceItems.add({ name: remote.name });
+      await db.practiceItems.add({ name: remote.name, sortOrder: remote.sort_order ?? 0 });
+    } else if (remote.sort_order != null && existing.sortOrder !== remote.sort_order) {
+      await db.practiceItems.update(existing.id, { sortOrder: remote.sort_order });
     }
   }
 
@@ -220,6 +247,12 @@ export function subscribeToChanges(onDataChanged) {
         onDataChanged();
       }
     } else if (e.action === 'update') {
+      // Handle sort_order updates
+      const localByName = await db.practiceItems
+        .where('name').equals(e.record.name).first();
+      if (localByName && e.record.sort_order != null && localByName.sortOrder !== e.record.sort_order) {
+        await db.practiceItems.update(localByName.id, { sortOrder: e.record.sort_order });
+      }
       // We don't know the old name from the SSE event, so check if the new
       // name already exists locally. If not, a rename happened on another
       // device — find the local item that doesn't match any remote record.
