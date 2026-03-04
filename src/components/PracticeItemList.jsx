@@ -1,6 +1,43 @@
 import { useState, useEffect, useCallback } from 'react';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { formatTime } from '../utils/formatTime';
 import { useLanguage } from '../contexts/LanguageContext';
+
+function DragHandle({ listeners, attributes }) {
+  return (
+    <button
+      {...listeners}
+      {...attributes}
+      className="p-2 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none"
+      aria-label="Drag to reorder"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
+      </svg>
+    </button>
+  );
+}
+
+function SortableItem({ item, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div className="bg-white rounded-lg shadow-sm p-4 flex items-center">
+        <DragHandle listeners={listeners} attributes={attributes} />
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function PracticeItemList({
   items,
@@ -14,12 +51,30 @@ function PracticeItemList({
   onAddItem,
   onRenameItem,
   onDeleteItem,
+  onReorder,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = items.findIndex(i => i.id === active.id);
+    const newIndex = items.findIndex(i => i.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newItems = [...items];
+    const [moved] = newItems.splice(oldIndex, 1);
+    newItems.splice(newIndex, 0, moved);
+    onReorder(newItems.map(i => i.id));
+  };
 
   // Keyboard shortcuts (only in normal/timer mode, not edit mode)
   const handleKeyDown = useCallback((e) => {
@@ -107,50 +162,58 @@ function PracticeItemList({
   if (editing) {
     return (
       <div className="flex flex-col gap-3">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between"
-          >
-            {editingItemId === item.id ? (
-              <input
-                type="text"
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={handleRenameKeyDown}
-                onBlur={commitRename}
-                autoFocus
-                className="flex-1 mr-3 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            ) : (
-              <span
-                onClick={() => startRename(item)}
-                className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 transition-colors"
-                title="Click to rename"
-              >
-                {item.name}
-              </span>
-            )}
-            <button
-              onClick={() => onDeleteItem(item.id)}
-              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-              title="Delete item"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-          </div>
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            {items.map((item) => (
+              <SortableItem key={item.id} item={item}>
+                <div className="flex-1 flex items-center justify-between ml-2">
+                  {editingItemId === item.id ? (
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      onKeyDown={handleRenameKeyDown}
+                      onBlur={commitRename}
+                      autoFocus
+                      className="flex-1 mr-3 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  ) : (
+                    <span
+                      onClick={() => startRename(item)}
+                      className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 transition-colors"
+                      title="Click to rename"
+                    >
+                      {item.name}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => onDeleteItem(item.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete item"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </SortableItem>
+            ))}
+          </SortableContext>
+        </DndContext>
 
         {items.length === 0 && (
           <p className="text-center text-gray-400 py-4">
