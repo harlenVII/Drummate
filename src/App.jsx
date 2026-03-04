@@ -30,6 +30,7 @@ import {
   getTodaysLogs,
   getLogsByDate,
   getLogsByDateRange,
+  updateItemOrder,
 } from './services/database';
 import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd } from './utils/dateHelpers';
 
@@ -489,6 +490,20 @@ function App() {
       }
     },
     [activeItemId, stopTimer, loadData, user, backend],
+  );
+
+  const handleReorder = useCallback(
+    async (orderedIds) => {
+      await updateItemOrder(orderedIds);
+      await loadData();
+      if (user) {
+        const reorderedItems = await Promise.all(
+          orderedIds.map(id => db.practiceItems.get(id))
+        );
+        backend.pushReorder(reorderedItems, user.id).catch(console.error);
+      }
+    },
+    [loadData, user, backend],
   );
 
   const handleSetEditing = useCallback(
@@ -1020,6 +1035,7 @@ function App() {
               onAddItem={handleAddItem}
               onRenameItem={handleRenameItem}
               onDeleteItem={handleDeleteItem}
+              onReorder={handleReorder}
             />
           )}
 
