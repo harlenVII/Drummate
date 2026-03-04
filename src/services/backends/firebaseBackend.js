@@ -102,10 +102,9 @@ const firebaseBackend = {
     try {
       // Deterministic doc ID based on name — setDoc is idempotent, prevents duplicates
       const docId = encodeURIComponent(localItem.name);
-      await setDoc(doc(itemsRef(userId), docId), {
-        name: localItem.name,
-        created: serverTimestamp(),
-      }, { merge: true });
+      const data = { name: localItem.name, created: serverTimestamp() };
+      if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
+      await setDoc(doc(itemsRef(userId), docId), data, { merge: true });
     } catch (err) {
       if (!navigator.onLine) {
         await queueSync('create_item', { name: localItem.name });
@@ -197,6 +196,21 @@ const firebaseBackend = {
     }
   },
 
+  async pushReorder(items, userId) {
+    try {
+      for (const item of items) {
+        const docId = encodeURIComponent(item.name);
+        await updateDoc(doc(itemsRef(userId), docId), { sort_order: item.sortOrder });
+      }
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('reorder', { items: items.map(i => ({ name: i.name, sortOrder: i.sortOrder })) });
+      } else {
+        throw err;
+      }
+    }
+  },
+
   // Sync — pull
   async pullAll(userId) {
     const itemsSnap = await getDocs(itemsRef(userId));
@@ -205,7 +219,9 @@ const firebaseBackend = {
       const existing = await db.practiceItems
         .where('name').equals(data.name).first();
       if (!existing) {
-        await db.practiceItems.add({ name: data.name });
+        await db.practiceItems.add({ name: data.name, sortOrder: data.sort_order ?? 0 });
+      } else if (data.sort_order != null && existing.sortOrder !== data.sort_order) {
+        await db.practiceItems.update(existing.id, { sortOrder: data.sort_order });
       }
     }
 
@@ -261,6 +277,11 @@ const firebaseBackend = {
         } else if (entry.action === 'rename_item') {
           await firebaseBackend.pushRenameItem(
             entry.payload.oldName, entry.payload.newName, userId);
+        } else if (entry.action === 'reorder') {
+          for (const item of entry.payload.items) {
+            const docId = encodeURIComponent(item.name);
+            await updateDoc(doc(itemsRef(userId), docId), { sort_order: item.sortOrder });
+          }
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
@@ -287,6 +308,12 @@ const firebaseBackend = {
             onDataChanged();
           }
         } else if (change.type === 'modified') {
+          // Handle sort_order updates
+          const localItem = await db.practiceItems
+            .where('name').equals(data.name).first();
+          if (localItem && data.sort_order != null && localItem.sortOrder !== data.sort_order) {
+            await db.practiceItems.update(localItem.id, { sortOrder: data.sort_order });
+          }
           // Handle renames: find local item with old name
           const allLocal = await db.practiceItems.toArray();
           const allRemoteNames = new Set();
