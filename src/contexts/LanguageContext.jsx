@@ -38,6 +38,8 @@ const translations = {
     sequencerEditSlot: 'Editing Slot',
     sequencerTapToAdd: 'Tap to add',
     sequencerEmpty: 'Tap a subdivision below to start building your rhythm',
+    sequencerInsertBefore: 'Before',
+    sequencerInsertAfter: 'After',
     rest: 'Rest',
     soundTypes: {
       click: 'Click',
@@ -178,6 +180,8 @@ const translations = {
     sequencerEditSlot: '编辑节拍',
     sequencerTapToAdd: '点击添加',
     sequencerEmpty: '点击下方的节奏类型开始构建',
+    sequencerInsertBefore: '之前',
+    sequencerInsertAfter: '之后',
     rest: '休止',
     soundTypes: {
       click: '咔嗒',

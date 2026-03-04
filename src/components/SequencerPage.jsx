@@ -1,4 +1,7 @@
-import { useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import BpmDial from './BpmDial';
 import SubdivisionIcon from './SubdivisionIcon';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -6,6 +9,82 @@ import { SUBDIVISIONS } from '../constants/subdivisions';
 
 const MAX_SLOTS = 16;
 const SOUND_TYPES = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+
+function DragHandle({ listeners, attributes }) {
+  return (
+    <button
+      {...listeners}
+      {...attributes}
+      className="absolute top-0.5 left-0.5 p-0.5 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none"
+      aria-label="Drag to reorder"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />
+      </svg>
+    </button>
+  );
+}
+
+function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot, onDelete, onSelect }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: slot.id });
+  const isCurrentlyPlaying = isPlaying && index === playingSlot;
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={editing ? () => onSelect(index) : undefined}
+      className={`
+        relative flex flex-col items-center justify-center
+        p-2 rounded-xl border-2
+        transition-all duration-150
+        ${isCurrentlyPlaying
+          ? 'border-blue-500 bg-blue-50 scale-105 shadow-md'
+          : isSelected
+            ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-300'
+            : 'border-gray-200 bg-white'
+        }
+        ${editing ? 'cursor-pointer' : ''}
+      `}
+    >
+      {/* Drag handle (edit mode only) */}
+      {editing && (
+        <DragHandle listeners={listeners} attributes={attributes} />
+      )}
+
+      {/* Slot number badge */}
+      <span className={`text-[10px] font-bold mb-0.5 ${
+        isCurrentlyPlaying ? 'text-blue-600' : 'text-gray-400'
+      }`}>
+        {index + 1}
+      </span>
+
+      {/* Subdivision icon */}
+      <div className={`${
+        isCurrentlyPlaying ? 'text-blue-600' : 'text-gray-700'
+      }`}>
+        <SubdivisionIcon type={slot.subdivision} />
+      </div>
+
+      {/* Delete button (edit mode or non-playing) */}
+      {(editing || !isPlaying) && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(index); }}
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500
+            text-white rounded-full flex items-center justify-center
+            text-xs font-bold shadow-sm hover:bg-red-600 transition-colors"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  );
+}
 
 function SequencerPage({
   engineRef,
@@ -23,6 +102,14 @@ function SequencerPage({
   nextIdRef,
 }) {
   const { t } = useLanguage();
+  const [editing, setEditing] = useState(false);
+  const [selectedSlotIndex, setSelectedSlotIndex] = useState(null);
+  const [insertMode, setInsertMode] = useState('after');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
 
   // Sync BPM to engine whenever it changes
   useEffect(() => {
@@ -54,11 +141,9 @@ function SequencerPage({
       setPlayingSlot(-1);
       noSleepRef.current.disable();
     } else {
-      if (slots.length === 0) return; // Can't play empty sequence
-      // Set sequence mode with current slots
+      if (slots.length === 0) return;
       const patterns = buildSequencePatterns(slots);
       engineRef.current.setSequence(patterns);
-      // Set beatsPerMeasure to slot count so currentBeat wraps correctly
       engineRef.current.setBeatsPerMeasure(slots.length);
       noSleepRef.current.enable();
       await engineRef.current.start();
@@ -74,17 +159,37 @@ function SequencerPage({
       id: nextIdRef.current++,
       subdivision: subdivisionKey,
     };
-    setSlots([...slots, newSlot]);
-  }, [slots, setSlots, nextIdRef]);
+
+    if (editing && selectedSlotIndex !== null) {
+      // Insert at selected position
+      const insertAt = insertMode === 'before' ? selectedSlotIndex : selectedSlotIndex + 1;
+      const newSlots = [...slots];
+      newSlots.splice(insertAt, 0, newSlot);
+      setSlots(newSlots);
+      // Move selection to the newly inserted slot
+      setSelectedSlotIndex(insertAt);
+    } else {
+      // Append to end (default behavior)
+      setSlots([...slots, newSlot]);
+    }
+  }, [slots, setSlots, nextIdRef, editing, selectedSlotIndex, insertMode]);
 
   const handleDeleteSlot = useCallback((index) => {
     const newSlots = slots.filter((_, i) => i !== index);
     setSlots(newSlots);
 
+    // Adjust selection if needed
+    if (selectedSlotIndex !== null) {
+      if (index === selectedSlotIndex) {
+        setSelectedSlotIndex(null);
+      } else if (index < selectedSlotIndex) {
+        setSelectedSlotIndex(selectedSlotIndex - 1);
+      }
+    }
+
     // If currently playing, update the engine's sequence live
     if (isPlaying && engineRef.current) {
       if (newSlots.length === 0) {
-        // Stop if we deleted the last slot
         engineRef.current.stop();
         engineRef.current.setSequence(null);
         setIsPlaying(false);
@@ -99,7 +204,41 @@ function SequencerPage({
         engineRef.current.setBeatsPerMeasure(newSlots.length);
       }
     }
-  }, [slots, setSlots, isPlaying, engineRef, setIsPlaying, setPlayingSlot, noSleepRef]);
+  }, [slots, setSlots, isPlaying, engineRef, setIsPlaying, setPlayingSlot, noSleepRef, selectedSlotIndex]);
+
+  const handleDragEnd = useCallback((event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = slots.findIndex(s => s.id === active.id);
+    const newIndex = slots.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newSlots = [...slots];
+    const [moved] = newSlots.splice(oldIndex, 1);
+    newSlots.splice(newIndex, 0, moved);
+    setSlots(newSlots);
+
+    // Adjust selection to follow the moved slot
+    if (selectedSlotIndex !== null) {
+      if (selectedSlotIndex === oldIndex) {
+        setSelectedSlotIndex(newIndex);
+      } else if (oldIndex < selectedSlotIndex && newIndex >= selectedSlotIndex) {
+        setSelectedSlotIndex(selectedSlotIndex - 1);
+      } else if (oldIndex > selectedSlotIndex && newIndex <= selectedSlotIndex) {
+        setSelectedSlotIndex(selectedSlotIndex + 1);
+      }
+    }
+  }, [slots, setSlots, selectedSlotIndex]);
+
+  const handleSelectSlot = useCallback((index) => {
+    // Toggle selection: tap again to deselect
+    setSelectedSlotIndex(prev => prev === index ? null : index);
+  }, []);
+
+  const handleExitEditing = useCallback(() => {
+    setEditing(false);
+    setSelectedSlotIndex(null);
+    setInsertMode('after');
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -124,6 +263,24 @@ function SequencerPage({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleTogglePlay, setBpm]);
 
+  const slotGrid = (
+    <div className="grid grid-cols-4 gap-2">
+      {slots.map((slot, index) => (
+        <SortableSlot
+          key={slot.id}
+          slot={slot}
+          index={index}
+          isSelected={editing && selectedSlotIndex === index}
+          editing={editing}
+          isPlaying={isPlaying}
+          playingSlot={playingSlot}
+          onDelete={handleDeleteSlot}
+          onSelect={handleSelectSlot}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex flex-col items-center gap-5">
 
@@ -133,54 +290,46 @@ function SequencerPage({
           <div className="text-center py-8 text-gray-400 text-sm">
             {t('sequencerEmpty')}
           </div>
+        ) : editing ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={slots.map(s => s.id)} strategy={rectSortingStrategy}>
+              {slotGrid}
+            </SortableContext>
+          </DndContext>
         ) : (
-          <div className="grid grid-cols-4 gap-2">
-            {slots.map((slot, index) => {
-              const isCurrentlyPlaying = isPlaying && index === playingSlot;
-              return (
-                <div
-                  key={slot.id}
-                  className={`
-                    relative flex flex-col items-center justify-center
-                    p-2 rounded-xl border-2
-                    transition-all duration-150
-                    ${isCurrentlyPlaying
-                      ? 'border-blue-500 bg-blue-50 scale-105 shadow-md'
-                      : 'border-gray-200 bg-white'
-                    }
-                  `}
-                >
-                  {/* Slot number badge */}
-                  <span className={`text-[10px] font-bold mb-0.5 ${
-                    isCurrentlyPlaying ? 'text-blue-600' : 'text-gray-400'
-                  }`}>
-                    {index + 1}
-                  </span>
-
-                  {/* Subdivision icon */}
-                  <div className={`${
-                    isCurrentlyPlaying ? 'text-blue-600' : 'text-gray-700'
-                  }`}>
-                    <SubdivisionIcon type={slot.subdivision} />
-                  </div>
-
-                  {/* Delete button (hidden while playing) */}
-                  {!isPlaying && (
-                    <button
-                      onClick={() => handleDeleteSlot(index)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500
-                        text-white rounded-full flex items-center justify-center
-                        text-xs font-bold shadow-sm hover:bg-red-600 transition-colors"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          slotGrid
         )}
       </div>
+
+      {/* === Insert Before/After Toggle (edit mode with selection) === */}
+      {editing && selectedSlotIndex !== null && (
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          <button
+            onClick={() => setInsertMode('before')}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              insertMode === 'before'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {t('sequencerInsertBefore')}
+          </button>
+          <button
+            onClick={() => setInsertMode('after')}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              insertMode === 'after'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {t('sequencerInsertAfter')}
+          </button>
+        </div>
+      )}
 
       {/* === Add Subdivision Buttons === */}
       <div className="w-full">
@@ -255,6 +404,25 @@ function SequencerPage({
           </svg>
         )}
       </button>
+
+      {/* === Edit / Done button === */}
+      {!isPlaying && (
+        editing ? (
+          <button
+            onClick={handleExitEditing}
+            className="px-4 py-2 bg-gray-700 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+          >
+            {t('done')}
+          </button>
+        ) : slots.length > 0 && (
+          <button
+            onClick={() => setEditing(true)}
+            className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          >
+            {t('edit')}
+          </button>
+        )
+      )}
     </div>
   );
 }
