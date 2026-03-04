@@ -32,14 +32,27 @@ db.version(4).stores({
   });
 });
 
+db.version(5).stores({
+  practiceItems: '++id, name, sortOrder',
+  practiceLogs: '++id, itemId, date, duration, uid',
+  syncQueue: '++id, action, collection, localId',
+}).upgrade(async tx => {
+  let order = 0;
+  await tx.table('practiceItems').toCollection().modify(item => {
+    item.sortOrder = order++;
+  });
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
-  return await db.practiceItems.toArray();
+  return await db.practiceItems.orderBy('sortOrder').toArray();
 };
 
 export const addItem = async (name) => {
-  return await db.practiceItems.add({ name });
+  const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
+  const sortOrder = maxOrder ? maxOrder.sortOrder + 1 : 0;
+  return await db.practiceItems.add({ name, sortOrder });
 };
 
 export const renameItem = async (id, newName) => {
@@ -49,6 +62,14 @@ export const renameItem = async (id, newName) => {
 export const deleteItem = async (id) => {
   await db.practiceLogs.where('itemId').equals(id).delete();
   return await db.practiceItems.delete(id);
+};
+
+export const updateItemOrder = async (orderedIds) => {
+  await db.transaction('rw', db.practiceItems, async () => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.practiceItems.update(orderedIds[i], { sortOrder: i });
+    }
+  });
 };
 
 // --- Practice Logs ---
