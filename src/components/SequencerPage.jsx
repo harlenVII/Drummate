@@ -71,8 +71,8 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
         <SubdivisionIcon type={slot.subdivision} />
       </div>
 
-      {/* Delete button (edit mode or non-playing) */}
-      {(editing || !isPlaying) && (
+      {/* Delete button (edit mode only) */}
+      {editing && (
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(index); }}
           className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500
@@ -287,9 +287,11 @@ function SequencerPage({
       {/* === Slot Sequence Visualization === */}
       <div className="w-full">
         {slots.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 text-sm">
-            {t('sequencerEmpty')}
-          </div>
+          editing ? (
+            <div className="text-center py-8 text-gray-400 text-sm">
+              {t('sequencerEmpty')}
+            </div>
+          ) : null
         ) : editing ? (
           <DndContext
             sensors={sensors}
@@ -305,61 +307,66 @@ function SequencerPage({
         )}
       </div>
 
-      {/* === Insert Before/After Toggle (edit mode with selection) === */}
-      {editing && selectedSlotIndex !== null && (
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-          <button
-            onClick={() => setInsertMode('before')}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-              insertMode === 'before'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {t('sequencerInsertBefore')}
-          </button>
-          <button
-            onClick={() => setInsertMode('after')}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-              insertMode === 'after'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {t('sequencerInsertAfter')}
-          </button>
-        </div>
-      )}
+      {/* === Edit mode: Insert toggle + Add buttons === */}
+      {editing && (
+        <>
+          {/* Insert Before/After Toggle (when a slot is selected) */}
+          {selectedSlotIndex !== null && (
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setInsertMode('before')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  insertMode === 'before'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {t('sequencerInsertBefore')}
+              </button>
+              <button
+                onClick={() => setInsertMode('after')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  insertMode === 'after'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {t('sequencerInsertAfter')}
+              </button>
+            </div>
+          )}
 
-      {/* === Add Subdivision Buttons === */}
-      <div className="w-full">
-        <p className="text-xs text-gray-500 text-center mb-2">
-          {t('sequencerTapToAdd')}
-        </p>
-        <div className="flex gap-2 flex-wrap justify-center">
-          {SUBDIVISIONS.map(({ key }) => (
-            <button
-              key={key}
-              onClick={() => handleAddSubdivision(key)}
-              disabled={slots.length >= MAX_SLOTS || isPlaying}
-              className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                slots.length >= MAX_SLOTS || isPlaying
-                  ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                  : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50 hover:border-blue-400'
-              }`}
-            >
-              <SubdivisionIcon type={key} />
-              {/* Small + badge */}
-              {slots.length < MAX_SLOTS && !isPlaying && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white
-                  rounded-full flex items-center justify-center text-[10px] font-bold">
-                  +
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+          {/* Add Subdivision Buttons */}
+          <div className="w-full">
+            <p className="text-xs text-gray-500 text-center mb-2">
+              {t('sequencerTapToAdd')}
+            </p>
+            <div className="flex gap-2 flex-wrap justify-center">
+              {SUBDIVISIONS.map(({ key }) => (
+                <button
+                  key={key}
+                  onClick={() => handleAddSubdivision(key)}
+                  disabled={slots.length >= MAX_SLOTS}
+                  className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    slots.length >= MAX_SLOTS
+                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50 hover:border-blue-400'
+                  }`}
+                >
+                  <SubdivisionIcon type={key} />
+                  {/* Small + badge */}
+                  {slots.length < MAX_SLOTS && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white
+                      rounded-full flex items-center justify-center text-[10px] font-bold">
+                      +
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* === Sound Type Selector === */}
       <div className="flex gap-2 flex-wrap justify-center">
@@ -414,7 +421,7 @@ function SequencerPage({
           >
             {t('done')}
           </button>
-        ) : slots.length > 0 && (
+        ) : (
           <button
             onClick={() => setEditing(true)}
             className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
