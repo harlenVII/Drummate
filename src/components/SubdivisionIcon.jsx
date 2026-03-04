@@ -166,16 +166,27 @@ function SixteenthEighthSixteenth() {
   );
 }
 
-// Two offbeat sixteenth notes (positions 2 and 4): rest-note-rest-note
+// Offbeat sixteenths: eighth-rest + eighth note, sixteenth-rest + sixteenth note (with connecting beam)
 function OffbeatSixteenths() {
   return (
-    <svg viewBox="0 0 32 32" className="w-8 h-8" fill="none">
-      <Beam x1={9.5} x2={25.5} y={6} />
-      <Beam x1={9.5} x2={25.5} y={9.5} />
-      <Stem x={9.5} bottom={24} top={6} />
-      <Stem x={25.5} bottom={24} top={6} />
-      <Notehead cx={7} cy={24} />
-      <Notehead cx={23} cy={24} />
+    <svg viewBox="0 0 44 32" className="w-11 h-8" fill="none">
+      {/* Position 1: sixteenth rest — diagonal stroke with two dots */}
+      <line x1={4} y1={19} x2={10} y2={7} stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+      <circle cx={10} cy={11} r={2} fill="currentColor" />
+      <circle cx={8.5} cy={16} r={2} fill="currentColor" />
+      {/* Position 2: eighth note (single beam = flag) */}
+      <Stem x={19.5} bottom={24} top={6} />
+      <Beam x1={19.5} x2={26} y={6} />
+      <Notehead cx={17} cy={24} />
+      {/* Position 3: sixteenth rest — diagonal stroke with two dots */}
+      <line x1={26} y1={19} x2={32} y2={7} stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+      <circle cx={32} cy={11} r={2} fill="currentColor" />
+      <circle cx={30.5} cy={16} r={2} fill="currentColor" />
+      {/* Position 4: sixteenth note (double beam, one beam connects back to position 2) */}
+      <Stem x={38.5} bottom={24} top={6} />
+      <Beam x1={19.5} x2={38.5} y={6} />
+      <Beam x1={31} x2={38.5} y={10} />
+      <Notehead cx={36} cy={24} />
     </svg>
   );
 }
