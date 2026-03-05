@@ -118,14 +118,16 @@ export const purgeExpiredTrash = async (daysOld = 30) => {
   const cutoffISO = cutoff.toISOString();
 
   const expiredItems = await db.practiceItems
-    .where('trashed').equals(1)
+    .where('trashed').equals(true)
     .filter(item => item.trashedAt && item.trashedAt < cutoffISO)
     .toArray();
 
-  for (const item of expiredItems) {
-    await db.practiceLogs.where('itemId').equals(item.id).delete();
-    await db.practiceItems.delete(item.id);
-  }
+  await db.transaction('rw', db.practiceItems, db.practiceLogs, async () => {
+    for (const item of expiredItems) {
+      await db.practiceLogs.where('itemId').equals(item.id).delete();
+      await db.practiceItems.delete(item.id);
+    }
+  });
 
   return expiredItems;
 };
