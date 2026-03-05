@@ -104,6 +104,7 @@ const firebaseBackend = {
       const docId = encodeURIComponent(localItem.name);
       const data = { name: localItem.name, created: serverTimestamp() };
       if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
+      data.archived = localItem.archived ?? false;
       await setDoc(doc(itemsRef(userId), docId), data, { merge: true });
     } catch (err) {
       if (!navigator.onLine) {
@@ -211,6 +212,19 @@ const firebaseBackend = {
     }
   },
 
+  async pushArchiveItem(name, archived, userId) {
+    try {
+      const docId = encodeURIComponent(name);
+      await updateDoc(doc(itemsRef(userId), docId), { archived: !!archived });
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('archive_item', { name, archived: !!archived });
+      } else {
+        throw err;
+      }
+    }
+  },
+
   // Sync — pull
   async pullAll(userId) {
     const itemsSnap = await getDocs(itemsRef(userId));
@@ -219,9 +233,22 @@ const firebaseBackend = {
       const existing = await db.practiceItems
         .where('name').equals(data.name).first();
       if (!existing) {
-        await db.practiceItems.add({ name: data.name, sortOrder: data.sort_order ?? 0 });
-      } else if (data.sort_order != null && existing.sortOrder !== data.sort_order) {
-        await db.practiceItems.update(existing.id, { sortOrder: data.sort_order });
+        await db.practiceItems.add({
+          name: data.name,
+          sortOrder: data.sort_order ?? 0,
+          archived: data.archived ?? false,
+        });
+      } else {
+        const updates = {};
+        if (data.sort_order != null && existing.sortOrder !== data.sort_order) {
+          updates.sortOrder = data.sort_order;
+        }
+        if (data.archived != null && existing.archived !== data.archived) {
+          updates.archived = data.archived;
+        }
+        if (Object.keys(updates).length > 0) {
+          await db.practiceItems.update(existing.id, updates);
+        }
       }
     }
 
@@ -282,6 +309,8 @@ const firebaseBackend = {
             const docId = encodeURIComponent(item.name);
             await updateDoc(doc(itemsRef(userId), docId), { sort_order: item.sortOrder });
           }
+        } else if (entry.action === 'archive_item') {
+          await firebaseBackend.pushArchiveItem(entry.payload.name, entry.payload.archived, userId);
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
@@ -306,15 +335,27 @@ const firebaseBackend = {
           if (!existing) {
             const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
             const sortOrder = data.sort_order ?? (maxOrder ? maxOrder.sortOrder + 1 : 0);
-            await db.practiceItems.add({ name: data.name, sortOrder });
+            await db.practiceItems.add({
+              name: data.name,
+              sortOrder,
+              archived: data.archived ?? false,
+            });
             onDataChanged();
           }
         } else if (change.type === 'modified') {
-          // Handle sort_order updates
           const localItem = await db.practiceItems
             .where('name').equals(data.name).first();
-          if (localItem && data.sort_order != null && localItem.sortOrder !== data.sort_order) {
-            await db.practiceItems.update(localItem.id, { sortOrder: data.sort_order });
+          if (localItem) {
+            const updates = {};
+            if (data.sort_order != null && localItem.sortOrder !== data.sort_order) {
+              updates.sortOrder = data.sort_order;
+            }
+            if (data.archived != null && localItem.archived !== data.archived) {
+              updates.archived = data.archived;
+            }
+            if (Object.keys(updates).length > 0) {
+              await db.practiceItems.update(localItem.id, updates);
+            }
           }
           // Handle renames: find local item with old name
           const allLocal = await db.practiceItems.toArray();
