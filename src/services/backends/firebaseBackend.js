@@ -304,7 +304,9 @@ const firebaseBackend = {
           const existing = await db.practiceItems
             .where('name').equals(data.name).first();
           if (!existing) {
-            await db.practiceItems.add({ name: data.name });
+            const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
+            const sortOrder = data.sort_order ?? (maxOrder ? maxOrder.sortOrder + 1 : 0);
+            await db.practiceItems.add({ name: data.name, sortOrder });
             onDataChanged();
           }
         } else if (change.type === 'modified') {
