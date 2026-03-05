@@ -20,6 +20,7 @@ export async function pushItem(localItem, userId) {
       name: localItem.name,
       user: userId,
       sort_order: localItem.sortOrder ?? 0,
+      archived: localItem.archived ?? false,
     }, { requestKey: null });
   } catch (err) {
     if (!navigator.onLine) {
@@ -136,6 +137,26 @@ export async function pushReorder(items, userId) {
   }
 }
 
+export async function pushArchiveItem(name, archived, userId) {
+  try {
+    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
+      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name }),
+      requestKey: null,
+    });
+    if (remoteItems.totalItems > 0) {
+      await pb.collection('practice_items').update(remoteItems.items[0].id, {
+        archived: !!archived,
+      }, { requestKey: null });
+    }
+  } catch (err) {
+    if (!navigator.onLine) {
+      await queueSync('archive_item', { name, archived: !!archived });
+    } else {
+      throw err;
+    }
+  }
+}
+
 // --- Sync queue for offline writes ---
 
 async function queueSync(action, payload) {
@@ -163,6 +184,8 @@ export async function flushSyncQueue(userId) {
         await pushRenameItem(entry.payload.oldName, entry.payload.newName, userId);
       } else if (entry.action === 'reorder') {
         await pushReorder(entry.payload.items, userId);
+      } else if (entry.action === 'archive_item') {
+        await pushArchiveItem(entry.payload.name, entry.payload.archived, userId);
       }
       await db.syncQueue.delete(entry.id);
     } catch (err) {
@@ -185,9 +208,22 @@ export async function pullAll(userId) {
     const existing = await db.practiceItems
       .where('name').equals(remote.name).first();
     if (!existing) {
-      await db.practiceItems.add({ name: remote.name, sortOrder: remote.sort_order ?? 0 });
-    } else if (remote.sort_order != null && existing.sortOrder !== remote.sort_order) {
-      await db.practiceItems.update(existing.id, { sortOrder: remote.sort_order });
+      await db.practiceItems.add({
+        name: remote.name,
+        sortOrder: remote.sort_order ?? 0,
+        archived: remote.archived ?? false,
+      });
+    } else {
+      const updates = {};
+      if (remote.sort_order != null && existing.sortOrder !== remote.sort_order) {
+        updates.sortOrder = remote.sort_order;
+      }
+      if (remote.archived != null && existing.archived !== remote.archived) {
+        updates.archived = remote.archived;
+      }
+      if (Object.keys(updates).length > 0) {
+        await db.practiceItems.update(existing.id, updates);
+      }
     }
   }
 
@@ -243,15 +279,28 @@ export function subscribeToChanges(onDataChanged) {
       const existing = await db.practiceItems
         .where('name').equals(e.record.name).first();
       if (!existing) {
-        await db.practiceItems.add({ name: e.record.name });
+        await db.practiceItems.add({
+          name: e.record.name,
+          sortOrder: e.record.sort_order ?? 0,
+          archived: e.record.archived ?? false,
+        });
         onDataChanged();
       }
     } else if (e.action === 'update') {
-      // Handle sort_order updates
+      // Handle sort_order and archived updates
       const localByName = await db.practiceItems
         .where('name').equals(e.record.name).first();
-      if (localByName && e.record.sort_order != null && localByName.sortOrder !== e.record.sort_order) {
-        await db.practiceItems.update(localByName.id, { sortOrder: e.record.sort_order });
+      if (localByName) {
+        const updates = {};
+        if (e.record.sort_order != null && localByName.sortOrder !== e.record.sort_order) {
+          updates.sortOrder = e.record.sort_order;
+        }
+        if (e.record.archived != null && localByName.archived !== e.record.archived) {
+          updates.archived = e.record.archived;
+        }
+        if (Object.keys(updates).length > 0) {
+          await db.practiceItems.update(localByName.id, updates);
+        }
       }
       // We don't know the old name from the SSE event, so check if the new
       // name already exists locally. If not, a rename happened on another
