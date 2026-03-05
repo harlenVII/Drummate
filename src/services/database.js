@@ -53,6 +53,17 @@ db.version(6).stores({
   });
 });
 
+db.version(7).stores({
+  practiceItems: '++id, name, sortOrder, archived, trashed',
+  practiceLogs: '++id, itemId, date, duration, uid',
+  syncQueue: '++id, action, collection, localId',
+}).upgrade(async tx => {
+  await tx.table('practiceItems').toCollection().modify(item => {
+    item.trashed = false;
+    item.trashedAt = null;
+  });
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -62,7 +73,7 @@ export const getItems = async () => {
 export const addItem = async (name) => {
   const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
   const sortOrder = maxOrder ? maxOrder.sortOrder + 1 : 0;
-  return await db.practiceItems.add({ name, sortOrder, archived: false });
+  return await db.practiceItems.add({ name, sortOrder, archived: false, trashed: false, trashedAt: null });
 };
 
 export const renameItem = async (id, newName) => {
@@ -84,6 +95,39 @@ export const updateItemOrder = async (orderedIds) => {
 
 export const archiveItem = async (id, archived) => {
   return await db.practiceItems.update(id, { archived });
+};
+
+export const trashItem = async (id) => {
+  return await db.practiceItems.update(id, {
+    trashed: true,
+    trashedAt: new Date().toISOString(),
+  });
+};
+
+export const restoreItem = async (id) => {
+  return await db.practiceItems.update(id, {
+    trashed: false,
+    trashedAt: null,
+    archived: false,
+  });
+};
+
+export const purgeExpiredTrash = async (daysOld = 30) => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - daysOld);
+  const cutoffISO = cutoff.toISOString();
+
+  const expiredItems = await db.practiceItems
+    .where('trashed').equals(1)
+    .filter(item => item.trashedAt && item.trashedAt < cutoffISO)
+    .toArray();
+
+  for (const item of expiredItems) {
+    await db.practiceLogs.where('itemId').equals(item.id).delete();
+    await db.practiceItems.delete(item.id);
+  }
+
+  return expiredItems;
 };
 
 // --- Practice Logs ---
