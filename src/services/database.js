@@ -43,6 +43,16 @@ db.version(5).stores({
   });
 });
 
+db.version(6).stores({
+  practiceItems: '++id, name, sortOrder, archived',
+  practiceLogs: '++id, itemId, date, duration, uid',
+  syncQueue: '++id, action, collection, localId',
+}).upgrade(async tx => {
+  await tx.table('practiceItems').toCollection().modify(item => {
+    item.archived = false;
+  });
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -52,7 +62,7 @@ export const getItems = async () => {
 export const addItem = async (name) => {
   const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
   const sortOrder = maxOrder ? maxOrder.sortOrder + 1 : 0;
-  return await db.practiceItems.add({ name, sortOrder });
+  return await db.practiceItems.add({ name, sortOrder, archived: false });
 };
 
 export const renameItem = async (id, newName) => {
@@ -70,6 +80,10 @@ export const updateItemOrder = async (orderedIds) => {
       await db.practiceItems.update(orderedIds[i], { sortOrder: i });
     }
   });
+};
+
+export const archiveItem = async (id, archived) => {
+  return await db.practiceItems.update(id, { archived });
 };
 
 // --- Practice Logs ---
