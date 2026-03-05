@@ -52,12 +52,21 @@ function PracticeItemList({
   onRenameItem,
   onDeleteItem,
   onReorder,
+  onArchiveItem,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const activeItems = items.filter(item => !item.archived);
+  const archivedItems = items.filter(item => item.archived);
+  const hasArchivedItems = archivedItems.length > 0;
+  const displayItems = editing
+    ? (showArchived ? items : activeItems)
+    : activeItems;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -67,10 +76,10 @@ function PracticeItemList({
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = items.findIndex(i => i.id === active.id);
-    const newIndex = items.findIndex(i => i.id === over.id);
+    const oldIndex = displayItems.findIndex(i => i.id === active.id);
+    const newIndex = displayItems.findIndex(i => i.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    const newItems = [...items];
+    const newItems = [...displayItems];
     const [moved] = newItems.splice(oldIndex, 1);
     newItems.splice(newIndex, 0, moved);
     onReorder(newItems.map(i => i.id));
@@ -80,14 +89,14 @@ function PracticeItemList({
   const handleKeyDown = useCallback((e) => {
     if (editing) return;
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (items.length === 0) return;
+    if (activeItems.length === 0) return;
 
     if (e.code === 'ArrowUp') {
       e.preventDefault();
-      setFocusedIndex((prev) => prev === null ? items.length - 1 : Math.max(0, prev - 1));
+      setFocusedIndex((prev) => prev === null ? activeItems.length - 1 : Math.max(0, prev - 1));
     } else if (e.code === 'ArrowDown') {
       e.preventDefault();
-      setFocusedIndex((prev) => prev === null ? 0 : Math.min(items.length - 1, prev + 1));
+      setFocusedIndex((prev) => prev === null ? 0 : Math.min(activeItems.length - 1, prev + 1));
     } else if (e.code === 'Space') {
       e.preventDefault();
       // If nothing is focused but something is running, stop it
@@ -95,7 +104,7 @@ function PracticeItemList({
         if (activeItemId != null) onStop();
         return;
       }
-      const focusedItem = items[focusedIndex];
+      const focusedItem = activeItems[focusedIndex];
       if (!focusedItem) return;
       if (activeItemId === focusedItem.id) {
         onStop();
@@ -103,7 +112,7 @@ function PracticeItemList({
         onStart(focusedItem.id);
       }
     }
-  }, [editing, items, focusedIndex, activeItemId, onStart, onStop]);
+  }, [editing, activeItems, focusedIndex, activeItemId, onStart, onStop]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -113,17 +122,17 @@ function PracticeItemList({
   // When returning to this tab with an active item, restore focus to it
   useEffect(() => {
     if (focusedIndex === null && activeItemId != null) {
-      const idx = items.findIndex((item) => item.id === activeItemId);
+      const idx = activeItems.findIndex((item) => item.id === activeItemId);
       if (idx !== -1) setFocusedIndex(idx);
     }
-  }, [activeItemId, items, focusedIndex]);
+  }, [activeItemId, activeItems, focusedIndex]);
 
   // Keep focusedIndex in bounds if items list changes
   useEffect(() => {
-    if (focusedIndex !== null && focusedIndex >= items.length) {
-      setFocusedIndex(items.length > 0 ? items.length - 1 : null);
+    if (focusedIndex !== null && focusedIndex >= activeItems.length) {
+      setFocusedIndex(activeItems.length > 0 ? activeItems.length - 1 : null);
     }
-  }, [items.length, focusedIndex]);
+  }, [activeItems.length, focusedIndex]);
 
   const handleAdd = () => {
     const name = newName.trim();
@@ -162,16 +171,25 @@ function PracticeItemList({
   if (editing) {
     return (
       <div className="flex flex-col gap-3">
+        {hasArchivedItems && (
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className="self-start px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            {showArchived ? t('hideArchived') : `${t('showArchived')} (${archivedItems.length})`}
+          </button>
+        )}
+
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           modifiers={[restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-            {items.map((item) => (
+          <SortableContext items={displayItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            {displayItems.map((item) => (
               <SortableItem key={item.id} item={item}>
-                <div className="flex-1 flex items-center justify-between ml-2">
+                <div className={`flex-1 flex items-center justify-between ml-2 ${item.archived ? 'opacity-50' : ''}`}>
                   {editingItemId === item.id ? (
                     <input
                       type="text"
@@ -191,31 +209,42 @@ function PracticeItemList({
                       {item.name}
                     </span>
                   )}
-                  <button
-                    onClick={() => onDeleteItem(item.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                    title="Delete item"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onArchiveItem(item.id, !item.archived)}
+                      className="p-1.5 text-gray-400 hover:text-amber-500 transition-colors"
+                      title={item.archived ? t('unarchive') : t('archive')}
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M4 3a2 2 0 00-2 2v1h16V5a2 2 0 00-2-2H4zM2 9a1 1 0 000 2v5a2 2 0 002 2h12a2 2 0 002-2v-5a1 1 0 100-2H2zm5 4a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => onDeleteItem(item.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete item"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </SortableItem>
             ))}
           </SortableContext>
         </DndContext>
 
-        {items.length === 0 && (
+        {displayItems.length === 0 && (
           <p className="text-center text-gray-400 py-4">
             {t('noPracticeItems')}
           </p>
@@ -252,7 +281,7 @@ function PracticeItemList({
   // --- Normal (timer) mode ---
   return (
     <div className="flex flex-col gap-3">
-      {items.map((item, index) => {
+      {activeItems.map((item, index) => {
         const isActive = activeItemId === item.id;
         const isFocused = focusedIndex !== null && index === focusedIndex;
         const savedTotal = totals[item.id] || 0;
@@ -290,7 +319,7 @@ function PracticeItemList({
         );
       })}
 
-      {items.length === 0 && (
+      {activeItems.length === 0 && (
         <p className="text-center text-gray-400 py-4">
           {t('noPracticeItems')}
         </p>
