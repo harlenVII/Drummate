@@ -26,6 +26,7 @@ import {
   addItem,
   renameItem,
   deleteItem,
+  archiveItem,
   addLog,
   getTodaysLogs,
   getLogsByDate,
@@ -487,6 +488,23 @@ function App() {
       await loadData();
       if (user && item) {
         backend.pushDeleteItem(item.name, user.id).catch(console.error);
+      }
+    },
+    [activeItemId, stopTimer, loadData, user, backend],
+  );
+
+  const handleArchiveItem = useCallback(
+    async (id, archived) => {
+      if (activeItemId === id) {
+        stopTimer();
+        setActiveItemId(null);
+        setElapsedTime(0);
+      }
+      const item = await db.practiceItems.get(id);
+      await archiveItem(id, archived);
+      await loadData();
+      if (user && item) {
+        backend.pushArchiveItem(item.name, archived, user.id).catch(console.error);
       }
     },
     [activeItemId, stopTimer, loadData, user, backend],
@@ -1035,6 +1053,7 @@ function App() {
               onAddItem={handleAddItem}
               onRenameItem={handleRenameItem}
               onDeleteItem={handleDeleteItem}
+              onArchiveItem={handleArchiveItem}
               onReorder={handleReorder}
             />
           )}
