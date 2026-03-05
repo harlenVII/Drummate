@@ -320,7 +320,7 @@ export function subscribeToChanges(onDataChanged) {
         onDataChanged();
       }
     } else if (e.action === 'update') {
-      // Handle sort_order and archived updates
+      // Handle sort_order, archived, and trashed updates
       const localByName = await db.practiceItems
         .where('name').equals(e.record.name).first();
       if (localByName) {
