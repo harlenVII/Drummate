@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Drummate is a Progressive Web App (PWA) for drummers to track practice sessions, view reports, and use an integrated metronome with a rhythm sequencer. Built with React 19, Vite 7, Tailwind CSS v4, and Dexie.js (IndexedDB) with PocketBase for cross-device sync.
+Drummate is a Progressive Web App (PWA) for drummers to track practice sessions, view reports, and use an integrated metronome with a rhythm sequencer. Built with React 19, Vite 7, Tailwind CSS v4, and Dexie.js (IndexedDB) with pluggable cloud sync (Firebase or PocketBase).
 
 **Key docs:**
 - [DEVELOPMENT.md](./docs/DEVELOPMENT.md) — Full architecture, project structure, completed phases
@@ -25,10 +25,24 @@ npm run lint             # Run ESLint
 ## Environment Variables
 
 ```bash
-VITE_POCKETBASE_URL      # PocketBase server URL (defaults to https://drummate-api.yourdomain.com)
+# Firebase (default backend)
+VITE_FIREBASE_API_KEY       # Firebase API key
+VITE_FIREBASE_AUTH_DOMAIN   # Firebase auth domain
+VITE_FIREBASE_PROJECT_ID    # Firebase project ID
+
+# PocketBase (alternative backend)
+VITE_POCKETBASE_URL         # PocketBase server URL
 ```
 
 ## Architecture Overview
+
+### Provider Hierarchy (main.jsx)
+
+```
+LanguageProvider → BackendProvider → AuthProvider → App
+```
+
+`BackendProvider` lazy-loads Firebase SDK only when Firebase backend is selected. `AuthProvider` delegates to the active backend from `useBackend()`.
 
 ### Global State Management (App.jsx)
 
@@ -36,9 +50,23 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 
 **Practice State:** `items`, `totals`, `activeItemId`, `elapsedTime`, `editing`
 **Metronome/Sequencer State:** `metronomeBpm`, `metronomeIsPlaying`, `metronomeCurrentBeat`, `metronomeTimeSignature`, `metronomeSubdivision`, `metronomeSoundType`, `metronomeSubpage`, `sequencerSlots`, `sequencerPlayingSlot`
+**Voice State:** STT service instance, voice listening state, floating voice indicator
 **Singleton Refs:** `metronomeEngineRef` (audio engine), `noSleepRef` (prevents screen lock)
 
 **Key Pattern:** Metronome/sequencer state persists when switching tabs. The audio engine is initialized once on mount and destroyed only on unmount.
+
+### Pluggable Backend System
+
+Backend abstraction layer allows switching between Firebase and PocketBase:
+
+- `src/services/backends/backendInterface.js` — Contract that all backends must implement (auth + sync methods)
+- `src/services/backends/firebaseBackend.js` — Firebase implementation (Firestore + Firebase Auth)
+- `src/services/backends/pocketbaseBackend.js` — PocketBase implementation (REST API + SSE)
+- `src/contexts/BackendContext.jsx` — `useBackend()` hook returns `{ backend, backendType, switchBackend }`
+
+**Backend interface contract** (every backend must implement):
+- **Auth:** `signIn`, `signUp`, `signOut`, `getUser`, `onAuthChange`, `refreshAuth`
+- **Sync:** `pushItem`, `pushLog`, `pushDeleteItem`, `pushRenameItem`, `pushReorder`, `pushArchiveItem`, `pushTrashItem`, `pullAll`, `pushAllLocal`, `flushSyncQueue`, `subscribeToChanges`
 
 ### Audio Engine (metronomeEngine.js)
 
@@ -58,33 +86,39 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 
 ### Database Layer (database.js)
 
-Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, version 4.
+Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: 7.
 
 **Tables:**
-- `practiceItems` — Schema: `'++id, name'` (name is unique, used as dedup key for sync)
+- `practiceItems` — Schema: `'++id, name, sortOrder, archived, trashed'`
+  - `name`: unique, used as sync dedup key
+  - `sortOrder`: integer for drag-and-drop ordering (@dnd-kit)
+  - `archived`: boolean, hides from active list
+  - `trashed`: boolean, soft-delete with `trashedAt` ISO timestamp (auto-purged after 30 days)
 - `practiceLogs` — Schema: `'++id, itemId, date, duration, uid'` (uid is a UUID generated on creation, used as dedup key for sync)
 - `syncQueue` — Schema: `'++id, action, collection, localId'` (offline retry queue)
 
+**Key Operations:**
+- CRUD: `getItems`, `addItem`, `renameItem`, `deleteItem`
+- Ordering: `updateItemOrder(orderedIds)` — batch updates sortOrder in a transaction
+- Archive/Trash: `archiveItem(id, bool)`, `trashItem(id)`, `restoreItem(id)`, `purgeExpiredTrash(daysOld=30)`
+- Logs: `addLog`, `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`
+
 All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs. Practice item names must be unique (case-insensitive check in UI).
 
-### Data Sync (PocketBase)
+### Voice Commands & AI Features
 
-Cross-device sync via self-hosted PocketBase:
-- `src/services/pocketbase.js` — PocketBase client singleton (configured via `VITE_POCKETBASE_URL`)
-- `src/contexts/AuthContext.jsx` — Auth state provider (`useAuth()` hook) with login/signup/signout
-- `src/services/sync.js` — Bidirectional real-time sync with offline queue
-
-**Sync deduplication:** Items deduplicate by `name`, logs by `uid` (UUID). No `remoteId` tracking — push functions are idempotent (check if record exists remotely before creating).
-
-**Real-time sync:** SSE subscriptions handle `create`, `update`, and `delete` events. New items/logs from other devices appear without page refresh.
-
-**Key functions:** `pushItem`, `pushLog`, `pushDeleteItem`, `pushRenameItem`, `pullAll`, `pushAllLocal`, `flushSyncQueue`, `subscribeToChanges`
-
-**Important:** All PocketBase API calls use `requestKey: null` to disable SDK auto-cancellation, which otherwise cancels concurrent requests to the same endpoint.
+- `src/audio/wakeWordEngine.js` — Wake word detection (openWakeWord WASM)
+- `src/services/sttService.js` — Speech-to-text service
+- `src/services/intentParser.js` — Parses voice transcripts into app intents (`parseIntent`, `findBestItemMatch`)
+- `src/services/voiceFeedback.js` — TTS feedback (`speak`, `getLang`, `cancelSpeech`)
+- `src/services/llmService.js` — On-device LLM for encouragement messages
+- `src/services/ttsService.js` — Text-to-speech service (Kokoro)
+- `src/components/FloatingVoiceIndicator.jsx` — Voice listening UI overlay
+- `src/components/EncouragementButton.jsx` / `EncouragementModal.jsx` — AI-generated practice encouragement
 
 ### Internationalization (LanguageContext.jsx)
 
-React Context providing `t(key)` function for translations. Supports nested keys (e.g., `t('tempoNames.allegro')`). Languages: `en`, `zh`. Does NOT persist across refresh.
+React Context providing `t(key)` function for translations. Supports nested keys (e.g., `t('tempoNames.allegro')`) and interpolation. Languages: `en`, `zh`. Does NOT persist across refresh.
 
 ## Critical Implementation Patterns
 
@@ -93,6 +127,12 @@ When user closes/refreshes with active timer: `beforeunload`/`pagehide` → save
 
 ### Metronome ↔ Sequencer Switching
 When switching subpages: stop playback → `setSequence(null)` → clear beat indicators → disable NoSleep. Prevents audio engine state conflicts.
+
+### Drag-and-Drop Reordering
+Practice items use `@dnd-kit/sortable` for reordering. On drag end: reorder local state array → `updateItemOrder(orderedIds)` in DB → `backend.pushReorder(items, userId)` for sync.
+
+### Trash Bin (Soft Delete)
+Items are soft-deleted (`trashed: true`, `trashedAt: ISO string`). `purgeExpiredTrash(30)` runs on app load to permanently delete items trashed >30 days ago. Restore sets `trashed: false` and also clears `archived`.
 
 ### NoSleep.js
 Single global instance in `App.jsx`. Enable on start, disable on stop/tab switch. **Never create multiple instances** (causes iOS bugs).
@@ -116,8 +156,11 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 6. **Date strings must be YYYY-MM-DD** — use `dateHelpers.js`
 7. **All user-facing text must use `t()` function** for bilingual support
 8. **Metronome state is global in App.jsx** — persists across tab switches
-9. **PocketBase auto-cancellation** — always use `requestKey: null` on API calls in sync.js to prevent the SDK from cancelling concurrent requests
+9. **PocketBase auto-cancellation** — always use `requestKey: null` on API calls to prevent the SDK from cancelling concurrent requests
 10. **Practice item names are unique** — enforced with case-insensitive check in `handleAddItem`
+11. **Backend interface compliance** — new sync operations must be added to both `firebaseBackend.js` and `pocketbaseBackend.js`, and declared in `backendInterface.js`
+12. **Firebase SDK lazy-loaded** — `BackendContext` dynamically imports `firebaseBackend.js` to avoid bundling Firebase when using PocketBase
+13. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
 
 ## File Naming
 
