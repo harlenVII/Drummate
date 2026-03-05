@@ -18,6 +18,12 @@ const translations = {
     unarchive: 'Unarchive',
     showArchived: 'Show Archived',
     hideArchived: 'Hide Archived',
+    showTrash: 'Show Trash',
+    hideTrash: 'Hide Trash',
+    restore: 'Restore',
+    permanentDelete: 'Delete Permanently',
+    confirmPermanentDelete: 'This will permanently delete this item and all its practice logs. This cannot be undone. Continue?',
+    daysLeft: '{days}d left',
     delete: 'Delete',
     start: 'Start',
     stop: 'Stop',
@@ -164,6 +170,12 @@ const translations = {
     unarchive: '取消归档',
     showArchived: '显示已归档',
     hideArchived: '隐藏已归档',
+    showTrash: '显示回收站',
+    hideTrash: '隐藏回收站',
+    restore: '恢复',
+    permanentDelete: '永久删除',
+    confirmPermanentDelete: '这将永久删除此项目及其所有练习记录。此操作无法撤销。是否继续？',
+    daysLeft: '剩余{days}天',
     delete: '删除',
     start: '开始',
     stop: '停止',
@@ -311,13 +323,14 @@ export function LanguageProvider({ children }) {
   }, []);
 
   const t = useCallback(
-    (key) => {
+    (key, params = {}) => {
       const keys = key.split('.');
       let value = translations[language];
       for (const k of keys) {
         value = value?.[k];
       }
-      return value || key;
+      if (typeof value !== 'string') return key;
+      return value.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`);
     },
     [language],
   );
