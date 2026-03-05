@@ -27,6 +27,9 @@ import {
   renameItem,
   deleteItem,
   archiveItem,
+  trashItem,
+  restoreItem,
+  purgeExpiredTrash,
   addLog,
   getTodaysLogs,
   getLogsByDate,
@@ -227,10 +230,12 @@ function App() {
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
     setItems(allItems);
-
+    const trashedIds = new Set(allItems.filter(i => i.trashed).map(i => i.id));
     const totalsMap = {};
     for (const log of logs) {
-      totalsMap[log.itemId] = (totalsMap[log.itemId] || 0) + log.duration;
+      if (!trashedIds.has(log.itemId)) {
+        totalsMap[log.itemId] = (totalsMap[log.itemId] || 0) + log.duration;
+      }
     }
     setTotals(totalsMap);
   }, []);
@@ -238,6 +243,21 @@ function App() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    const purge = async () => {
+      const expired = await purgeExpiredTrash();
+      if (expired.length > 0) {
+        await loadData();
+        if (user) {
+          for (const item of expired) {
+            backend.pushDeleteItem(item.name, user.id).catch(console.error);
+          }
+        }
+      }
+    };
+    purge();
+  }, [loadData, user, backend]);
 
   // Refresh practice data when the calendar day changes (app left open past midnight)
   useEffect(() => {
@@ -477,6 +497,35 @@ function App() {
   );
 
   const handleDeleteItem = useCallback(
+    async (id) => {
+      if (activeItemId === id) {
+        stopTimer();
+        setActiveItemId(null);
+        setElapsedTime(0);
+      }
+      const item = await db.practiceItems.get(id);
+      await trashItem(id);
+      await loadData();
+      if (user && item) {
+        backend.pushTrashItem(item.name, true, new Date().toISOString(), user.id).catch(console.error);
+      }
+    },
+    [activeItemId, stopTimer, loadData, user, backend],
+  );
+
+  const handleRestoreItem = useCallback(
+    async (id) => {
+      const item = await db.practiceItems.get(id);
+      await restoreItem(id);
+      await loadData();
+      if (user && item) {
+        backend.pushTrashItem(item.name, false, null, user.id).catch(console.error);
+      }
+    },
+    [loadData, user, backend],
+  );
+
+  const handlePermanentDelete = useCallback(
     async (id) => {
       if (activeItemId === id) {
         stopTimer();
@@ -1053,6 +1102,8 @@ function App() {
               onAddItem={handleAddItem}
               onRenameItem={handleRenameItem}
               onDeleteItem={handleDeleteItem}
+              onRestoreItem={handleRestoreItem}
+              onPermanentDelete={handlePermanentDelete}
               onArchiveItem={handleArchiveItem}
               onReorder={handleReorder}
             />
@@ -1142,7 +1193,7 @@ function App() {
 
               {reportSubpage === 'daily' && (
                 <DailyReport
-                  items={items}
+                  items={items.filter(i => !i.trashed)}
                   reportDate={reportDate}
                   reportLogs={reportLogs}
                   onDateChange={handleReportDateChange}
@@ -1152,7 +1203,7 @@ function App() {
 
               {reportSubpage === 'weekly' && (
                 <WeeklyReport
-                  items={items}
+                  items={items.filter(i => !i.trashed)}
                   weekStart={weekStart}
                   weekLogs={weekLogs}
                   onWeekChange={handleWeekChange}
@@ -1162,7 +1213,7 @@ function App() {
 
               {reportSubpage === 'monthly' && (
                 <MonthlyReport
-                  items={items}
+                  items={items.filter(i => !i.trashed)}
                   monthStart={monthStart}
                   monthLogs={monthLogs}
                   onMonthChange={handleMonthChange}
