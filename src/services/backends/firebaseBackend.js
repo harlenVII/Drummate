@@ -105,6 +105,8 @@ const firebaseBackend = {
       const data = { name: localItem.name, created: serverTimestamp() };
       if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
       data.archived = localItem.archived ?? false;
+      data.trashed = localItem.trashed ?? false;
+      data.trashed_at = localItem.trashedAt || '';
       await setDoc(doc(itemsRef(userId), docId), data, { merge: true });
     } catch (err) {
       if (!navigator.onLine) {
@@ -225,6 +227,22 @@ const firebaseBackend = {
     }
   },
 
+  async pushTrashItem(name, trashed, trashedAt, userId) {
+    try {
+      const docId = encodeURIComponent(name);
+      await updateDoc(doc(itemsRef(userId), docId), {
+        trashed: !!trashed,
+        trashed_at: trashedAt || '',
+      });
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('trash_item', { name, trashed: !!trashed, trashedAt: trashedAt || '' });
+      } else {
+        throw err;
+      }
+    }
+  },
+
   // Sync — pull
   async pullAll(userId) {
     const itemsSnap = await getDocs(itemsRef(userId));
@@ -237,6 +255,8 @@ const firebaseBackend = {
           name: data.name,
           sortOrder: data.sort_order ?? 0,
           archived: data.archived ?? false,
+          trashed: data.trashed ?? false,
+          trashedAt: data.trashed_at || null,
         });
       } else {
         const updates = {};
@@ -245,6 +265,10 @@ const firebaseBackend = {
         }
         if (data.archived != null && existing.archived !== data.archived) {
           updates.archived = data.archived;
+        }
+        if (data.trashed != null && existing.trashed !== data.trashed) {
+          updates.trashed = data.trashed;
+          updates.trashedAt = data.trashed_at || null;
         }
         if (Object.keys(updates).length > 0) {
           await db.practiceItems.update(existing.id, updates);
@@ -311,6 +335,8 @@ const firebaseBackend = {
           }
         } else if (entry.action === 'archive_item') {
           await firebaseBackend.pushArchiveItem(entry.payload.name, entry.payload.archived, userId);
+        } else if (entry.action === 'trash_item') {
+          await firebaseBackend.pushTrashItem(entry.payload.name, entry.payload.trashed, entry.payload.trashedAt, userId);
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
@@ -339,6 +365,8 @@ const firebaseBackend = {
               name: data.name,
               sortOrder,
               archived: data.archived ?? false,
+              trashed: data.trashed ?? false,
+              trashedAt: data.trashed_at || null,
             });
             onDataChanged();
           }
@@ -352,6 +380,10 @@ const firebaseBackend = {
             }
             if (data.archived != null && localItem.archived !== data.archived) {
               updates.archived = data.archived;
+            }
+            if (data.trashed != null && localItem.trashed !== data.trashed) {
+              updates.trashed = data.trashed;
+              updates.trashedAt = data.trashed_at || null;
             }
             if (Object.keys(updates).length > 0) {
               await db.practiceItems.update(localItem.id, updates);
