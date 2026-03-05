@@ -15,6 +15,7 @@
  *   pushDeleteItem(name, userId) → void
  *   pushRenameItem(oldName, newName, userId) → void
  *   pushReorder(items, userId) → void       // items: [{ name, sortOrder }]
+ *   pushArchiveItem(name, archived, userId) → void
  *   pullAll(userId) → void
  *   pushAllLocal(userId) → void
  *   flushSyncQueue(userId) → void
