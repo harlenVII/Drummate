@@ -21,6 +21,8 @@ export async function pushItem(localItem, userId) {
       user: userId,
       sort_order: localItem.sortOrder ?? 0,
       archived: localItem.archived ?? false,
+      trashed: localItem.trashed ?? false,
+      trashed_at: localItem.trashedAt || '',
     }, { requestKey: null });
   } catch (err) {
     if (!navigator.onLine) {
@@ -157,6 +159,27 @@ export async function pushArchiveItem(name, archived, userId) {
   }
 }
 
+export async function pushTrashItem(name, trashed, trashedAt, userId) {
+  try {
+    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
+      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name }),
+      requestKey: null,
+    });
+    if (remoteItems.totalItems > 0) {
+      await pb.collection('practice_items').update(remoteItems.items[0].id, {
+        trashed: !!trashed,
+        trashed_at: trashedAt || '',
+      }, { requestKey: null });
+    }
+  } catch (err) {
+    if (!navigator.onLine) {
+      await queueSync('trash_item', { name, trashed: !!trashed, trashedAt: trashedAt || '' });
+    } else {
+      throw err;
+    }
+  }
+}
+
 // --- Sync queue for offline writes ---
 
 async function queueSync(action, payload) {
@@ -186,6 +209,8 @@ export async function flushSyncQueue(userId) {
         await pushReorder(entry.payload.items, userId);
       } else if (entry.action === 'archive_item') {
         await pushArchiveItem(entry.payload.name, entry.payload.archived, userId);
+      } else if (entry.action === 'trash_item') {
+        await pushTrashItem(entry.payload.name, entry.payload.trashed, entry.payload.trashedAt, userId);
       }
       await db.syncQueue.delete(entry.id);
     } catch (err) {
@@ -212,6 +237,8 @@ export async function pullAll(userId) {
         name: remote.name,
         sortOrder: remote.sort_order ?? 0,
         archived: remote.archived ?? false,
+        trashed: remote.trashed ?? false,
+        trashedAt: remote.trashed_at || null,
       });
     } else {
       const updates = {};
@@ -220,6 +247,10 @@ export async function pullAll(userId) {
       }
       if (remote.archived != null && existing.archived !== remote.archived) {
         updates.archived = remote.archived;
+      }
+      if (remote.trashed != null && existing.trashed !== remote.trashed) {
+        updates.trashed = remote.trashed;
+        updates.trashedAt = remote.trashed_at || null;
       }
       if (Object.keys(updates).length > 0) {
         await db.practiceItems.update(existing.id, updates);
@@ -283,6 +314,8 @@ export function subscribeToChanges(onDataChanged) {
           name: e.record.name,
           sortOrder: e.record.sort_order ?? 0,
           archived: e.record.archived ?? false,
+          trashed: e.record.trashed ?? false,
+          trashedAt: e.record.trashed_at || null,
         });
         onDataChanged();
       }
@@ -297,6 +330,10 @@ export function subscribeToChanges(onDataChanged) {
         }
         if (e.record.archived != null && localByName.archived !== e.record.archived) {
           updates.archived = e.record.archived;
+        }
+        if (e.record.trashed != null && localByName.trashed !== e.record.trashed) {
+          updates.trashed = e.record.trashed;
+          updates.trashedAt = e.record.trashed_at || null;
         }
         if (Object.keys(updates).length > 0) {
           await db.practiceItems.update(localByName.id, updates);
