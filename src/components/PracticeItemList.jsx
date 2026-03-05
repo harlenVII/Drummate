@@ -53,6 +53,8 @@ function PracticeItemList({
   onDeleteItem,
   onReorder,
   onArchiveItem,
+  onRestoreItem,
+  onPermanentDelete,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
@@ -60,12 +62,15 @@ function PracticeItemList({
   const [editingName, setEditingName] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [showTrashed, setShowTrashed] = useState(false);
 
-  const activeItems = items.filter(item => !item.archived);
-  const archivedItems = items.filter(item => item.archived);
+  const activeItems = items.filter(item => !item.archived && !item.trashed);
+  const archivedItems = items.filter(item => item.archived && !item.trashed);
+  const trashedItems = items.filter(item => item.trashed);
   const hasArchivedItems = archivedItems.length > 0;
+  const hasTrashedItems = trashedItems.length > 0;
   const displayItems = editing
-    ? (showArchived ? items : activeItems)
+    ? (showArchived ? items.filter(i => !i.trashed) : activeItems)
     : activeItems;
 
   const sensors = useSensors(
@@ -274,6 +279,63 @@ function PracticeItemList({
         >
           {t('done')}
         </button>
+
+        {hasTrashedItems && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowTrashed(!showTrashed)}
+              className="self-start px-3 py-1 text-sm text-red-500 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              {showTrashed ? t('hideTrash') : `${t('showTrash')} (${trashedItems.length})`}
+            </button>
+
+            {showTrashed && (
+              <div className="flex flex-col gap-2 mt-3">
+                {trashedItems.map((item) => {
+                  const daysLeft = item.trashedAt
+                    ? Math.max(0, 30 - Math.floor((Date.now() - new Date(item.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
+                    : 0;
+                  return (
+                    <div key={item.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center opacity-50">
+                      <div className="flex-1 flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-800">{item.name}</span>
+                          <span className="text-xs text-red-400">
+                            {t('daysLeft', { days: daysLeft })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => onRestoreItem(item.id)}
+                            className="p-1.5 text-gray-400 hover:text-green-500 transition-colors"
+                            title={t('restore')}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414l5-5a1 1 0 011.414 0l5 5a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414 0zm0-6a1 1 0 010-1.414l5-5a1 1 0 011.414 0l5 5a1 1 0 01-1.414 1.414L10 5.414 5.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(t('confirmPermanentDelete'))) {
+                                onPermanentDelete(item.id);
+                              }
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                            title={t('permanentDelete')}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
