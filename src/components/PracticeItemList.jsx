@@ -63,6 +63,7 @@ function PracticeItemList({
   const [focusedIndex, setFocusedIndex] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [showTrashed, setShowTrashed] = useState(false);
+  const [now] = useState(Date.now);
 
   const activeItems = items.filter(item => !item.archived && !item.trashed);
   const archivedItems = items.filter(item => item.archived && !item.trashed);
@@ -293,7 +294,7 @@ function PracticeItemList({
               <div className="flex flex-col gap-2 mt-3">
                 {trashedItems.map((item) => {
                   const daysLeft = item.trashedAt
-                    ? Math.max(0, 30 - Math.floor((Date.now() - new Date(item.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
+                    ? Math.max(0, 30 - Math.floor((now - new Date(item.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
                     : 0;
                   return (
                     <div key={item.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center opacity-50">
