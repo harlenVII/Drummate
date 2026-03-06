@@ -81,6 +81,22 @@ export function getMonthEnd(dateString) {
 }
 
 /**
+ * Returns the first day of the year containing dateString.
+ */
+export function getYearStart(dateString) {
+  const year = dateString.split('-')[0];
+  return `${year}-01-01`;
+}
+
+/**
+ * Returns the last day of the year containing dateString.
+ */
+export function getYearEnd(dateString) {
+  const year = dateString.split('-')[0];
+  return `${year}-12-31`;
+}
+
+/**
  * Returns an array of all YYYY-MM-DD strings from startDate to endDate inclusive.
  */
 export function getDaysInRange(startDate, endDate) {

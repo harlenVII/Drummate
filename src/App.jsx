@@ -4,6 +4,7 @@ import PracticeItemList from './components/PracticeItemList';
 import DailyReport from './components/DailyReport';
 import WeeklyReport from './components/WeeklyReport';
 import MonthlyReport from './components/MonthlyReport';
+import YearlyReport from './components/YearlyReport';
 import Metronome from './components/Metronome';
 import SequencerPage from './components/SequencerPage';
 import TabBar from './components/TabBar';
@@ -36,7 +37,7 @@ import {
   getLogsByDateRange,
   updateItemOrder,
 } from './services/database';
-import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd } from './utils/dateHelpers';
+import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
@@ -66,6 +67,8 @@ function App() {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(getTodayString()));
   const [weekLogs, setWeekLogs] = useState([]);
   const [monthStart, setMonthStart] = useState(() => getMonthStart(getTodayString()));
+  const [yearStart, setYearStart] = useState(() => getYearStart(getTodayString()));
+  const [yearLogs, setYearLogs] = useState([]);
   const [monthLogs, setMonthLogs] = useState([]);
 
   // Metronome state (persists across tab changes and page reloads)
@@ -600,6 +603,12 @@ function App() {
     setMonthLogs(logs);
   }, []);
 
+  const loadYearData = useCallback(async (yearStartStr) => {
+    const yearEndStr = getYearEnd(yearStartStr);
+    const logs = await getLogsByDateRange(yearStartStr, yearEndStr);
+    setYearLogs(logs);
+  }, []);
+
   const handleReportDateChange = useCallback(
     async (dateString) => {
       setReportDate(dateString);
@@ -618,6 +627,11 @@ function App() {
     await loadMonthData(newMonthStart);
   }, [loadMonthData]);
 
+  const handleYearChange = useCallback(async (newYearStart) => {
+    setYearStart(newYearStart);
+    await loadYearData(newYearStart);
+  }, [loadYearData]);
+
   const handleTabChange = useCallback(
     async (tab) => {
       setActiveTab(tab);
@@ -625,17 +639,20 @@ function App() {
         const today = getTodayString();
         const wStart = getWeekStart(today);
         const mStart = getMonthStart(today);
+        const yStart = getYearStart(today);
         setReportDate(today);
         setWeekStart(wStart);
         setMonthStart(mStart);
+        setYearStart(yStart);
         await Promise.all([
           loadReportData(today),
           loadWeekData(wStart),
           loadMonthData(mStart),
+          loadYearData(yStart),
         ]);
       }
     },
-    [loadReportData, loadWeekData, loadMonthData],
+    [loadReportData, loadWeekData, loadMonthData, loadYearData],
   );
 
   const handleSubpageChange = useCallback(
@@ -1176,7 +1193,7 @@ function App() {
             <>
               {/* Report subpage toggle */}
               <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
-                {['daily', 'weekly', 'monthly'].map((page) => (
+                {['daily', 'weekly', 'monthly', 'yearly'].map((page) => (
                   <button
                     key={page}
                     onClick={() => setReportSubpage(page)}
@@ -1217,6 +1234,16 @@ function App() {
                   monthStart={monthStart}
                   monthLogs={monthLogs}
                   onMonthChange={handleMonthChange}
+                  timeUnit={timeUnit}
+                />
+              )}
+
+              {reportSubpage === 'yearly' && (
+                <YearlyReport
+                  items={items.filter(i => !i.trashed)}
+                  yearStart={yearStart}
+                  yearLogs={yearLogs}
+                  onYearChange={handleYearChange}
                   timeUnit={timeUnit}
                 />
               )}
