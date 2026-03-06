@@ -12,8 +12,8 @@ export default defineConfig({
         name: 'Drummate',
         short_name: 'Drummate',
         description: 'Drumming practice tracker',
-        theme_color: '#3b82f6',
-        background_color: '#f3f4f6',
+        theme_color: '#1a1a2e',
+        background_color: '#1a1a2e',
         display: 'standalone',
         start_url: '/',
         icons: [

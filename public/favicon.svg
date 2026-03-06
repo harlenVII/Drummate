@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#1a1a2e"/>
+
+  <!-- Beat dots and bars -->
+  <!-- Bar spacing: 5 bars, each 40px wide, 20px gap between, total = 5*40 + 4*20 = 280px, offset = (512-280)/2 = 116 -->
+  <!-- Bar area: y from 380 (bottom) upward. Max bar height region = 240px. Dots at top. -->
+
+  <!-- Bar 1 - Coral - 40% height = 96px -->
+  <circle cx="136" cy="148" r="16" fill="#FF6B6B"/>
+  <rect x="116" y="284" width="40" height="96" rx="20" fill="#FF6B6B"/>
+
+  <!-- Bar 2 - Teal - 60% height = 144px -->
+  <circle cx="196" cy="108" r="16" fill="#4ECDC4"/>
+  <rect x="176" y="236" width="40" height="144" rx="20" fill="#4ECDC4"/>
+
+  <!-- Bar 3 - Amber - 75% height = 180px -->
+  <circle cx="256" cy="76" r="16" fill="#FFD93D"/>
+  <rect x="236" y="200" width="40" height="180" rx="20" fill="#FFD93D"/>
+
+  <!-- Bar 4 - Purple - 50% height = 120px -->
+  <circle cx="316" cy="128" r="16" fill="#A855F7"/>
+  <rect x="296" y="260" width="40" height="120" rx="20" fill="#A855F7"/>
+
+  <!-- Bar 5 - Blue - 35% height = 84px -->
+  <circle cx="376" cy="160" r="16" fill="#60A5FA"/>
+  <rect x="356" y="296" width="40" height="84" rx="20" fill="#60A5FA"/>
+</svg>
