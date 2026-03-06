@@ -9,8 +9,10 @@ const DEVICE = 'wasm';
 
 const VOICES = {
   en: 'af_bella',
-  zh: 'zf_xiaobei',
 };
+
+// Languages supported by Kokoro TTS (only English/British voices available)
+const SUPPORTED_LANGUAGES = new Set(Object.keys(VOICES));
 
 /**
  * Check if the Kokoro TTS model is already cached in browser Cache API.
@@ -38,6 +40,10 @@ export function createTtsService() {
   return {
     get isReady() {
       return loaded;
+    },
+
+    supportsLanguage(language) {
+      return SUPPORTED_LANGUAGES.has(language);
     },
 
     async load(progressCallback) {
@@ -72,7 +78,11 @@ export function createTtsService() {
         await audioCtx.resume();
       }
 
-      const voice = VOICES[language] || VOICES.en;
+      const voice = VOICES[language];
+      if (!voice) {
+        // Language not supported by Kokoro — let caller fall back to system TTS
+        throw new Error(`Kokoro TTS does not support language: ${language}`);
+      }
 
       // Generate full audio in one pass — avoids per-sentence gaps caused by
       // WASM blocking the main thread between streaming chunks.
