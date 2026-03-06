@@ -617,6 +617,15 @@ function App() {
     [loadReportData],
   );
 
+  const handleDayClick = useCallback(
+    async (dateString) => {
+      setReportDate(dateString);
+      setReportSubpage('daily');
+      await loadReportData(dateString);
+    },
+    [loadReportData],
+  );
+
   const handleWeekChange = useCallback(async (newWeekStart) => {
     setWeekStart(newWeekStart);
     await loadWeekData(newWeekStart);
@@ -1224,6 +1233,7 @@ function App() {
                   weekStart={weekStart}
                   weekLogs={weekLogs}
                   onWeekChange={handleWeekChange}
+                  onDayClick={handleDayClick}
                   timeUnit={timeUnit}
                 />
               )}
@@ -1234,6 +1244,7 @@ function App() {
                   monthStart={monthStart}
                   monthLogs={monthLogs}
                   onMonthChange={handleMonthChange}
+                  onDayClick={handleDayClick}
                   timeUnit={timeUnit}
                 />
               )}
@@ -1244,6 +1255,7 @@ function App() {
                   yearStart={yearStart}
                   yearLogs={yearLogs}
                   onYearChange={handleYearChange}
+                  onDayClick={handleDayClick}
                   timeUnit={timeUnit}
                 />
               )}

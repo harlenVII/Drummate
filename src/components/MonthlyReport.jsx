@@ -11,7 +11,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, timeUnit }) {
+function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, timeUnit }) {
   const { t } = useLanguage();
   const monthEnd = getMonthEnd(monthStart);
   const monthDays = getDaysInRange(monthStart, monthEnd);
@@ -233,7 +233,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, timeUnit }
             const cy = r * (CELL + GAP) + HEADER_H;
             const isDark = seconds > p50;
             return (
-              <g key={date}>
+              <g key={date} onClick={() => onDayClick(date)} style={{ cursor: 'pointer' }}>
                 <rect
                   x={cx}
                   y={cy}

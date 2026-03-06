@@ -13,7 +13,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
+function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, timeUnit }) {
   const { t } = useLanguage();
   const yearEnd = getYearEnd(yearStart);
   const year = yearStart.split('-')[0];
@@ -261,6 +261,8 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
                 fill={intensityColor(seconds)}
                 stroke={isToday ? '#3b82f6' : 'none'}
                 strokeWidth={isToday ? 1.5 : 0}
+                onClick={() => onDayClick(date)}
+                style={{ cursor: 'pointer' }}
               />
             );
           })}

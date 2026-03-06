@@ -9,7 +9,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, timeUnit }) {
+function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, timeUnit }) {
   const { t } = useLanguage();
   const weekEnd = getWeekEnd(weekStart);
   const weekDays = getDaysInRange(weekStart, weekEnd);
@@ -146,7 +146,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, timeUnit }) {
               const isToday = day === today;
 
               return (
-                <g key={day}>
+                <g key={day} onClick={() => onDayClick(day)} style={{ cursor: 'pointer' }}>
                   <rect
                     x={x}
                     y={y}
