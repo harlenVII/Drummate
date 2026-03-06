@@ -1,7 +1,6 @@
 /**
  * ttsService.js — Kokoro.js TTS wrapper for natural on-device speech synthesis.
  * Uses WASM backend for iOS Safari compatibility.
- * Uses streaming API to avoid blocking the main thread on long text.
  */
 
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
@@ -75,36 +74,34 @@ export function createTtsService() {
 
       const voice = VOICES[language] || VOICES.en;
 
-      // Use streaming to process text in chunks, reducing main-thread blocking
-      const stream = tts.stream(text, { voice });
-      for await (const { audio } of stream) {
-        if (stopped) break;
+      // Generate full audio in one pass — avoids per-sentence gaps caused by
+      // WASM blocking the main thread between streaming chunks.
+      const result = await tts.generate(text, { voice });
+      if (stopped) return;
 
-        const sampleRate = audio.sampling_rate || 24000;
-        const buffer = audioCtx.createBuffer(1, audio.audio.length, sampleRate);
-        buffer.getChannelData(0).set(audio.audio);
+      const sampleRate = result.sampling_rate || 24000;
+      const buffer = audioCtx.createBuffer(1, result.audio.length, sampleRate);
+      buffer.getChannelData(0).set(result.audio);
 
-        // Play this chunk and wait for it to finish before the next
-        await new Promise((resolve) => {
-          const source = audioCtx.createBufferSource();
-          source.buffer = buffer;
-          source.connect(audioCtx.destination);
-          source.onended = () => {
-            if (currentSource === source) currentSource = null;
-            resolve();
-          };
-          currentSource = source;
-          source.start(0);
-        });
-
-        if (stopped) break;
-      }
+      await new Promise((resolve) => {
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.onended = () => {
+          currentSource = null;
+          resolve();
+        };
+        currentSource = source;
+        source.start(0);
+      });
     },
 
     stop() {
       stopped = true;
       if (currentSource) {
-        try { currentSource.stop(); } catch {}
+        try {
+          currentSource.stop();
+        } catch {}
         currentSource = null;
       }
     },
