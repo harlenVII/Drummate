@@ -25,7 +25,9 @@ function SettingsPanel({
 }) {
   const { t } = useLanguage();
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
-  const kokoroDisabled = !aiCoachEnabled && !handsFreeMode;
+  const kokoroLangUnsupported = language === 'zh';
+  const kokoroDisabled = !aiCoachEnabled && !handsFreeMode || kokoroLangUnsupported;
+  const kokoroEffective = kokoroEnabled && !kokoroLangUnsupported;
 
   return (
     <>
@@ -120,14 +122,14 @@ function SettingsPanel({
                 onClick={onToggleKokoro}
                 disabled={kokoroStatus === 'downloading' || kokoroDisabled}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  kokoroEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  kokoroEffective ? 'bg-blue-600' : 'bg-gray-300'
                 } ${kokoroStatus === 'downloading' || kokoroDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 role="switch"
-                aria-checked={kokoroEnabled}
+                aria-checked={kokoroEffective}
               >
                 <span
                   className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                    kokoroEnabled ? 'translate-x-5' : 'translate-x-0'
+                    kokoroEffective ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
@@ -145,7 +147,7 @@ function SettingsPanel({
               </div>
             )}
 
-            {kokoroStatus === 'ready' && kokoroEnabled && (
+            {kokoroStatus === 'ready' && kokoroEffective && (
               <p className="text-xs text-green-600">{t('naturalVoice.ready')}</p>
             )}
 
@@ -154,7 +156,9 @@ function SettingsPanel({
             )}
 
             {kokoroDisabled && (
-              <p className="text-xs text-gray-400">{t('naturalVoice.requires')}</p>
+              <p className="text-xs text-gray-400">
+                {kokoroLangUnsupported ? t('naturalVoice.unsupportedLang') : t('naturalVoice.requires')}
+              </p>
             )}
 
             {!kokoroDisabled && kokoroStatus === 'idle' && !kokoroEnabled && (
