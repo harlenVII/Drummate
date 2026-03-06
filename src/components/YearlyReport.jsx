@@ -11,6 +11,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
   const { t } = useLanguage();
@@ -49,7 +50,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
 
   // --- GitHub-style heatmap ---
   // Build week columns starting from Jan 1
-  const allDays = getDaysInRange(yearStart, yearEnd > today ? today : yearEnd);
+  const allDays = getDaysInRange(yearStart, yearEnd);
 
   // Compute intensity buckets
   const activeDurations = allDays
@@ -71,50 +72,47 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
     return '#1e3a8a'; // blue-900
   };
 
-  // Build grid: columns = weeks, rows = day of week (0=Mon, 6=Sun)
-  const CELL = 12;
-  const GAP = 2;
-  const LABEL_W = 20; // space for day-of-week labels
+  // Build grid: columns = day of week (0=Mon, 6=Sun), rows = weeks
+  const CELL = 14;
+  const GAP = 3;
+  const HEADER_H = 20; // space for weekday headers
+
+  const jan1 = new Date(yearStart + 'T12:00:00');
+  const jan1DayOfWeek = (jan1.getDay() + 6) % 7;
 
   const cells = [];
   for (const day of allDays) {
     const date = new Date(day + 'T12:00:00');
     const dayOfWeek = (date.getDay() + 6) % 7; // 0=Mon, 6=Sun
-    // Week column: how many weeks since Jan 1
-    const jan1 = new Date(yearStart + 'T12:00:00');
-    const jan1DayOfWeek = (jan1.getDay() + 6) % 7;
     const daysSinceStart = Math.round((date - jan1) / (1000 * 60 * 60 * 24));
-    const col = Math.floor((daysSinceStart + jan1DayOfWeek) / 7);
-    cells.push({ date: day, col, row: dayOfWeek });
+    const weekRow = Math.floor((daysSinceStart + jan1DayOfWeek) / 7);
+    cells.push({ date: day, col: dayOfWeek, row: weekRow });
   }
 
-  const maxCol = cells.length > 0 ? Math.max(...cells.map((c) => c.col)) : 0;
-  const gridW = LABEL_W + (maxCol + 1) * (CELL + GAP);
-  const gridH = 7 * (CELL + GAP) - GAP;
+  const maxRow = cells.length > 0 ? Math.max(...cells.map((c) => c.row)) : 0;
+  const LABEL_W = 24; // space for month labels on left
+  const gridW = LABEL_W + 7 * (CELL + GAP) - GAP;
+  const gridH = (maxRow + 1) * (CELL + GAP) - GAP;
 
-  // Month labels for heatmap
+  // Month labels for heatmap (positioned on left by row)
   const monthLabels = [];
   for (let m = 0; m < 12; m++) {
     const monthStr = `${year}-${String(m + 1).padStart(2, '0')}-01`;
-    if (monthStr > today) break;
+    if (monthStr > yearEnd) break;
     const monthDate = new Date(monthStr + 'T12:00:00');
-    const jan1 = new Date(yearStart + 'T12:00:00');
-    const jan1DayOfWeek = (jan1.getDay() + 6) % 7;
     const daysSince = Math.round((monthDate - jan1) / (1000 * 60 * 60 * 24));
-    const col = Math.floor((daysSince + jan1DayOfWeek) / 7);
-    const shortMonth = monthDate.toLocaleDateString(undefined, { month: 'short' });
-    monthLabels.push({ label: shortMonth, x: LABEL_W + col * (CELL + GAP) });
+    const weekRow = Math.floor((daysSince + jan1DayOfWeek) / 7);
+    monthLabels.push({ label: t(`analytics.months.${MONTH_KEYS[m]}`), y: HEADER_H + weekRow * (CELL + GAP) + CELL / 2 + 3 });
   }
 
-  const MONTH_LABEL_H = 16;
-  const heatmapTotalH = MONTH_LABEL_H + gridH;
+  const heatmapTotalH = HEADER_H + gridH;
 
   // --- Monthly bar chart ---
   const monthTotals = [];
   for (let m = 0; m < 12; m++) {
     const mStart = `${year}-${String(m + 1).padStart(2, '0')}-01`;
     const mEnd = getMonthEnd(mStart);
-    const days = getDaysInRange(mStart, mEnd > today ? today : mEnd);
+    const days = getDaysInRange(mStart, mEnd);
     let total = 0;
     for (const d of days) {
       total += dayTotals[d] || 0;
@@ -131,15 +129,11 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
   const chartW = 12 * (BAR_W + BAR_GAP) - BAR_GAP;
   const chartTotalH = CHART_PAD_TOP + CHART_H + CHART_PAD_BOTTOM;
 
-  const monthShortLabels = Array.from({ length: 12 }, (_, i) =>
-    new Date(2024, i, 1).toLocaleDateString(undefined, { month: 'narrow' })
-  );
+  const monthShortLabels = MONTH_KEYS.map((key) => t(`analytics.months.${key}`));
 
   // Practice days count
   const practiceDayCount = allDays.filter((d) => (dayTotals[d] || 0) > 0).length;
-  const totalDaysInYear = yearEnd > today
-    ? getDaysInRange(yearStart, today).length
-    : getDaysInRange(yearStart, yearEnd).length;
+  const totalDaysInYear = allDays.length;
 
   // Navigation
   const handlePrevYear = () => {
@@ -220,34 +214,36 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
       </div>
 
       {/* GitHub-style heatmap */}
-      <div className="bg-white rounded-lg shadow-sm p-4 overflow-x-auto">
+      <div className="bg-white rounded-lg shadow-sm p-4">
         <svg
           viewBox={`0 0 ${gridW} ${heatmapTotalH}`}
           className="w-full"
-          style={{ minWidth: '500px' }}
+          style={{ maxHeight: '1900px' }}
+          preserveAspectRatio="xMidYMin meet"
         >
-          {/* Month labels */}
-          {monthLabels.map(({ label, x }, i) => (
+          {/* Weekday headers (columns) */}
+          {WEEKDAY_KEYS.map((key, i) => (
+            <text
+              key={key}
+              x={LABEL_W + i * (CELL + GAP) + CELL / 2}
+              y={14}
+              textAnchor="middle"
+              fontSize="8"
+              fill="#9ca3af"
+            >
+              {t(`analytics.weekdays.${key}`)}
+            </text>
+          ))}
+          {/* Month labels (rows, left side) */}
+          {monthLabels.map(({ label, y }, i) => (
             <text
               key={i}
-              x={x}
-              y={10}
-              fontSize="8"
+              x={0}
+              y={y}
+              fontSize="7"
               fill="#9ca3af"
             >
               {label}
-            </text>
-          ))}
-          {/* Day-of-week labels */}
-          {[1, 3, 5].map((row) => (
-            <text
-              key={row}
-              x={0}
-              y={MONTH_LABEL_H + row * (CELL + GAP) + CELL / 2 + 3}
-              fontSize="8"
-              fill="#9ca3af"
-            >
-              {t(`analytics.weekdays.${WEEKDAY_KEYS[row]}`)}
             </text>
           ))}
           {/* Day cells */}
@@ -258,7 +254,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, timeUnit }) {
               <rect
                 key={date}
                 x={LABEL_W + col * (CELL + GAP)}
-                y={MONTH_LABEL_H + row * (CELL + GAP)}
+                y={HEADER_H + row * (CELL + GAP)}
                 width={CELL}
                 height={CELL}
                 rx={2}

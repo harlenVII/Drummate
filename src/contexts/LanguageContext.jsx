@@ -127,6 +127,11 @@ const translations = {
         sat: 'Sat',
         sun: 'Sun',
       },
+      months: {
+        jan: 'Jan', feb: 'Feb', mar: 'Mar', apr: 'Apr',
+        may: 'May', jun: 'Jun', jul: 'Jul', aug: 'Aug',
+        sep: 'Sep', oct: 'Oct', nov: 'Nov', dec: 'Dec',
+      },
     },
     naturalVoice: {
       title: 'Natural Voice (AI)',
@@ -284,6 +289,11 @@ const translations = {
         fri: '五',
         sat: '六',
         sun: '日',
+      },
+      months: {
+        jan: '1月', feb: '2月', mar: '3月', apr: '4月',
+        may: '5月', jun: '6月', jul: '7月', aug: '8月',
+        sep: '9月', oct: '10月', nov: '11月', dec: '12月',
       },
     },
     naturalVoice: {
