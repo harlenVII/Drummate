@@ -5,6 +5,7 @@ import DailyReport from './components/DailyReport';
 import WeeklyReport from './components/WeeklyReport';
 import MonthlyReport from './components/MonthlyReport';
 import YearlyReport from './components/YearlyReport';
+import StatsReport from './components/StatsReport';
 import Metronome from './components/Metronome';
 import SequencerPage from './components/SequencerPage';
 import TabBar from './components/TabBar';
@@ -1202,7 +1203,7 @@ function App() {
             <>
               {/* Report subpage toggle */}
               <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
-                {['daily', 'weekly', 'monthly', 'yearly'].map((page) => (
+                {['daily', 'weekly', 'monthly', 'yearly', 'stats'].map((page) => (
                   <button
                     key={page}
                     onClick={() => setReportSubpage(page)}
@@ -1256,6 +1257,13 @@ function App() {
                   yearLogs={yearLogs}
                   onYearChange={handleYearChange}
                   onDayClick={handleDayClick}
+                  timeUnit={timeUnit}
+                />
+              )}
+
+              {reportSubpage === 'stats' && (
+                <StatsReport
+                  items={items.filter(i => !i.trashed)}
                   timeUnit={timeUnit}
                 />
               )}
