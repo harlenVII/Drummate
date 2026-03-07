@@ -32,6 +32,7 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange, timeUnit }) 
   // Create sorted list: items with data first (sorted by duration desc)
   const breakdown = items
     .map((item) => ({ id: item.id, name: item.name, duration: itemTotals[item.id] || 0 }))
+    .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
 
   const isToday = reportDate === getTodayString();

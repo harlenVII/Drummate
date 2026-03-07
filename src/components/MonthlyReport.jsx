@@ -42,6 +42,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       name: item.name,
       duration: itemTotals[item.id] || 0,
     }))
+    .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
 
   const isCurrentMonth = monthStart >= getMonthStart(today);
