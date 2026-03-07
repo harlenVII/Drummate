@@ -41,8 +41,8 @@ function StatsReport({ items, timeUnit }) {
     {
       title: t('stats.records'),
       items: [
-        { label: t('stats.mostPracticedItem'), value: stats.topItem || '-' },
-        { label: t('stats.bestMonth'), value: stats.bestMonth || '-' },
+        { label: t('stats.mostPracticedItem'), value: stats.topItem || '-', sub: stats.topItemDuration > 0 ? `${formatDuration(stats.topItemDuration, timeUnit)} ${t(timeUnit)}` : null },
+        { label: t('stats.bestMonth'), value: stats.bestMonth || '-', sub: stats.bestMonthDuration > 0 ? `${formatDuration(stats.bestMonthDuration, timeUnit)} ${t(timeUnit)}` : null },
       ],
     },
   ];
@@ -193,7 +193,9 @@ function computeStats(allLogs, items) {
     longestStreak,
     longestDay,
     topItem,
+    topItemDuration,
     bestMonth,
+    bestMonthDuration,
   };
 }
 
