@@ -26,7 +26,6 @@ function StatsReport({ items, timeUnit }) {
       items: [
         { label: t('stats.totalPracticeTime'), value: `${formatDuration(stats.totalTime, timeUnit)} ${t(timeUnit)}` },
         { label: t('stats.totalPracticeDays'), value: String(stats.totalDays) },
-        { label: t('stats.totalSessions'), value: String(stats.totalSessions) },
         { label: t('stats.avgDailyTime'), value: stats.totalDays > 0 ? `${formatDuration(Math.round(stats.totalTime / stats.totalDays), timeUnit)} ${t(timeUnit)}` : '-' },
       ],
     },
