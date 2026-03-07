@@ -50,8 +50,9 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   const isCurrentYear = yearStart >= getYearStart(today);
 
   // --- GitHub-style heatmap ---
-  // Build week columns starting from Jan 1
-  const allDays = getDaysInRange(yearStart, yearEnd);
+  // Build week columns starting from Jan 1, up to today for current year
+  const heatmapEnd = isCurrentYear ? (today < yearEnd ? today : yearEnd) : yearEnd;
+  const allDays = getDaysInRange(yearStart, heatmapEnd);
 
   // Compute intensity buckets
   const activeDurations = allDays
@@ -74,9 +75,9 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   };
 
   // Build grid: columns = day of week (0=Mon, 6=Sun), rows = weeks
-  const CELL = 14;
-  const GAP = 3;
-  const HEADER_H = 20; // space for weekday headers
+  const CELL = 10;
+  const GAP = 2;
+  const HEADER_H = 14; // space for weekday headers
 
   const jan1 = new Date(yearStart + 'T12:00:00');
   const jan1DayOfWeek = (jan1.getDay() + 6) % 7;
@@ -91,7 +92,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   }
 
   const maxRow = cells.length > 0 ? Math.max(...cells.map((c) => c.row)) : 0;
-  const LABEL_W = 24; // space for month labels on left
+  const LABEL_W = 18; // space for month labels on left
   const gridW = LABEL_W + 7 * (CELL + GAP) - GAP;
   const gridH = (maxRow + 1) * (CELL + GAP) - GAP;
 
@@ -103,10 +104,10 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
     const monthDate = new Date(monthStr + 'T12:00:00');
     const daysSince = Math.round((monthDate - jan1) / (1000 * 60 * 60 * 24));
     const weekRow = Math.floor((daysSince + jan1DayOfWeek) / 7);
-    monthLabels.push({ label: t(`analytics.months.${MONTH_KEYS[m]}`), y: HEADER_H + weekRow * (CELL + GAP) + CELL / 2 + 3 });
+    monthLabels.push({ label: t(`analytics.months.${MONTH_KEYS[m]}`), y: HEADER_H + weekRow * (CELL + GAP) + CELL / 2 + 2 });
   }
 
-  const heatmapTotalH = HEADER_H + gridH;
+  const heatmapTotalH = HEADER_H + gridH + 2; // +2 padding for stroke/rounded corners
 
   // --- Monthly bar chart ---
   const monthTotals = [];
@@ -215,21 +216,21 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
       </div>
 
       {/* GitHub-style heatmap */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 flex justify-center">
         <svg
+          width={gridW * 3}
           viewBox={`0 0 ${gridW} ${heatmapTotalH}`}
-          className="w-full"
-          style={{ maxHeight: '1900px' }}
           preserveAspectRatio="xMidYMin meet"
+          style={{ maxWidth: '100%' }}
         >
           {/* Weekday headers (columns) */}
           {WEEKDAY_KEYS.map((key, i) => (
             <text
               key={key}
               x={LABEL_W + i * (CELL + GAP) + CELL / 2}
-              y={14}
+              y={10}
               textAnchor="middle"
-              fontSize="8"
+              fontSize="6"
               fill="#9ca3af"
             >
               {t(`analytics.weekdays.${key}`)}
@@ -241,7 +242,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
               key={i}
               x={0}
               y={y}
-              fontSize="7"
+              fontSize="5.5"
               fill="#9ca3af"
             >
               {label}
@@ -261,7 +262,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
                 rx={2}
                 fill={intensityColor(seconds)}
                 stroke={isToday ? '#3b82f6' : 'none'}
-                strokeWidth={isToday ? 1.5 : 0}
+                strokeWidth={isToday ? 1 : 0}
                 onClick={() => onDayClick(date)}
                 style={{ cursor: 'pointer' }}
               />
