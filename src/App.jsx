@@ -622,13 +622,18 @@ function App() {
 
   const handleManualTimeAdjust = useCallback(async (itemId, deltaSeconds, date) => {
     const logId = await addLog(itemId, deltaSeconds, date);
-    await loadReportData(date);
-    await loadData();
+    await Promise.all([
+      loadReportData(date),
+      loadWeekData(weekStart),
+      loadMonthData(monthStart),
+      loadYearData(yearStart),
+      loadData(),
+    ]);
     if (user) {
       const log = await db.practiceLogs.get(logId);
       backend.pushLog(log, user.id).catch(console.error);
     }
-  }, [loadReportData, loadData, user, backend]);
+  }, [loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user, backend]);
 
   const handleEditTime = useCallback((itemId, itemName, currentSeconds) => {
     setEditTimeModal({ itemId, itemName, currentSeconds });
