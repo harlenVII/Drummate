@@ -3,10 +3,11 @@ import { formatTime, formatMinutes, formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 
-function DailyReport({ items, reportDate, reportLogs, onDateChange, timeUnit }) {
+function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, timeUnit }) {
   const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showItemPicker, setShowItemPicker] = useState(false);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -28,12 +29,22 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange, timeUnit }) 
     itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
     grandTotal += log.duration;
   }
+  grandTotal = Math.max(0, grandTotal);
 
   // Create sorted list: items with data first (sorted by duration desc)
   const breakdown = items
-    .map((item) => ({ id: item.id, name: item.name, duration: itemTotals[item.id] || 0 }))
+    .map((item) => ({ id: item.id, name: item.name, duration: Math.max(0, itemTotals[item.id] || 0) }))
     .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
+
+  // Items available for manual add (active + archived, excluding those already with logs today)
+  const itemIdsWithLogs = new Set(breakdown.map(e => e.id));
+  const availableItems = (allItems || items)
+    .filter(item => !item.trashed && !itemIdsWithLogs.has(item.id))
+    .sort((a, b) => {
+      if (a.archived !== b.archived) return a.archived ? 1 : -1;
+      return a.sortOrder - b.sortOrder;
+    });
 
   const isToday = reportDate === getTodayString();
 
@@ -106,7 +117,11 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange, timeUnit }) 
       {breakdown.map((entry) => {
         const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
         return (
-          <div key={entry.id} className="bg-white rounded-lg shadow-sm p-4">
+          <div
+            key={entry.id}
+            className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            onClick={() => onEditTime(entry.id, entry.name, entry.duration)}
+          >
             <div className="flex items-center justify-between">
               <span className={`font-medium ${entry.duration > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
                 {entry.name}
@@ -137,6 +152,14 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange, timeUnit }) 
           {t('noPracticeItems')}
         </p>
       )}
+
+      {/* Add time button */}
+      <button
+        onClick={() => setShowItemPicker(true)}
+        className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium hover:border-blue-400 hover:text-blue-500 transition-colors"
+      >
+        + {t('addManualTime')}
+      </button>
 
       {/* Generate Report button */}
       {grandTotal > 0 && (
@@ -182,6 +205,46 @@ function DailyReport({ items, reportDate, reportLogs, onDateChange, timeUnit }) 
               className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
             >
               {t('close')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Item picker modal */}
+      {showItemPicker && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+          onClick={() => setShowItemPicker(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-2 max-h-[70vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-gray-800 mb-2">{t('selectItem')}</h2>
+            {availableItems.length === 0 ? (
+              <p className="text-gray-400 text-center py-4">{t('noItemsToAdd')}</p>
+            ) : (
+              availableItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setShowItemPicker(false);
+                    onAddTime(item.id);
+                  }}
+                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between"
+                >
+                  <span className="font-medium text-gray-800">{item.name}</span>
+                  {item.archived && (
+                    <span className="text-xs text-gray-400 ml-2">{t('archived')}</span>
+                  )}
+                </button>
+              ))
+            )}
+            <button
+              onClick={() => setShowItemPicker(false)}
+              className="mt-2 px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            >
+              {t('cancel')}
             </button>
           </div>
         </div>

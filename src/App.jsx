@@ -18,6 +18,7 @@ import { MetronomeEngine } from './audio/metronomeEngine';
 import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
 import EncouragementButton from './components/EncouragementButton';
 import EncouragementModal from './components/EncouragementModal';
+import EditTimeModal from './components/EditTimeModal';
 import { createSttService } from './services/sttService';
 import { parseIntent, findBestItemMatch } from './services/intentParser';
 import { speak, getLang, cancelSpeech } from './services/voiceFeedback';
@@ -186,6 +187,7 @@ function App() {
   const [llmMessage, setLlmMessage] = useState(null);
   const [llmError, setLlmError] = useState(null);
   const [llmModalOpen, setLlmModalOpen] = useState(false);
+  const [editTimeModal, setEditTimeModal] = useState(null); // { itemId, itemName, currentSeconds }
   const sequencerNextIdRef = useRef(null);
   if (sequencerNextIdRef.current === null) {
     try {
@@ -617,6 +619,27 @@ function App() {
     },
     [loadReportData],
   );
+
+  const handleManualTimeAdjust = useCallback(async (itemId, deltaSeconds, date) => {
+    const logId = await addLog(itemId, deltaSeconds, date);
+    await loadReportData(date);
+    await loadData();
+    if (user) {
+      const log = await db.practiceLogs.get(logId);
+      backend.pushLog(log, user.id).catch(console.error);
+    }
+  }, [loadReportData, loadData, user, backend]);
+
+  const handleEditTime = useCallback((itemId, itemName, currentSeconds) => {
+    setEditTimeModal({ itemId, itemName, currentSeconds });
+  }, []);
+
+  const handleAddTime = useCallback((itemId) => {
+    const item = items.find(i => i.id === itemId);
+    if (item) {
+      setEditTimeModal({ itemId, itemName: item.name, currentSeconds: 0 });
+    }
+  }, [items]);
 
   const handleDayClick = useCallback(
     async (dateString) => {
@@ -1221,9 +1244,12 @@ function App() {
               {reportSubpage === 'daily' && (
                 <DailyReport
                   items={items.filter(i => !i.trashed)}
+                  allItems={items.filter(i => !i.trashed)}
                   reportDate={reportDate}
                   reportLogs={reportLogs}
                   onDateChange={handleReportDateChange}
+                  onEditTime={handleEditTime}
+                  onAddTime={handleAddTime}
                   timeUnit={timeUnit}
                 />
               )}
@@ -1327,6 +1353,23 @@ function App() {
             onRegenerate={generateEncouragement}
           />
         </>
+      )}
+
+      {editTimeModal && (
+        <EditTimeModal
+          itemName={editTimeModal.itemName}
+          date={reportDate}
+          currentSeconds={editTimeModal.currentSeconds}
+          onSave={async (deltaSeconds) => {
+            await handleManualTimeAdjust(editTimeModal.itemId, deltaSeconds, reportDate);
+            setEditTimeModal(null);
+          }}
+          onDelete={async () => {
+            await handleManualTimeAdjust(editTimeModal.itemId, -editTimeModal.currentSeconds, reportDate);
+            setEditTimeModal(null);
+          }}
+          onClose={() => setEditTimeModal(null)}
+        />
       )}
 
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
