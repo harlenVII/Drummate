@@ -8,6 +8,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showItemPicker, setShowItemPicker] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -102,6 +103,20 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         </button>
       </div>
 
+      {/* Edit mode toggle */}
+      <div className="flex justify-end -mb-2">
+        <button
+          onClick={() => setEditMode(!editMode)}
+          className={`text-sm font-medium px-3 py-1 rounded-lg transition-colors ${
+            editMode
+              ? 'text-blue-600 bg-blue-50'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          {editMode ? t('done') : t('edit')}
+        </button>
+      </div>
+
       {/* Grand total card */}
       <div className="bg-white rounded-lg shadow-sm p-6 text-center">
         <p className="text-sm text-gray-500 font-medium">{t('totalPracticeTime')}</p>
@@ -119,8 +134,10 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         return (
           <div
             key={entry.id}
-            className="bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
-            onClick={() => onEditTime(entry.id, entry.name, entry.duration)}
+            className={`bg-white rounded-lg shadow-sm p-4 transition-colors ${
+              editMode ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''
+            }`}
+            onClick={editMode ? () => onEditTime(entry.id, entry.name, entry.duration) : undefined}
           >
             <div className="flex items-center justify-between">
               <span className={`font-medium ${entry.duration > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
@@ -153,13 +170,15 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         </p>
       )}
 
-      {/* Add time button */}
-      <button
-        onClick={() => setShowItemPicker(true)}
-        className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium hover:border-blue-400 hover:text-blue-500 transition-colors"
-      >
-        + {t('addManualTime')}
-      </button>
+      {/* Add time button (edit mode only) */}
+      {editMode && (
+        <button
+          onClick={() => setShowItemPicker(true)}
+          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium hover:border-blue-400 hover:text-blue-500 transition-colors"
+        >
+          + {t('addManualTime')}
+        </button>
+      )}
 
       {/* Generate Report button */}
       {grandTotal > 0 && (
