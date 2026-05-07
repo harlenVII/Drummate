@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { formatTime } from '../utils/formatTime';
 import { useLanguage } from '../contexts/LanguageContext';
+import MergeTargetPicker from './MergeTargetPicker';
 
 function DragHandle({ listeners, attributes }) {
   return (
@@ -100,6 +101,7 @@ function PracticeItemList({
   onRestoreItem,
   onPermanentDelete,
   onSetItemCategory,
+  onMergeItem,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
@@ -111,6 +113,7 @@ function PracticeItemList({
   const [showArchivedNormal, setShowArchivedNormal] = useState(false);
   const [now] = useState(Date.now);
   const [addCategory, setAddCategory] = useState('fundamentals');
+  const [mergeSourceItem, setMergeSourceItem] = useState(null);
 
   const activeItems = items.filter(item => !item.archived && !item.trashed);
   const archivedItems = items.filter(item => item.archived && !item.trashed);
@@ -317,6 +320,16 @@ function PracticeItemList({
               </svg>
             </button>
             <button
+              onClick={() => setMergeSourceItem(item)}
+              className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+              title={t('merge')}
+              aria-label={`${t('merge')}: ${item.name}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h4a1 1 0 010 2H6.414l3.293 3.293a1 1 0 01.293.707V17a1 1 0 11-2 0v-6.586L4.414 7H4a1 1 0 01-1-1V5zm14 0a1 1 0 00-1-1h-4a1 1 0 100 2h1.586l-3.293 3.293a1 1 0 00-.293.707V17a1 1 0 102 0v-6.586L15.586 7H16a1 1 0 001-1V5z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button
               onClick={() => onDeleteItem(item.id)}
               className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
               title="Delete item"
@@ -464,6 +477,19 @@ function PracticeItemList({
               </div>
             )}
           </div>
+        )}
+
+        {mergeSourceItem && (
+          <MergeTargetPicker
+            sourceItem={mergeSourceItem}
+            items={items}
+            onCancel={() => setMergeSourceItem(null)}
+            onConfirm={(targetId) => {
+              const sourceId = mergeSourceItem.id;
+              setMergeSourceItem(null);
+              onMergeItem(sourceId, targetId);
+            }}
+          />
         )}
       </div>
     );
