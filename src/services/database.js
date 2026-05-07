@@ -95,7 +95,11 @@ export const getItems = async () => {
 export const addItem = async (name) => {
   const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
   const sortOrder = maxOrder ? maxOrder.sortOrder + 1 : 0;
-  return await db.practiceItems.add({ name, sortOrder, archived: false, trashed: false, trashedAt: null });
+  const uid = crypto.randomUUID();
+  return await db.practiceItems.add({
+    uid, name, sortOrder, archived: false, trashed: false, trashedAt: null,
+    syncedOnce: false,
+  });
 };
 
 export const renameItem = async (id, newName) => {
@@ -158,7 +162,9 @@ export const purgeExpiredTrash = async (daysOld = 30) => {
 export const addLog = async (itemId, duration, date) => {
   if (!date) date = getTodayString();
   const uid = crypto.randomUUID();
-  return await db.practiceLogs.add({ itemId, date, duration, uid });
+  const item = await db.practiceItems.get(itemId);
+  const itemUid = item?.uid || null;
+  return await db.practiceLogs.add({ itemId, itemUid, date, duration, uid });
 };
 
 export const getTodaysLogs = async () => {
@@ -179,4 +185,14 @@ export const getLogsByDateRange = async (startDate, endDate) => {
     .where('date')
     .between(startDate, endDate, true, true)
     .toArray();
+};
+
+// --- UID lookups (used by sync layer) ---
+
+export const getItemByUid = async (uid) => {
+  return await db.practiceItems.where('uid').equals(uid).first();
+};
+
+export const getItemByName = async (name) => {
+  return await db.practiceItems.where('name').equals(name).first();
 };
