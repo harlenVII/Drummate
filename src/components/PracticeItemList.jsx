@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { formatTime } from '../utils/formatTime';
 import { useLanguage } from '../contexts/LanguageContext';
 import MergeTargetPicker from './MergeTargetPicker';
@@ -366,7 +365,6 @@ function PracticeItemList({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          modifiers={[restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
