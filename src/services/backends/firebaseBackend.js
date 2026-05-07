@@ -334,25 +334,13 @@ const firebaseBackend = {
       remoteUids.add(data.uid);
     }
 
-    // Reconciliation step: any local item that has been synced before but is
-    // now missing from the cloud was deleted on another device. Apply the
-    // delete locally + cascade logs. Local-only items (syncedOnce=false) are
-    // preserved so pushAllLocal can push them up.
-    const allLocal = await db.practiceItems.toArray();
-    for (const local of allLocal) {
-      if (local.syncedOnce && !remoteUids.has(local.uid)) {
-        await db.practiceLogs.where('itemId').equals(local.id).delete();
-        await db.practiceItems.delete(local.id);
-      }
-    }
-
+    // Pull logs BEFORE reconciling item deletions, so logs whose `item_uid`
+    // moved to a different parent (via merge on another device) get remapped
+    // locally before their old parent gets deleted.
     const logsSnap = await getDocs(logsRef(userId));
     for (const docSnap of logsSnap.docs) {
       const data = docSnap.data();
       if (!data.uid) continue;
-
-      const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
-      if (existing) continue;
 
       // Resolve the parent item locally — prefer item_uid, fall back to item_name
       // for any legacy log whose item_uid hasn't been backfilled yet.
@@ -365,6 +353,18 @@ const firebaseBackend = {
       }
       if (!localItem) continue;
 
+      const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
+      if (existing) {
+        // Remap if remote moved this log under a different parent (cross-device merge).
+        if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
+          await db.practiceLogs.update(existing.id, {
+            itemUid: localItem.uid,
+            itemId: localItem.id,
+          });
+        }
+        continue;
+      }
+
       await db.practiceLogs.add({
         itemId: localItem.id,
         itemUid: localItem.uid,
@@ -372,6 +372,22 @@ const firebaseBackend = {
         duration: data.duration,
         uid: data.uid,
       });
+    }
+
+    // Reconciliation step: any local item that has been synced before but is
+    // now missing from the cloud was deleted on another device. Apply the
+    // delete locally + cascade logs. Local-only items (syncedOnce=false) are
+    // preserved so pushAllLocal can push them up.
+    //
+    // NOTE: This MUST run AFTER pulling logs, otherwise a cross-device merge
+    // would delete logs locally that have been remapped to a different parent
+    // on the server.
+    const allLocal = await db.practiceItems.toArray();
+    for (const local of allLocal) {
+      if (local.syncedOnce && !remoteUids.has(local.uid)) {
+        await db.practiceLogs.where('itemId').equals(local.id).delete();
+        await db.practiceItems.delete(local.id);
+      }
     }
   },
 
