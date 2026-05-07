@@ -234,33 +234,93 @@ const firebaseBackend = {
   // Sync — pull
   async pullAll(userId) {
     const itemsSnap = await getDocs(itemsRef(userId));
+    const remoteUids = new Set();
+
     for (const docSnap of itemsSnap.docs) {
       const data = docSnap.data();
-      const existing = await db.practiceItems
-        .where('name').equals(data.name).first();
-      if (!existing) {
+
+      // Legacy doc detection: pre-migration docs were keyed by encodeURIComponent(name)
+      // and have no `uid` field. Migrate them inline.
+      if (!data.uid) {
+        const localByName = await db.practiceItems.where('name').equals(data.name).first();
+        const uid = localByName?.uid || crypto.randomUUID();
+
+        await setDoc(doc(itemsRef(userId), uid), {
+          uid,
+          name: data.name,
+          sort_order: data.sort_order ?? 0,
+          archived: data.archived ?? false,
+          trashed: data.trashed ?? false,
+          trashed_at: data.trashed_at || '',
+          created: serverTimestamp(),
+        }, { merge: true });
+
+        // Backfill item_uid on this item's existing logs in Firestore.
+        const logsByName = await getDocs(query(logsRef(userId), where('item_name', '==', data.name)));
+        for (const logDoc of logsByName.docs) {
+          await updateDoc(logDoc.ref, { item_uid: uid });
+        }
+
+        await deleteDoc(docSnap.ref);
+
+        if (localByName && !localByName.uid) {
+          await db.practiceItems.update(localByName.id, { uid, syncedOnce: true });
+          await db.practiceLogs.where('itemId').equals(localByName.id).modify({ itemUid: uid });
+        }
+
+        data.uid = uid;
+      }
+
+      // Reconciliation: if remote uid is unknown locally but a same-named local
+      // item exists (without a uid), adopt the remote uid (covers two-device
+      // migration races).
+      let local = await db.practiceItems.where('uid').equals(data.uid).first();
+      if (!local) {
+        const sameName = await db.practiceItems.where('name').equals(data.name).first();
+        if (sameName && !sameName.uid) {
+          await db.practiceItems.update(sameName.id, { uid: data.uid, syncedOnce: true });
+          await db.practiceLogs.where('itemId').equals(sameName.id).modify({ itemUid: data.uid });
+          local = await db.practiceItems.get(sameName.id);
+        }
+      }
+
+      if (!local) {
         await db.practiceItems.add({
+          uid: data.uid,
           name: data.name,
           sortOrder: data.sort_order ?? 0,
           archived: data.archived ?? false,
           trashed: data.trashed ?? false,
           trashedAt: data.trashed_at || null,
+          syncedOnce: true,
         });
       } else {
         const updates = {};
-        if (data.sort_order != null && existing.sortOrder !== data.sort_order) {
-          updates.sortOrder = data.sort_order;
-        }
-        if (data.archived != null && existing.archived !== data.archived) {
-          updates.archived = data.archived;
-        }
-        if (data.trashed != null && existing.trashed !== data.trashed) {
+        if (data.name != null && local.name !== data.name) updates.name = data.name;
+        if (data.sort_order != null && local.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
+        if (data.archived != null && local.archived !== data.archived) updates.archived = data.archived;
+        if (data.trashed != null && local.trashed !== data.trashed) {
           updates.trashed = data.trashed;
           updates.trashedAt = data.trashed_at || null;
         }
+        if (!local.syncedOnce) updates.syncedOnce = true;
         if (Object.keys(updates).length > 0) {
-          await db.practiceItems.update(existing.id, updates);
+          await db.practiceItems.update(local.id, updates);
         }
+      }
+
+      remoteUids.add(data.uid);
+    }
+
+    // Reconciliation step: any local item that has been synced before but is
+    // now missing from the cloud was deleted on another device. Apply the
+    // delete locally + cascade logs. Local-only items (syncedOnce=false) are
+    // preserved so pushAllLocal can push them up.
+    const allLocal = await db.practiceItems.toArray();
+    for (const local of allLocal) {
+      if (local.syncedOnce && !remoteUids.has(local.uid)) {
+        await db.practiceLogs.where('itemId').equals(local.id).delete();
+        await db.practiceItems.delete(local.id);
       }
     }
 
@@ -268,20 +328,28 @@ const firebaseBackend = {
     for (const docSnap of logsSnap.docs) {
       const data = docSnap.data();
       if (!data.uid) continue;
-      const existing = await db.practiceLogs
-        .where('uid').equals(data.uid).first();
-      if (!existing) {
-        const localItem = await db.practiceItems
-          .where('name').equals(data.item_name).first();
-        if (localItem) {
-          await db.practiceLogs.add({
-            itemId: localItem.id,
-            date: data.date,
-            duration: data.duration,
-            uid: data.uid,
-          });
-        }
+
+      const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
+      if (existing) continue;
+
+      // Resolve the parent item locally — prefer item_uid, fall back to item_name
+      // for any legacy log whose item_uid hasn't been backfilled yet.
+      let localItem = null;
+      if (data.item_uid) {
+        localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
       }
+      if (!localItem && data.item_name) {
+        localItem = await db.practiceItems.where('name').equals(data.item_name).first();
+      }
+      if (!localItem) continue;
+
+      await db.practiceLogs.add({
+        itemId: localItem.id,
+        itemUid: localItem.uid,
+        date: data.date,
+        duration: data.duration,
+        uid: data.uid,
+      });
     }
   },
 
