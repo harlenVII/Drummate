@@ -86,18 +86,31 @@ db.version(8).stores({
   await tx.table('syncQueue').clear();
 });
 
+db.version(9).stores({
+  practiceItems: '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs: '++id, itemId, itemUid, date, duration, uid',
+  syncQueue: '++id, action, collection, localId',
+}).upgrade(async tx => {
+  await tx.table('practiceItems').toCollection().modify(item => {
+    if (!item.category) item.category = 'fundamentals';
+  });
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
   return await db.practiceItems.orderBy('sortOrder').toArray();
 };
 
-export const addItem = async (name) => {
+export const addItem = async (name, category) => {
+  if (category !== 'fundamentals' && category !== 'songs') {
+    throw new Error(`addItem: invalid category "${category}"`);
+  }
   const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
   const sortOrder = maxOrder ? maxOrder.sortOrder + 1 : 0;
   const uid = crypto.randomUUID();
   return await db.practiceItems.add({
-    uid, name, sortOrder, archived: false, trashed: false, trashedAt: null,
+    uid, name, category, sortOrder, archived: false, trashed: false, trashedAt: null,
     syncedOnce: false,
   });
 };
@@ -121,6 +134,13 @@ export const updateItemOrder = async (orderedIds) => {
 
 export const archiveItem = async (id, archived) => {
   return await db.practiceItems.update(id, { archived });
+};
+
+export const setItemCategory = async (id, category) => {
+  if (category !== 'fundamentals' && category !== 'songs') {
+    throw new Error(`setItemCategory: invalid category "${category}"`);
+  }
+  return await db.practiceItems.update(id, { category });
 };
 
 export const trashItem = async (id) => {
