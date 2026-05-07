@@ -248,6 +248,27 @@ const firebaseBackend = {
     }
   },
 
+  async mergeItems(sourceUid, targetUid, targetName, userId) {
+    if (sourceUid === targetUid) return;
+    try {
+      const q = query(logsRef(userId), where('item_uid', '==', sourceUid));
+      const snap = await getDocs(q);
+      for (const logDoc of snap.docs) {
+        await updateDoc(logDoc.ref, {
+          item_uid: targetUid,
+          item_name: targetName,
+        });
+      }
+      await deleteDoc(doc(itemsRef(userId), sourceUid));
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('merge_items', { sourceUid, targetUid, targetName });
+      } else {
+        throw err;
+      }
+    }
+  },
+
   // Sync — pull
   async pullAll(userId) {
     const itemsSnap = await getDocs(itemsRef(userId));
@@ -429,6 +450,13 @@ const firebaseBackend = {
           await firebaseBackend.pushTrashItem(entry.payload.uid, entry.payload.trashed, entry.payload.trashedAt, userId);
         } else if (entry.action === 'set_category') {
           await firebaseBackend.pushSetCategory(entry.payload.uid, entry.payload.category, userId);
+        } else if (entry.action === 'merge_items') {
+          await firebaseBackend.mergeItems(
+            entry.payload.sourceUid,
+            entry.payload.targetUid,
+            entry.payload.targetName,
+            userId,
+          );
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
