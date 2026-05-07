@@ -1,6 +1,11 @@
 /**
  * Backend Interface — every backend must export an object matching this shape.
  *
+ * Identity model: practice items are identified by a stable `uid` (UUID
+ * generated at creation). Names are mutable display labels. All sync push
+ * methods take `uid` so that renames and deletes propagate correctly across
+ * devices that may have been offline.
+ *
  * Auth methods:
  *   signIn(email, password) → { id, email, name }
  *   signUp(email, password, name) → { id, email, name }
@@ -13,12 +18,14 @@
  *
  * Sync methods:
  *   pushItem(localItem, userId) → void
+ *     localItem must include: { uid, name, sortOrder?, archived?, trashed?, trashedAt? }
  *   pushLog(localLog, userId) → void
- *   pushDeleteItem(name, userId) → void
- *   pushRenameItem(oldName, newName, userId) → void
- *   pushReorder(items, userId) → void       // items: [{ name, sortOrder }]
- *   pushArchiveItem(name, archived, userId) → void
- *   pushTrashItem(name, trashed, trashedAt, userId) → void
+ *     localLog must include: { uid, itemUid, date, duration }
+ *   pushDeleteItem(uid, userId) → void
+ *   pushRenameItem(uid, newName, userId) → void
+ *   pushReorder(items, userId) → void       // items: [{ uid, sortOrder }]
+ *   pushArchiveItem(uid, archived, userId) → void
+ *   pushTrashItem(uid, trashed, trashedAt, userId) → void
  *   pullAll(userId) → void
  *   pushAllLocal(userId) → void
  *   flushSyncQueue(userId) → void
