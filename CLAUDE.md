@@ -66,7 +66,7 @@ Backend abstraction layer allows switching between Firebase and PocketBase:
 
 **Backend interface contract** (every backend must implement):
 - **Auth:** `signIn`, `signUp`, `signOut`, `getUser`, `onAuthChange`, `refreshAuth`
-- **Sync:** `pushItem`, `pushLog`, `pushDeleteItem`, `pushRenameItem`, `pushReorder`, `pushArchiveItem`, `pushTrashItem`, `pullAll`, `pushAllLocal`, `flushSyncQueue`, `subscribeToChanges`
+- **Sync:** `pushItem`, `pushLog`, `pushDeleteItem`, `pushRenameItem`, `pushReorder`, `pushArchiveItem`, `pushTrashItem`, `pushSetCategory`, `pullAll`, `pushAllLocal`, `flushSyncQueue`, `subscribeToChanges`
 
 ### Audio Engine (metronomeEngine.js)
 
@@ -86,15 +86,16 @@ Backend abstraction layer allows switching between Firebase and PocketBase:
 
 ### Database Layer (database.js)
 
-Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: 7.
+Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: 9.
 
 **Tables:**
-- `practiceItems` — Schema: `'++id, &uid, name, sortOrder, archived, trashed'`
+- `practiceItems` — Schema: `'++id, &uid, name, sortOrder, archived, trashed, category'`
   - `uid`: UUID generated at creation; the cross-device sync identity. Stable across renames.
   - `name`: mutable display label. UI enforces uniqueness at create-time but the DB no longer requires it.
   - `sortOrder`: integer for drag-and-drop ordering (@dnd-kit)
   - `archived`: boolean, hides from active list
   - `trashed`: boolean, soft-delete with `trashedAt` ISO timestamp (auto-purged after 30 days)
+  - `category`: `'fundamentals'` | `'songs'` — which section the item appears in. Orthogonal to `archived`.
   - `syncedOnce` (stored, not indexed): `true` once this item has reached the cloud (via push) or arrived from the cloud (via pull/subscribe). `pullAll` deletes any item with `syncedOnce: true` whose uid is missing from the latest remote set — this is how offline deletes propagate.
 - `practiceLogs` — Schema: `'++id, itemId, itemUid, date, duration, uid'`
   - `itemUid`: parent item's uid; the cross-device link.
@@ -103,7 +104,8 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
 - `syncQueue` — Schema: `'++id, action, collection, localId'` (offline retry queue)
 
 **Key Operations:**
-- CRUD: `getItems`, `addItem`, `renameItem`, `deleteItem`
+- CRUD: `getItems`, `addItem(name, category)`, `renameItem`, `deleteItem`
+- Category: `setItemCategory(id, category)` — updates `'fundamentals'` | `'songs'`
 - Ordering: `updateItemOrder(orderedIds)` — batch updates sortOrder in a transaction
 - Archive/Trash: `archiveItem(id, bool)`, `trashItem(id)`, `restoreItem(id)`, `purgeExpiredTrash(daysOld=30)`
 - Logs: `addLog`, `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`
@@ -134,7 +136,7 @@ When user closes/refreshes with active timer: `beforeunload`/`pagehide` → save
 When switching subpages: stop playback → `setSequence(null)` → clear beat indicators → disable NoSleep. Prevents audio engine state conflicts.
 
 ### Drag-and-Drop Reordering
-Practice items use `@dnd-kit/sortable` for reordering. On drag end: reorder local state array → `updateItemOrder(orderedIds)` in DB → `backend.pushReorder(items, userId)` for sync.
+Practice items use `@dnd-kit/sortable` for reordering. Edit mode uses **two `SortableContext` instances** (one per category) inside a single `DndContext`. On drag end: `handleDragEnd` uses `arrayMove` for same-category reorders and splice for cross-category drops → `onReorder([{id, category}])` → DB transaction updates `sortOrder` and `category` → `backend.pushReorder(items, userId)`. `pushReorder` carries `category` per item so cross-section drags are atomic on the remote.
 
 ### Trash Bin (Soft Delete)
 Items are soft-deleted (`trashed: true`, `trashedAt: ISO string`). `purgeExpiredTrash(30)` runs on app load to permanently delete items trashed >30 days ago. Restore sets `trashed: false` and also clears `archived`.
@@ -167,6 +169,8 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 12. **Firebase SDK lazy-loaded** — `BackendContext` dynamically imports `firebaseBackend.js` to avoid bundling Firebase when using PocketBase
 13. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
 14. **Sync init order is `pullAll → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. The `syncedOnce` flag on items lets `pullAll` distinguish "deleted on another device" (delete locally) from "created here while offline" (preserve and push up).
+15. **`category` is orthogonal to `archived`** — `category` (`'fundamentals'` | `'songs'`) controls which active section an item appears in; `archived` controls whether it's in the active sections or the collapsed Archived section. Both fields are always persisted. Tolerant pull rule: treat absent `category` on remote as "no change" (`if (remote.category !== undefined && ...)`) to avoid clobbering on old clients.
+16. **PocketBase uid-migration** — `pushDeleteItem`, `pushRenameItem`, `pushReorder`, `pushArchiveItem`, `pushTrashItem`, and `pushSetCategory` in `sync.js` are `console.warn` stubs pending a uid-based schema migration for PocketBase. Firebase has full implementations. New category-related sync ops must follow the same stub pattern until the migration lands.
 
 ## File Naming
 
