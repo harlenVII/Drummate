@@ -1196,7 +1196,7 @@ function App() {
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-lg mx-auto px-4 py-8 flex flex-col gap-6">
+        <div className={`${activeTab === 'practice' ? 'max-w-4xl' : 'max-w-lg'} mx-auto px-4 py-8 flex flex-col gap-6`}>
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-gray-800">
               {t('appName')}
