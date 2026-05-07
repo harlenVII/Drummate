@@ -1,35 +1,31 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useBackend } from './BackendContext';
+import firebaseBackend from '../services/backends/firebaseBackend';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const { backend, backendLoading } = useBackend();
-  const [user, setUser] = useState(() => backend.getUser());
+  const [user, setUser] = useState(() => firebaseBackend.getUser());
   const [sessionExpired, setSessionExpired] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    // Reset auth state when backend changes
-    const currentUser = backend.getUser();
+    const currentUser = firebaseBackend.getUser();
     if (currentUser) {
       if (!navigator.onLine) {
-        // Offline: trust the cached session; the server will be re-checked next time we boot online.
         setUser(currentUser);
         Promise.resolve().then(() => setAuthReady(true));
       } else {
-        backend.refreshAuth()
+        firebaseBackend.refreshAuth()
           .then((refreshedUser) => {
             setUser(refreshedUser);
           })
           .catch((err) => {
-            if (backend.isAbortError(err)) return;
-            if (backend.isNetworkError?.(err)) {
-              // Network failed mid-refresh — keep the cached session rather than booting the user out.
+            if (firebaseBackend.isAbortError(err)) return;
+            if (firebaseBackend.isNetworkError?.(err)) {
               setUser(currentUser);
               return;
             }
-            backend.signOut();
+            firebaseBackend.signOut();
             setUser(null);
             setSessionExpired(true);
           })
@@ -39,33 +35,31 @@ export function AuthProvider({ children }) {
       Promise.resolve().then(() => setAuthReady(true));
     }
 
-    const unsubscribe = backend.onAuthChange((newUser) => {
+    const unsubscribe = firebaseBackend.onAuthChange((newUser) => {
       setUser(newUser);
     });
 
     return unsubscribe;
-  }, [backend]);
+  }, []);
 
   const signIn = useCallback(async (email, password) => {
     setSessionExpired(false);
-    const user = await backend.signIn(email, password);
-    setUser(user);
-  }, [backend]);
+    const newUser = await firebaseBackend.signIn(email, password);
+    setUser(newUser);
+  }, []);
 
   const signUp = useCallback(async (email, password, name) => {
-    const user = await backend.signUp(email, password, name);
-    setUser(user);
-  }, [backend]);
+    const newUser = await firebaseBackend.signUp(email, password, name);
+    setUser(newUser);
+  }, []);
 
   const signOut = useCallback(() => {
-    backend.signOut();
+    firebaseBackend.signOut();
     setUser(null);
-  }, [backend]);
-
-  const loading = backendLoading;
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, authReady, sessionExpired, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, authReady, sessionExpired, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
