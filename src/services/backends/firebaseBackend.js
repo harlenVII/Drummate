@@ -554,6 +554,22 @@ const firebaseBackend = {
             uid: data.uid,
           });
           onDataChanged();
+        } else if (change.type === 'modified') {
+          const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
+          if (!existing) continue;
+          // Remap parent if item_uid changed (e.g. from a cross-device merge).
+          let localItem = null;
+          if (data.item_uid) {
+            localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
+          }
+          if (!localItem) continue;
+          if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
+            await db.practiceLogs.update(existing.id, {
+              itemUid: localItem.uid,
+              itemId: localItem.id,
+            });
+            onDataChanged();
+          }
         } else if (change.type === 'removed') {
           const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
           if (existing) {
@@ -561,8 +577,6 @@ const firebaseBackend = {
             onDataChanged();
           }
         }
-        // 'modified' on logs is a no-op: only the denormalized item_name field
-        // changes on rename, and we don't store item_name locally.
       }
     });
 
