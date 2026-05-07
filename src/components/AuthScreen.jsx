@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { BACKEND_TYPES } from '../services/backends/backendInterface';
 
 export default function AuthScreen() {
   const { signIn, signUp, sessionExpired } = useAuth();
@@ -45,24 +44,6 @@ export default function AuthScreen() {
           >
             {language === 'en' ? '中文' : 'EN'}
           </button>
-        </div>
-
-        {/* Backend selector */}
-        <div className="flex items-center justify-between mb-4 px-1">
-          <span className="text-sm text-gray-500">{t('backend.label')}</span>
-          <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
-            <button
-              disabled
-              className="px-3 py-1 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed opacity-50 line-through"
-            >
-              {t(`backend.${BACKEND_TYPES.POCKETBASE}`)}
-            </button>
-            <button
-              className="px-3 py-1 rounded-md text-sm font-medium transition-colors bg-white text-gray-800 shadow-sm"
-            >
-              {t(`backend.${BACKEND_TYPES.FIREBASE}`)}
-            </button>
-          </div>
         </div>
 
         {sessionExpired && (

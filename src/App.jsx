@@ -12,7 +12,7 @@ import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
-import { useBackend } from './contexts/BackendContext';
+import firebaseBackend from './services/backends/firebaseBackend';
 import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
 import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
@@ -43,8 +43,7 @@ import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, g
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
-  const { user, loading, authReady, signOut } = useAuth();
-  const { backend } = useBackend();
+  const { user, authReady, signOut } = useAuth();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -257,13 +256,13 @@ function App() {
         await loadData();
         if (user) {
           for (const item of expired) {
-            backend.pushDeleteItem(item.uid, user.id).catch(console.error);
+            firebaseBackend.pushDeleteItem(item.uid, user.id).catch(console.error);
           }
         }
       }
     };
     purge();
-  }, [loadData, user, backend]);
+  }, [loadData, user]);
 
   // Refresh practice data when the calendar day changes (app left open past midnight)
   useEffect(() => {
@@ -294,7 +293,6 @@ function App() {
     };
   }, [loadData]);
 
-  // Sync with PocketBase on sign-in (wait for token refresh to complete)
   useEffect(() => {
     if (!user || !authReady) return;
 
@@ -306,16 +304,16 @@ function App() {
         // Order matters: pull first so we adopt cloud truth (renames, deletes
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
-        await backend.pullAll(user.id);
-        await backend.flushSyncQueue(user.id);
-        await backend.pushAllLocal(user.id);
+        await firebaseBackend.pullAll(user.id);
+        await firebaseBackend.flushSyncQueue(user.id);
+        await firebaseBackend.pushAllLocal(user.id);
         await loadData();
       } catch (err) {
         console.error('Sync init failed:', err);
       }
       // Subscribe to real-time changes only after initial sync completes
       if (!cancelled) {
-        unsubscribe = backend.subscribeToChanges(loadData);
+        unsubscribe = firebaseBackend.subscribeToChanges(loadData);
       }
     };
     init();
@@ -324,7 +322,7 @@ function App() {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
-  }, [user, authReady, loadData, backend]);
+  }, [user, authReady, loadData]);
 
   // Initialize metronome engine once
   useEffect(() => {
@@ -421,13 +419,13 @@ function App() {
       setElapsedTime(0);
       if (user) {
         const log = await db.practiceLogs.get(logId);
-        backend.pushLog(log, user.id).catch(console.error);
+        firebaseBackend.pushLog(log, user.id).catch(console.error);
       }
     } else {
       setActiveItemId(null);
       setElapsedTime(0);
     }
-  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType, backend]);
+  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType]);
 
   const handleStart = useCallback(
     async (itemId) => {
@@ -441,7 +439,7 @@ function App() {
           const logId = await addLog(activeItemId, elapsedTime);
           if (user) {
             const log = await db.practiceLogs.get(logId);
-            backend.pushLog(log, user.id).catch(console.error);
+            firebaseBackend.pushLog(log, user.id).catch(console.error);
           }
         }
       }
@@ -467,7 +465,7 @@ function App() {
         await loadData();
       }
     },
-    [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType, backend],
+    [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType],
   );
 
   const handleStop = useCallback(async () => {
@@ -487,10 +485,10 @@ function App() {
       await loadData();
       if (user) {
         const item = await db.practiceItems.get(localId);
-        backend.pushItem(item, user.id).catch(console.error);
+        firebaseBackend.pushItem(item, user.id).catch(console.error);
       }
     },
-    [items, loadData, user, t, backend],
+    [items, loadData, user, t],
   );
 
   const handleRenameItem = useCallback(
@@ -499,10 +497,10 @@ function App() {
       await renameItem(id, newName);
       await loadData();
       if (user && item) {
-        backend.pushRenameItem(item.uid, newName, user.id).catch(console.error);
+        firebaseBackend.pushRenameItem(item.uid, newName, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [loadData, user],
   );
 
   const handleDeleteItem = useCallback(
@@ -516,10 +514,10 @@ function App() {
       await trashItem(id);
       await loadData();
       if (user && item) {
-        backend.pushTrashItem(item.uid, true, new Date().toISOString(), user.id).catch(console.error);
+        firebaseBackend.pushTrashItem(item.uid, true, new Date().toISOString(), user.id).catch(console.error);
       }
     },
-    [activeItemId, stopTimer, loadData, user, backend],
+    [activeItemId, stopTimer, loadData, user],
   );
 
   const handleRestoreItem = useCallback(
@@ -528,10 +526,10 @@ function App() {
       await restoreItem(id);
       await loadData();
       if (user && item) {
-        backend.pushTrashItem(item.uid, false, null, user.id).catch(console.error);
+        firebaseBackend.pushTrashItem(item.uid, false, null, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [loadData, user],
   );
 
   const handlePermanentDelete = useCallback(
@@ -545,10 +543,10 @@ function App() {
       await deleteItem(id);
       await loadData();
       if (user && item) {
-        backend.pushDeleteItem(item.uid, user.id).catch(console.error);
+        firebaseBackend.pushDeleteItem(item.uid, user.id).catch(console.error);
       }
     },
-    [activeItemId, stopTimer, loadData, user, backend],
+    [activeItemId, stopTimer, loadData, user],
   );
 
   const handleArchiveItem = useCallback(
@@ -562,10 +560,10 @@ function App() {
       await archiveItem(id, archived);
       await loadData();
       if (user && item) {
-        backend.pushArchiveItem(item.uid, archived, user.id).catch(console.error);
+        firebaseBackend.pushArchiveItem(item.uid, archived, user.id).catch(console.error);
       }
     },
-    [activeItemId, stopTimer, loadData, user, backend],
+    [activeItemId, stopTimer, loadData, user],
   );
 
   const handleSetItemCategory = useCallback(
@@ -574,10 +572,10 @@ function App() {
       await setItemCategory(id, category);
       await loadData();
       if (user && item) {
-        backend.pushSetCategory(item.uid, category, user.id).catch(console.error);
+        firebaseBackend.pushSetCategory(item.uid, category, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [loadData, user],
   );
 
   const handleReorder = useCallback(
@@ -600,10 +598,10 @@ function App() {
         const reorderedItems = await Promise.all(
           normalized.map(({ id }) => db.practiceItems.get(id))
         );
-        backend.pushReorder(reorderedItems, user.id).catch(console.error);
+        firebaseBackend.pushReorder(reorderedItems, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [loadData, user],
   );
 
   const handleSetEditing = useCallback(
@@ -658,9 +656,9 @@ function App() {
     ]);
     if (user) {
       const log = await db.practiceLogs.get(logId);
-      backend.pushLog(log, user.id).catch(console.error);
+      firebaseBackend.pushLog(log, user.id).catch(console.error);
     }
-  }, [loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user, backend]);
+  }, [loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user]);
 
   const handleEditTime = useCallback((itemId, itemName, currentSeconds) => {
     setEditTimeModal({ itemId, itemName, currentSeconds });
@@ -1143,14 +1141,6 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleTabChange]);
-
-  if (loading) {
-    return (
-      <div className="h-[100dvh] flex items-center justify-center bg-gray-100">
-        <div className="text-gray-400 text-lg">{t('auth.syncing')}</div>
-      </div>
-    );
-  }
 
   if (!user) {
     return <AuthScreen />;
