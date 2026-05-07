@@ -356,6 +356,7 @@ const firebaseBackend = {
   async pushAllLocal(userId) {
     const items = await db.practiceItems.toArray();
     for (const item of items) {
+      if (!item.uid) continue;
       await firebaseBackend.pushItem(item, userId);
     }
     const logs = await db.practiceLogs.toArray();
@@ -369,30 +370,23 @@ const firebaseBackend = {
     for (const entry of pending) {
       try {
         if (entry.action === 'create_item') {
-          await firebaseBackend.pushItem({ name: entry.payload.name }, userId);
+          const local = await db.practiceItems.where('uid').equals(entry.payload.uid).first();
+          if (local) await firebaseBackend.pushItem(local, userId);
         } else if (entry.action === 'create_log') {
-          const localItem = await db.practiceItems
-            .where('name').equals(entry.payload.itemName).first();
-          if (localItem) {
-            await firebaseBackend.pushLog({
-              itemId: localItem.id, date: entry.payload.date,
-              duration: entry.payload.duration, uid: entry.payload.uid,
-            }, userId);
-          }
+          const local = await db.practiceLogs.where('uid').equals(entry.payload.uid).first();
+          if (local) await firebaseBackend.pushLog(local, userId);
         } else if (entry.action === 'delete_item') {
-          await firebaseBackend.pushDeleteItem(entry.payload.name, userId);
+          await firebaseBackend.pushDeleteItem(entry.payload.uid, userId);
         } else if (entry.action === 'rename_item') {
-          await firebaseBackend.pushRenameItem(
-            entry.payload.oldName, entry.payload.newName, userId);
+          await firebaseBackend.pushRenameItem(entry.payload.uid, entry.payload.newName, userId);
         } else if (entry.action === 'reorder') {
           for (const item of entry.payload.items) {
-            const docId = encodeURIComponent(item.name);
-            await updateDoc(doc(itemsRef(userId), docId), { sort_order: item.sortOrder });
+            await updateDoc(doc(itemsRef(userId), item.uid), { sort_order: item.sortOrder });
           }
         } else if (entry.action === 'archive_item') {
-          await firebaseBackend.pushArchiveItem(entry.payload.name, entry.payload.archived, userId);
+          await firebaseBackend.pushArchiveItem(entry.payload.uid, entry.payload.archived, userId);
         } else if (entry.action === 'trash_item') {
-          await firebaseBackend.pushTrashItem(entry.payload.name, entry.payload.trashed, entry.payload.trashedAt, userId);
+          await firebaseBackend.pushTrashItem(entry.payload.uid, entry.payload.trashed, entry.payload.trashedAt, userId);
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
