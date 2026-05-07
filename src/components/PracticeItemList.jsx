@@ -369,30 +369,32 @@ function PracticeItemList({
           modifiers={[restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
-              {t('categories.fundamentals')}
-            </h3>
-            <SortableContext items={editFundamentals.map(i => i.id)} strategy={verticalListSortingStrategy}>
-              {editFundamentals.length === 0 ? (
-                <EmptyDropZone id="category-fundamentals" label={t('noFundamentalsYet')} />
-              ) : (
-                editFundamentals.map(item => renderEditRow(item))
-              )}
-            </SortableContext>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+                {t('categories.fundamentals')}
+              </h3>
+              <SortableContext items={editFundamentals.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                {editFundamentals.length === 0 ? (
+                  <EmptyDropZone id="category-fundamentals" label={t('noFundamentalsYet')} />
+                ) : (
+                  editFundamentals.map(item => renderEditRow(item))
+                )}
+              </SortableContext>
+            </div>
 
-          <div className="flex flex-col gap-2 mt-2">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
-              {t('categories.songs')}
-            </h3>
-            <SortableContext items={editSongs.map(i => i.id)} strategy={verticalListSortingStrategy}>
-              {editSongs.length === 0 ? (
-                <EmptyDropZone id="category-songs" label={t('noSongsYet')} />
-              ) : (
-                editSongs.map(item => renderEditRow(item))
-              )}
-            </SortableContext>
+            <div className="flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+                {t('categories.songs')}
+              </h3>
+              <SortableContext items={editSongs.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                {editSongs.length === 0 ? (
+                  <EmptyDropZone id="category-songs" label={t('noSongsYet')} />
+                ) : (
+                  editSongs.map(item => renderEditRow(item))
+                )}
+              </SortableContext>
+            </div>
           </div>
         </DndContext>
 
