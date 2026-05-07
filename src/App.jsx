@@ -257,7 +257,7 @@ function App() {
         await loadData();
         if (user) {
           for (const item of expired) {
-            backend.pushDeleteItem(item.name, user.id).catch(console.error);
+            backend.pushDeleteItem(item.uid, user.id).catch(console.error);
           }
         }
       }
@@ -303,9 +303,12 @@ function App() {
 
     const init = async () => {
       try {
+        // Order matters: pull first so we adopt cloud truth (renames, deletes
+        // applied while this device was offline) BEFORE pushing local state up.
+        // The syncedOnce flag in pullAll handles offline-deletion cleanup.
+        await backend.pullAll(user.id);
         await backend.flushSyncQueue(user.id);
         await backend.pushAllLocal(user.id);
-        await backend.pullAll(user.id);
         await loadData();
       } catch (err) {
         console.error('Sync init failed:', err);
@@ -496,7 +499,7 @@ function App() {
       await renameItem(id, newName);
       await loadData();
       if (user && item) {
-        backend.pushRenameItem(item.name, newName, user.id).catch(console.error);
+        backend.pushRenameItem(item.uid, newName, user.id).catch(console.error);
       }
     },
     [loadData, user, backend],
@@ -513,7 +516,7 @@ function App() {
       await trashItem(id);
       await loadData();
       if (user && item) {
-        backend.pushTrashItem(item.name, true, new Date().toISOString(), user.id).catch(console.error);
+        backend.pushTrashItem(item.uid, true, new Date().toISOString(), user.id).catch(console.error);
       }
     },
     [activeItemId, stopTimer, loadData, user, backend],
@@ -525,7 +528,7 @@ function App() {
       await restoreItem(id);
       await loadData();
       if (user && item) {
-        backend.pushTrashItem(item.name, false, null, user.id).catch(console.error);
+        backend.pushTrashItem(item.uid, false, null, user.id).catch(console.error);
       }
     },
     [loadData, user, backend],
@@ -542,7 +545,7 @@ function App() {
       await deleteItem(id);
       await loadData();
       if (user && item) {
-        backend.pushDeleteItem(item.name, user.id).catch(console.error);
+        backend.pushDeleteItem(item.uid, user.id).catch(console.error);
       }
     },
     [activeItemId, stopTimer, loadData, user, backend],
@@ -559,7 +562,7 @@ function App() {
       await archiveItem(id, archived);
       await loadData();
       if (user && item) {
-        backend.pushArchiveItem(item.name, archived, user.id).catch(console.error);
+        backend.pushArchiveItem(item.uid, archived, user.id).catch(console.error);
       }
     },
     [activeItemId, stopTimer, loadData, user, backend],
