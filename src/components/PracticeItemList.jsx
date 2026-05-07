@@ -542,26 +542,28 @@ function PracticeItemList({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
-          {t('categories.fundamentals')}
-        </h3>
-        {fundamentalsItems.length === 0 && activeItems.length > 0 ? (
-          <p className="text-sm text-gray-400 italic px-1">{t('noFundamentalsYet')}</p>
-        ) : (
-          fundamentalsItems.map(item => renderRow(item, indexOf(item.id)))
-        )}
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+            {t('categories.fundamentals')}
+          </h3>
+          {fundamentalsItems.length === 0 && activeItems.length > 0 ? (
+            <p className="text-sm text-gray-400 italic px-1">{t('noFundamentalsYet')}</p>
+          ) : (
+            fundamentalsItems.map(item => renderRow(item, indexOf(item.id)))
+          )}
+        </div>
 
-      <div className="flex flex-col gap-2 mt-2">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
-          {t('categories.songs')}
-        </h3>
-        {songsItems.length === 0 && activeItems.length > 0 ? (
-          <p className="text-sm text-gray-400 italic px-1">{t('noSongsYet')}</p>
-        ) : (
-          songsItems.map(item => renderRow(item, indexOf(item.id)))
-        )}
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+            {t('categories.songs')}
+          </h3>
+          {songsItems.length === 0 && activeItems.length > 0 ? (
+            <p className="text-sm text-gray-400 italic px-1">{t('noSongsYet')}</p>
+          ) : (
+            songsItems.map(item => renderRow(item, indexOf(item.id)))
+          )}
+        </div>
       </div>
 
       {hasArchivedItems && (
