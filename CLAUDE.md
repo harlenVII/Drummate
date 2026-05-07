@@ -89,12 +89,17 @@ Backend abstraction layer allows switching between Firebase and PocketBase:
 Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: 7.
 
 **Tables:**
-- `practiceItems` — Schema: `'++id, name, sortOrder, archived, trashed'`
-  - `name`: unique, used as sync dedup key
+- `practiceItems` — Schema: `'++id, &uid, name, sortOrder, archived, trashed'`
+  - `uid`: UUID generated at creation; the cross-device sync identity. Stable across renames.
+  - `name`: mutable display label. UI enforces uniqueness at create-time but the DB no longer requires it.
   - `sortOrder`: integer for drag-and-drop ordering (@dnd-kit)
   - `archived`: boolean, hides from active list
   - `trashed`: boolean, soft-delete with `trashedAt` ISO timestamp (auto-purged after 30 days)
-- `practiceLogs` — Schema: `'++id, itemId, date, duration, uid'` (uid is a UUID generated on creation, used as dedup key for sync)
+  - `syncedOnce` (stored, not indexed): `true` once this item has reached the cloud (via push) or arrived from the cloud (via pull/subscribe). `pullAll` deletes any item with `syncedOnce: true` whose uid is missing from the latest remote set — this is how offline deletes propagate.
+- `practiceLogs` — Schema: `'++id, itemId, itemUid, date, duration, uid'`
+  - `itemUid`: parent item's uid; the cross-device link.
+  - `itemId`: local Dexie pk for this device only; do not use across devices.
+  - `uid`: UUID for the log itself; cross-device dedup key.
 - `syncQueue` — Schema: `'++id, action, collection, localId'` (offline retry queue)
 
 **Key Operations:**
@@ -157,10 +162,11 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 7. **All user-facing text must use `t()` function** for bilingual support
 8. **Metronome state is global in App.jsx** — persists across tab switches
 9. **PocketBase auto-cancellation** — always use `requestKey: null` on API calls to prevent the SDK from cancelling concurrent requests
-10. **Practice item names are unique** — enforced with case-insensitive check in `handleAddItem`
+10. **Practice item names are mutable; identity is the `uid`** — UI does a case-insensitive duplicate-name check in `handleAddItem` for UX, but cross-device sync identity is the `uid` field. Always pass `item.uid` (not `item.name`) to backend push methods.
 11. **Backend interface compliance** — new sync operations must be added to both `firebaseBackend.js` and `pocketbaseBackend.js`, and declared in `backendInterface.js`
 12. **Firebase SDK lazy-loaded** — `BackendContext` dynamically imports `firebaseBackend.js` to avoid bundling Firebase when using PocketBase
 13. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
+14. **Sync init order is `pullAll → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. The `syncedOnce` flag on items lets `pullAll` distinguish "deleted on another device" (delete locally) from "created here while offline" (preserve and push up).
 
 ## File Naming
 
