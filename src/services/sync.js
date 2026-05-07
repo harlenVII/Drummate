@@ -19,6 +19,7 @@ export async function pushItem(localItem, userId) {
     await pb.collection('practice_items').create({
       name: localItem.name,
       user: userId,
+      category: localItem.category ?? 'fundamentals',
       sort_order: localItem.sortOrder ?? 0,
       archived: localItem.archived ?? false,
       trashed: localItem.trashed ?? false,
@@ -109,6 +110,11 @@ export async function pushTrashItem(uid, trashed, trashedAt, userId) {
     { uid, trashed, trashedAt, userId });
 }
 
+export async function pushSetCategory(uid, category, userId) {
+  console.warn('pushSetCategory: PocketBase uid-migration not yet implemented',
+    { uid, category, userId });
+}
+
 // --- Sync queue for offline writes ---
 
 async function queueSync(action, payload) {
@@ -140,6 +146,8 @@ export async function flushSyncQueue(userId) {
         await pushArchiveItem(entry.payload.name, entry.payload.archived, userId);
       } else if (entry.action === 'trash_item') {
         await pushTrashItem(entry.payload.name, entry.payload.trashed, entry.payload.trashedAt, userId);
+      } else if (entry.action === 'set_category') {
+        await pushSetCategory(entry.payload.uid, entry.payload.category, userId);
       }
       await db.syncQueue.delete(entry.id);
     } catch (err) {
@@ -164,6 +172,7 @@ export async function pullAll(userId) {
     if (!existing) {
       await db.practiceItems.add({
         name: remote.name,
+        category: remote.category ?? 'fundamentals',
         sortOrder: remote.sort_order ?? 0,
         archived: remote.archived ?? false,
         trashed: remote.trashed ?? false,
@@ -180,6 +189,9 @@ export async function pullAll(userId) {
       if (remote.trashed != null && existing.trashed !== remote.trashed) {
         updates.trashed = remote.trashed;
         updates.trashedAt = remote.trashed_at || null;
+      }
+      if (remote.category !== undefined && existing.category !== remote.category) {
+        updates.category = remote.category;
       }
       if (Object.keys(updates).length > 0) {
         await db.practiceItems.update(existing.id, updates);
@@ -241,6 +253,7 @@ export function subscribeToChanges(onDataChanged) {
       if (!existing) {
         await db.practiceItems.add({
           name: e.record.name,
+          category: e.record.category ?? 'fundamentals',
           sortOrder: e.record.sort_order ?? 0,
           archived: e.record.archived ?? false,
           trashed: e.record.trashed ?? false,
@@ -263,6 +276,9 @@ export function subscribeToChanges(onDataChanged) {
         if (e.record.trashed != null && localByName.trashed !== e.record.trashed) {
           updates.trashed = e.record.trashed;
           updates.trashedAt = e.record.trashed_at || null;
+        }
+        if (e.record.category !== undefined && localByName.category !== e.record.category) {
+          updates.category = e.record.category;
         }
         if (Object.keys(updates).length > 0) {
           await db.practiceItems.update(localByName.id, updates);
