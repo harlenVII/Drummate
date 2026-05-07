@@ -53,9 +53,10 @@ function App() {
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const activeItemIdRef = useRef(null);
-  const metronomeSubpageRef = useRef(metronomeSubpage);
-  const reportSubpageRef = useRef(reportSubpage);
+  const metronomeSubpageRef = useRef('metronome');
+  const reportSubpageRef = useRef('daily');
   const [activeTab, setActiveTab] = useState('practice');
+  const activeTabRef = useRef('practice');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timeUnit, setTimeUnit] = useState(() => {
     try {
@@ -1153,6 +1154,7 @@ function App() {
 
   useEffect(() => { metronomeSubpageRef.current = metronomeSubpage; }, [metronomeSubpage]);
   useEffect(() => { reportSubpageRef.current = reportSubpage; }, [reportSubpage]);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
   useEffect(() => {
@@ -1164,7 +1166,7 @@ function App() {
       else if (e.code === 'KeyM') setTimeUnit('minutes');
       else if (e.code === 'KeyH') setTimeUnit('hours');
       else if (e.key === 'Tab') {
-        if (activeTab === 'metronome') {
+        if (activeTabRef.current === 'metronome') {
           e.preventDefault();
           const pages = ['metronome', 'sequencer'];
           const idx = pages.indexOf(metronomeSubpageRef.current);
@@ -1172,7 +1174,7 @@ function App() {
             ? pages[(idx - 1 + pages.length) % pages.length]
             : pages[(idx + 1) % pages.length];
           handleSubpageChange(next);
-        } else if (activeTab === 'report') {
+        } else if (activeTabRef.current === 'report') {
           e.preventDefault();
           const pages = ['daily', 'weekly', 'monthly', 'yearly', 'stats'];
           const idx = pages.indexOf(reportSubpageRef.current);
