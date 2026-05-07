@@ -404,7 +404,7 @@ function PracticeItemList({
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
           {t('categories.fundamentals')}
         </h3>
-        {fundamentalsItems.length === 0 ? (
+        {fundamentalsItems.length === 0 && activeItems.length > 0 ? (
           <p className="text-sm text-gray-400 italic px-1">{t('noFundamentalsYet')}</p>
         ) : (
           fundamentalsItems.map(item => renderRow(item, indexOf(item.id)))
@@ -415,7 +415,7 @@ function PracticeItemList({
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
           {t('categories.songs')}
         </h3>
-        {songsItems.length === 0 ? (
+        {songsItems.length === 0 && activeItems.length > 0 ? (
           <p className="text-sm text-gray-400 italic px-1">{t('noSongsYet')}</p>
         ) : (
           songsItems.map(item => renderRow(item, indexOf(item.id)))
