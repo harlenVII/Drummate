@@ -64,6 +64,28 @@ db.version(7).stores({
   });
 });
 
+db.version(8).stores({
+  practiceItems: '++id, &uid, name, sortOrder, archived, trashed',
+  practiceLogs: '++id, itemId, itemUid, date, duration, uid',
+  syncQueue: '++id, action, collection, localId',
+}).upgrade(async tx => {
+  await tx.table('practiceItems').toCollection().modify(item => {
+    if (!item.uid) item.uid = crypto.randomUUID();
+    if (item.syncedOnce == null) item.syncedOnce = true;
+  });
+
+  const items = await tx.table('practiceItems').toArray();
+  const idToUid = new Map(items.map(i => [i.id, i.uid]));
+  await tx.table('practiceLogs').toCollection().modify(log => {
+    if (!log.itemUid) {
+      const uid = idToUid.get(log.itemId);
+      if (uid) log.itemUid = uid;
+    }
+  });
+
+  await tx.table('syncQueue').clear();
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
