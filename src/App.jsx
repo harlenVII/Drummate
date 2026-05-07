@@ -30,6 +30,7 @@ import {
   renameItem,
   deleteItem,
   archiveItem,
+  setItemCategory,
   trashItem,
   restoreItem,
   purgeExpiredTrash,
@@ -37,7 +38,6 @@ import {
   getTodaysLogs,
   getLogsByDate,
   getLogsByDateRange,
-  updateItemOrder,
 } from './services/database';
 import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
 
@@ -475,7 +475,7 @@ function App() {
   }, [saveAndStop]);
 
   const handleAddItem = useCallback(
-    async (name) => {
+    async (name, category) => {
       const duplicate = items.some(
         (item) => item.name.toLowerCase() === name.toLowerCase(),
       );
@@ -483,7 +483,7 @@ function App() {
         alert(t('duplicateItem'));
         return;
       }
-      const localId = await addItem(name);
+      const localId = await addItem(name, category);
       await loadData();
       if (user) {
         const item = await db.practiceItems.get(localId);
@@ -568,13 +568,37 @@ function App() {
     [activeItemId, stopTimer, loadData, user, backend],
   );
 
-  const handleReorder = useCallback(
-    async (orderedIds) => {
-      await updateItemOrder(orderedIds);
+  const handleSetItemCategory = useCallback(
+    async (id, category) => {
+      const item = await db.practiceItems.get(id);
+      await setItemCategory(id, category);
       await loadData();
+      if (user && item) {
+        backend.pushSetCategory(item.uid, category, user.id).catch(console.error);
+      }
+    },
+    [loadData, user, backend],
+  );
+
+  const handleReorder = useCallback(
+    async (orderedEntries) => {
+      // Accepts both [id, ...] (legacy) and [{ id, category }, ...] (cross-section drag)
+      const normalized = orderedEntries.map(e =>
+        typeof e === 'object' ? e : { id: e, category: null }
+      );
+
+      await db.transaction('rw', db.practiceItems, async () => {
+        for (let i = 0; i < normalized.length; i++) {
+          const update = { sortOrder: i };
+          if (normalized[i].category) update.category = normalized[i].category;
+          await db.practiceItems.update(normalized[i].id, update);
+        }
+      });
+      await loadData();
+
       if (user) {
         const reorderedItems = await Promise.all(
-          orderedIds.map(id => db.practiceItems.get(id))
+          normalized.map(({ id }) => db.practiceItems.get(id))
         );
         backend.pushReorder(reorderedItems, user.id).catch(console.error);
       }
@@ -1165,6 +1189,7 @@ function App() {
               onRestoreItem={handleRestoreItem}
               onPermanentDelete={handlePermanentDelete}
               onArchiveItem={handleArchiveItem}
+              onSetItemCategory={handleSetItemCategory}
               onReorder={handleReorder}
             />
           )}
