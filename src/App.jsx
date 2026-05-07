@@ -1106,13 +1106,15 @@ function App() {
     };
   }, []);
 
-  // Global tab-switching shortcuts: 1 = Practice, 2 = Metronome, 3 = Report
+  // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.code === 'Digit1') handleTabChange('practice');
       else if (e.code === 'Digit2') handleTabChange('metronome');
       else if (e.code === 'Digit3') handleTabChange('report');
+      else if (e.code === 'KeyM') setTimeUnit('minutes');
+      else if (e.code === 'KeyH') setTimeUnit('hours');
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
