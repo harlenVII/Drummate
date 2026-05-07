@@ -93,6 +93,7 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
 - Category: `setItemCategory(id, category)` — updates `'fundamentals'` | `'songs'`
 - Ordering: `updateItemOrder(orderedIds)` — batch updates sortOrder in a transaction
 - Archive/Trash: `archiveItem(id, bool)`, `trashItem(id)`, `restoreItem(id)`, `purgeExpiredTrash(daysOld=30)`
+- Merge: `mergeItem(sourceId, targetId)` — reassigns all logs from source to target (updating both `itemId` and `itemUid`), hard-deletes the source item (no cascade). Returns `{ sourceUid, targetUid, targetName }` for the sync layer. Does NOT call `deleteItem` (which would cascade-delete logs).
 - Logs: `addLog`, `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`
 
 All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs. Practice item names must be unique (case-insensitive check in UI).
@@ -153,7 +154,9 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 11. **Firebase SDK** — `firebaseBackend.js` is imported statically; it is always bundled
 12. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
 13. **Sync init order is `pullAll → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. The `syncedOnce` flag on items lets `pullAll` distinguish "deleted on another device" (delete locally) from "created here while offline" (preserve and push up).
-14. **`category` is orthogonal to `archived`** — `category` (`'fundamentals'` | `'songs'`) controls which active section an item appears in; `archived` controls whether it's in the active sections or the collapsed Archived section. Both fields are always persisted. Tolerant pull rule: treat absent `category` on remote as "no change" (`if (remote.category !== undefined && ...)`) to avoid clobbering on old clients.
+14. **`pullAll` pulls logs BEFORE reconciling item deletions** — the log-pull loop runs first and remaps existing logs' `itemUid`/`itemId` if `item_uid` changed remotely (e.g. from a cross-device merge). Item-deletion reconciliation runs after. If you change this order, cross-device merges will cause silent log data loss.
+15. **`subscribeToChanges` log `modified` events must remap parent** — the live Firestore listener handles `modified` on logs by updating local `itemUid`/`itemId` if `item_uid` changed. This mirrors the `pullAll` remap logic and prevents data loss when a merge on another device arrives via real-time subscription.
+16. **`category` is orthogonal to `archived`** — `category` (`'fundamentals'` | `'songs'`) controls which active section an item appears in; `archived` controls whether it's in the active sections or the collapsed Archived section. Both fields are always persisted. Tolerant pull rule: treat absent `category` on remote as "no change" (`if (remote.category !== undefined && ...)`) to avoid clobbering on old clients.
 
 ## File Naming
 
