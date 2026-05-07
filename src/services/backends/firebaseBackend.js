@@ -29,18 +29,6 @@ function logsRef(userId) {
   return collection(firestore, 'users', userId, 'practice_logs');
 }
 
-async function findRemoteItemByName(userId, name) {
-  const q = query(itemsRef(userId), where('name', '==', name));
-  const snap = await getDocs(q);
-  return snap.empty ? null : snap.docs[0];
-}
-
-async function findRemoteLogByUid(userId, uid) {
-  const q = query(logsRef(userId), where('uid', '==', uid));
-  const snap = await getDocs(q);
-  return snap.empty ? null : snap.docs[0];
-}
-
 // --- Offline sync queue (reuses Dexie syncQueue table) ---
 
 async function queueSync(action, payload) {
@@ -103,18 +91,29 @@ const firebaseBackend = {
 
   // Sync — push
   async pushItem(localItem, userId) {
+    if (!localItem.uid) {
+      console.error('pushItem: missing uid', localItem);
+      return;
+    }
     try {
-      // Deterministic doc ID based on name — setDoc is idempotent, prevents duplicates
-      const docId = encodeURIComponent(localItem.name);
-      const data = { name: localItem.name, created: serverTimestamp() };
+      const data = {
+        uid: localItem.uid,
+        name: localItem.name,
+        created: serverTimestamp(),
+      };
       if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
       data.archived = localItem.archived ?? false;
       data.trashed = localItem.trashed ?? false;
       data.trashed_at = localItem.trashedAt || '';
-      await setDoc(doc(itemsRef(userId), docId), data, { merge: true });
+      await setDoc(doc(itemsRef(userId), localItem.uid), data, { merge: true });
+
+      // Mark local as synced so pullAll's deletion reconciliation is safe.
+      if (localItem.id != null && !localItem.syncedOnce) {
+        await db.practiceItems.update(localItem.id, { syncedOnce: true });
+      }
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('create_item', { name: localItem.name });
+        await queueSync('create_item', { uid: localItem.uid, name: localItem.name });
       } else {
         throw err;
       }
@@ -126,31 +125,26 @@ const firebaseBackend = {
       const item = await db.practiceItems.get(localLog.itemId);
       if (!item) return;
 
-      const remoteItemDocId = encodeURIComponent(item.name);
-      const remoteItem = await findRemoteItemByName(userId, item.name);
-      if (!remoteItem) {
-        await queueSync('create_log', {
-          itemName: item.name, date: localLog.date,
-          duration: localLog.duration, uid: localLog.uid,
-        });
-        return;
-      }
+      const itemUid = localLog.itemUid || item.uid;
 
-      // Use uid as doc ID to prevent duplicates from race conditions
       const logDocRef = doc(logsRef(userId), localLog.uid);
       await setDoc(logDocRef, {
+        uid: localLog.uid,
+        item_uid: itemUid,
         item_name: item.name,
         date: localLog.date,
         duration: localLog.duration,
-        uid: localLog.uid,
         created: serverTimestamp(),
       }, { merge: true });
     } catch (err) {
       if (!navigator.onLine) {
         const item = await db.practiceItems.get(localLog.itemId);
         await queueSync('create_log', {
-          itemName: item?.name, date: localLog.date,
-          duration: localLog.duration, uid: localLog.uid,
+          itemUid: localLog.itemUid || item?.uid,
+          itemName: item?.name,
+          date: localLog.date,
+          duration: localLog.duration,
+          uid: localLog.uid,
         });
       } else {
         throw err;
@@ -158,45 +152,36 @@ const firebaseBackend = {
     }
   },
 
-  async pushDeleteItem(name, userId) {
+  async pushDeleteItem(uid, userId) {
     try {
-      const docId = encodeURIComponent(name);
-      // Delete all logs for this item
-      const q = query(logsRef(userId), where('item_name', '==', name));
+      const q = query(logsRef(userId), where('item_uid', '==', uid));
       const snap = await getDocs(q);
       for (const logDoc of snap.docs) {
         await deleteDoc(logDoc.ref);
       }
-      await deleteDoc(doc(itemsRef(userId), docId));
+      await deleteDoc(doc(itemsRef(userId), uid));
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('delete_item', { name });
+        await queueSync('delete_item', { uid });
       } else {
         throw err;
       }
     }
   },
 
-  async pushRenameItem(oldName, newName, userId) {
+  async pushRenameItem(uid, newName, userId) {
     try {
-      // Delete old doc and create new one with new deterministic ID
-      const oldDocId = encodeURIComponent(oldName);
-      const newDocId = encodeURIComponent(newName);
-      const oldRef = doc(itemsRef(userId), oldDocId);
-      const newRef = doc(itemsRef(userId), newDocId);
+      await setDoc(doc(itemsRef(userId), uid), { name: newName }, { merge: true });
 
-      await setDoc(newRef, { name: newName, created: serverTimestamp() }, { merge: true });
-      await deleteDoc(oldRef);
-
-      // Also update denormalized item_name in logs
-      const q = query(logsRef(userId), where('item_name', '==', oldName));
+      // Update denormalized item_name on this item's logs (human-readable hint).
+      const q = query(logsRef(userId), where('item_uid', '==', uid));
       const snap = await getDocs(q);
       for (const logDoc of snap.docs) {
         await updateDoc(logDoc.ref, { item_name: newName });
       }
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('rename_item', { oldName, newName });
+        await queueSync('rename_item', { uid, newName });
       } else {
         throw err;
       }
@@ -206,41 +191,40 @@ const firebaseBackend = {
   async pushReorder(items, userId) {
     try {
       for (const item of items) {
-        const docId = encodeURIComponent(item.name);
-        await updateDoc(doc(itemsRef(userId), docId), { sort_order: item.sortOrder });
+        await updateDoc(doc(itemsRef(userId), item.uid), { sort_order: item.sortOrder });
       }
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('reorder', { items: items.map(i => ({ name: i.name, sortOrder: i.sortOrder })) });
+        await queueSync('reorder', {
+          items: items.map(i => ({ uid: i.uid, sortOrder: i.sortOrder })),
+        });
       } else {
         throw err;
       }
     }
   },
 
-  async pushArchiveItem(name, archived, userId) {
+  async pushArchiveItem(uid, archived, userId) {
     try {
-      const docId = encodeURIComponent(name);
-      await updateDoc(doc(itemsRef(userId), docId), { archived: !!archived });
+      await updateDoc(doc(itemsRef(userId), uid), { archived: !!archived });
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('archive_item', { name, archived: !!archived });
+        await queueSync('archive_item', { uid, archived: !!archived });
       } else {
         throw err;
       }
     }
   },
 
-  async pushTrashItem(name, trashed, trashedAt, userId) {
+  async pushTrashItem(uid, trashed, trashedAt, userId) {
     try {
-      const docId = encodeURIComponent(name);
-      await updateDoc(doc(itemsRef(userId), docId), {
+      await updateDoc(doc(itemsRef(userId), uid), {
         trashed: !!trashed,
         trashed_at: trashedAt || '',
       });
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('trash_item', { name, trashed: !!trashed, trashedAt: trashedAt || '' });
+        await queueSync('trash_item', { uid, trashed: !!trashed, trashedAt: trashedAt || '' });
       } else {
         throw err;
       }
