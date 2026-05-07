@@ -49,6 +49,7 @@ function App() {
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
   const [activeItemId, setActiveItemId] = useState(null);
+  const [focusedPracticeItemId, setFocusedPracticeItemId] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -1229,6 +1230,8 @@ function App() {
               onSetItemCategory={handleSetItemCategory}
               onMergeItem={handleMergeItem}
               onReorder={handleReorder}
+              focusedItemId={focusedPracticeItemId}
+              onFocusChange={setFocusedPracticeItemId}
             />
           )}
 

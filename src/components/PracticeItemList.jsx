@@ -101,12 +101,13 @@ function PracticeItemList({
   onPermanentDelete,
   onSetItemCategory,
   onMergeItem,
+  focusedItemId,
+  onFocusChange,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
   const [editingItemId, setEditingItemId] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const [focusedIndex, setFocusedIndex] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [showTrashed, setShowTrashed] = useState(false);
   const [showArchivedNormal, setShowArchivedNormal] = useState(false);
@@ -183,25 +184,45 @@ function PracticeItemList({
   const handleKeyDown = useCallback((e) => {
     if (editing) return;
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    const orderedActive = [
-      ...activeItems.filter(i => i.category === 'fundamentals'),
-      ...activeItems.filter(i => i.category === 'songs'),
-    ];
+    const cols = {
+      fundamentals: activeItems.filter(i => i.category === 'fundamentals'),
+      songs: activeItems.filter(i => i.category === 'songs'),
+    };
+    const orderedActive = [...cols.fundamentals, ...cols.songs];
     if (orderedActive.length === 0) return;
+
+    const rawIdx = focusedItemId != null ? orderedActive.findIndex(i => i.id === focusedItemId) : null;
+    const focusedIndex = rawIdx === -1 ? null : rawIdx;
+    const focusedItem = focusedIndex !== null ? orderedActive[focusedIndex] : null;
 
     if (e.code === 'ArrowUp') {
       e.preventDefault();
-      setFocusedIndex((prev) => prev === null ? orderedActive.length - 1 : Math.max(0, prev - 1));
+      const newIdx = focusedIndex === null ? orderedActive.length - 1 : Math.max(0, focusedIndex - 1);
+      onFocusChange(orderedActive[newIdx]?.id ?? null);
     } else if (e.code === 'ArrowDown') {
       e.preventDefault();
-      setFocusedIndex((prev) => prev === null ? 0 : Math.min(orderedActive.length - 1, prev + 1));
+      const newIdx = focusedIndex === null ? 0 : Math.min(orderedActive.length - 1, focusedIndex + 1);
+      onFocusChange(orderedActive[newIdx]?.id ?? null);
+    } else if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      if (cols.fundamentals.length === 0) return;
+      if (focusedItem?.category === 'fundamentals') return;
+      const rowInSongs = focusedIndex === null ? 0 : focusedIndex - cols.fundamentals.length;
+      const targetRow = Math.min(Math.max(0, rowInSongs), cols.fundamentals.length - 1);
+      onFocusChange(cols.fundamentals[targetRow]?.id ?? null);
+    } else if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      if (cols.songs.length === 0) return;
+      if (focusedItem?.category === 'songs') return;
+      const rowInFundamentals = focusedIndex === null ? 0 : focusedIndex;
+      const targetRow = Math.min(rowInFundamentals, cols.songs.length - 1);
+      onFocusChange(cols.songs[targetRow]?.id ?? null);
     } else if (e.code === 'Space') {
       e.preventDefault();
       if (focusedIndex === null) {
         if (activeItemId != null) onStop();
         return;
       }
-      const focusedItem = orderedActive[focusedIndex];
       if (!focusedItem) return;
       if (activeItemId === focusedItem.id) {
         onStop();
@@ -209,35 +230,19 @@ function PracticeItemList({
         onStart(focusedItem.id);
       }
     }
-  }, [editing, activeItems, focusedIndex, activeItemId, onStart, onStop]);
+  }, [editing, activeItems, focusedItemId, activeItemId, onStart, onStop, onFocusChange]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // When returning to this tab with an active item, restore focus to it
+  // When there is no focused item but a timer is running, snap focus to the active item
   useEffect(() => {
-    if (focusedIndex === null && activeItemId != null) {
-      const orderedActive = [
-        ...activeItems.filter(i => i.category === 'fundamentals'),
-        ...activeItems.filter(i => i.category === 'songs'),
-      ];
-      const idx = orderedActive.findIndex((item) => item.id === activeItemId);
-      if (idx !== -1) setFocusedIndex(idx);
+    if (focusedItemId == null && activeItemId != null) {
+      onFocusChange(activeItemId);
     }
-  }, [activeItemId, activeItems, focusedIndex]);
-
-  // Keep focusedIndex in bounds if items list changes
-  useEffect(() => {
-    const orderedActive = [
-      ...activeItems.filter(i => i.category === 'fundamentals'),
-      ...activeItems.filter(i => i.category === 'songs'),
-    ];
-    if (focusedIndex !== null && focusedIndex >= orderedActive.length) {
-      setFocusedIndex(orderedActive.length > 0 ? orderedActive.length - 1 : null);
-    }
-  }, [activeItems, focusedIndex]);
+  }, [activeItemId, focusedItemId, onFocusChange]);
 
   useEffect(() => {
     if (editing) setAddCategory('fundamentals');
@@ -499,6 +504,12 @@ function PracticeItemList({
   const fundamentalsItems = activeItems.filter(i => i.category === 'fundamentals');
   const songsItems = activeItems.filter(i => i.category === 'songs');
 
+  // Compute display index for keyboard focus (fundamentals first, then songs)
+  const orderedActive = [...fundamentalsItems, ...songsItems];
+  const indexOf = (id) => orderedActive.findIndex(i => i.id === id);
+  const rawFocusedIndex = focusedItemId != null ? orderedActive.findIndex(i => i.id === focusedItemId) : null;
+  const focusedIndex = rawFocusedIndex === -1 ? null : rawFocusedIndex;
+
   const renderRow = (item, indexInActive) => {
     const isActive = activeItemId === item.id;
     const isFocused = focusedIndex !== null && indexInActive === focusedIndex;
@@ -507,7 +518,8 @@ function PracticeItemList({
     return (
       <div
         key={item.id}
-        className={`bg-white rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors ${
+        onClick={() => onFocusChange(item.id)}
+        className={`bg-white rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors cursor-pointer ${
           isActive ? 'ring-2 ring-blue-500' : isFocused ? 'ring-2 ring-gray-300' : ''
         }`}
       >
@@ -519,14 +531,14 @@ function PracticeItemList({
         </div>
         {isActive ? (
           <button
-            onClick={onStop}
+            onClick={(e) => { e.stopPropagation(); onStop(); }}
             className="px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
           >
             {t('stop')}
           </button>
         ) : (
           <button
-            onClick={() => onStart(item.id)}
+            onClick={(e) => { e.stopPropagation(); onStart(item.id); }}
             className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
           >
             {t('start')}
@@ -535,10 +547,6 @@ function PracticeItemList({
       </div>
     );
   };
-
-  // Compute display index for keyboard focus (fundamentals first, then songs)
-  const orderedActive = [...fundamentalsItems, ...songsItems];
-  const indexOf = (id) => orderedActive.findIndex(i => i.id === id);
 
   return (
     <div className="flex flex-col gap-3">
