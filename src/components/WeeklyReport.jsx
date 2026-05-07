@@ -15,12 +15,6 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   const weekDays = getDaysInRange(weekStart, weekEnd);
   const today = getTodayString();
 
-  // Grand total
-  let grandTotal = 0;
-  for (const log of weekLogs) {
-    grandTotal += log.duration;
-  }
-
   // Per-item totals
   const itemTotals = {};
   for (const log of weekLogs) {
@@ -43,6 +37,9 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
     }))
     .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
+
+  // Derive total from breakdown so trashed items' logs don't inflate the count
+  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
 
   const isCurrentWeek = weekEnd >= today;
 

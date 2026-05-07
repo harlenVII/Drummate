@@ -25,18 +25,18 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
   }, [showModal]);
   // Build per-item totals from logs
   const itemTotals = {};
-  let grandTotal = 0;
   for (const log of reportLogs) {
     itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
-    grandTotal += log.duration;
   }
-  grandTotal = Math.max(0, grandTotal);
 
   // Create sorted list: items with data first (sorted by duration desc)
   const breakdown = items
     .map((item) => ({ id: item.id, name: item.name, duration: Math.max(0, itemTotals[item.id] || 0) }))
     .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
+
+  // Derive total from breakdown so trashed items' logs don't inflate the count
+  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
 
   // Items available for manual add (active + archived, excluding those already with logs today)
   const itemIdsWithLogs = new Set(breakdown.map(e => e.id));

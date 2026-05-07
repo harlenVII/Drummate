@@ -17,12 +17,6 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   const monthDays = getDaysInRange(monthStart, monthEnd);
   const today = getTodayString();
 
-  // Grand total
-  let grandTotal = 0;
-  for (const log of monthLogs) {
-    grandTotal += log.duration;
-  }
-
   // Per-item totals
   const itemTotals = {};
   for (const log of monthLogs) {
@@ -44,6 +38,9 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
     }))
     .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
+
+  // Derive total from breakdown so trashed items' logs don't inflate the count
+  let grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
 
   const isCurrentMonth = monthStart >= getMonthStart(today);
 

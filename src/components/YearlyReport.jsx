@@ -19,12 +19,6 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   const year = yearStart.split('-')[0];
   const today = getTodayString();
 
-  // Grand total
-  let grandTotal = 0;
-  for (const log of yearLogs) {
-    grandTotal += log.duration;
-  }
-
   // Per-item totals
   const itemTotals = {};
   for (const log of yearLogs) {
@@ -46,6 +40,9 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
     }))
     .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
+
+  // Derive total from breakdown so trashed items' logs don't inflate the count
+  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
 
   const isCurrentYear = yearStart >= getYearStart(today);
 
