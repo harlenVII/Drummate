@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { formatTime } from '../utils/formatTime';
@@ -141,22 +141,35 @@ function PracticeItemList({
 
     if (!isEmptyZone && active.id === over.id) return;
 
-    const fundamentals = displayItems
-      .filter(i => i.category === 'fundamentals' && i.id !== active.id);
-    const songs = displayItems
-      .filter(i => i.category === 'songs' && i.id !== active.id);
+    const isSameCategory = !isEmptyZone && activeItem.category === targetCategory;
 
-    const movedItem = { ...activeItem, category: targetCategory };
-    const targetList = targetCategory === 'fundamentals' ? fundamentals : songs;
+    let fundamentals = displayItems.filter(i => i.category === 'fundamentals');
+    let songs = displayItems.filter(i => i.category === 'songs');
 
-    if (isEmptyZone) {
-      targetList.push(movedItem);
+    if (isSameCategory) {
+      // Use arrayMove to correctly handle all positions including last
+      const list = targetCategory === 'fundamentals' ? fundamentals : songs;
+      const oldIndex = list.findIndex(i => i.id === active.id);
+      const newIndex = list.findIndex(i => i.id === over.id);
+      const reordered = arrayMove(list, oldIndex, newIndex);
+      if (targetCategory === 'fundamentals') {
+        fundamentals = reordered;
+      } else {
+        songs = reordered;
+      }
     } else {
-      const dropIndex = targetList.findIndex(i => i.id === over.id);
-      if (dropIndex === -1) {
+      // Cross-category: remove from source list, insert at target position
+      fundamentals = displayItems.filter(i => i.category === 'fundamentals' && i.id !== active.id);
+      songs = displayItems.filter(i => i.category === 'songs' && i.id !== active.id);
+
+      const movedItem = { ...activeItem, category: targetCategory };
+      const targetList = targetCategory === 'fundamentals' ? fundamentals : songs;
+
+      if (isEmptyZone) {
         targetList.push(movedItem);
       } else {
-        targetList.splice(dropIndex, 0, movedItem);
+        const dropIndex = targetList.findIndex(i => i.id === over.id);
+        targetList.splice(dropIndex === -1 ? targetList.length : dropIndex, 0, movedItem);
       }
     }
 
