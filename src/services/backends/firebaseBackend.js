@@ -99,6 +99,7 @@ const firebaseBackend = {
       const data = {
         uid: localItem.uid,
         name: localItem.name,
+        category: localItem.category ?? 'fundamentals',
         created: serverTimestamp(),
       };
       if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
@@ -191,12 +192,16 @@ const firebaseBackend = {
   async pushReorder(items, userId) {
     try {
       for (const item of items) {
-        await updateDoc(doc(itemsRef(userId), item.uid), { sort_order: item.sortOrder });
+        const updates = { sort_order: item.sortOrder };
+        if (item.category != null) updates.category = item.category;
+        await updateDoc(doc(itemsRef(userId), item.uid), updates);
       }
     } catch (err) {
       if (!navigator.onLine) {
         await queueSync('reorder', {
-          items: items.map(i => ({ uid: i.uid, sortOrder: i.sortOrder })),
+          items: items.map(i => ({
+            uid: i.uid, sortOrder: i.sortOrder, category: i.category,
+          })),
         });
       } else {
         throw err;
@@ -231,6 +236,18 @@ const firebaseBackend = {
     }
   },
 
+  async pushSetCategory(uid, category, userId) {
+    try {
+      await updateDoc(doc(itemsRef(userId), uid), { category });
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('set_category', { uid, category });
+      } else {
+        throw err;
+      }
+    }
+  },
+
   // Sync — pull
   async pullAll(userId) {
     const itemsSnap = await getDocs(itemsRef(userId));
@@ -248,6 +265,7 @@ const firebaseBackend = {
         await setDoc(doc(itemsRef(userId), uid), {
           uid,
           name: data.name,
+          category: data.category ?? 'fundamentals',
           sort_order: data.sort_order ?? 0,
           archived: data.archived ?? false,
           trashed: data.trashed ?? false,
@@ -288,6 +306,7 @@ const firebaseBackend = {
         await db.practiceItems.add({
           uid: data.uid,
           name: data.name,
+          category: data.category ?? 'fundamentals',
           sortOrder: data.sort_order ?? 0,
           archived: data.archived ?? false,
           trashed: data.trashed ?? false,
@@ -302,6 +321,9 @@ const firebaseBackend = {
         if (data.trashed != null && local.trashed !== data.trashed) {
           updates.trashed = data.trashed;
           updates.trashedAt = data.trashed_at || null;
+        }
+        if (data.category !== undefined && local.category !== data.category) {
+          updates.category = data.category;
         }
         if (!local.syncedOnce) updates.syncedOnce = true;
         if (Object.keys(updates).length > 0) {
@@ -381,12 +403,16 @@ const firebaseBackend = {
           await firebaseBackend.pushRenameItem(entry.payload.uid, entry.payload.newName, userId);
         } else if (entry.action === 'reorder') {
           for (const item of entry.payload.items) {
-            await updateDoc(doc(itemsRef(userId), item.uid), { sort_order: item.sortOrder });
+            const updates = { sort_order: item.sortOrder };
+            if (item.category != null) updates.category = item.category;
+            await updateDoc(doc(itemsRef(userId), item.uid), updates);
           }
         } else if (entry.action === 'archive_item') {
           await firebaseBackend.pushArchiveItem(entry.payload.uid, entry.payload.archived, userId);
         } else if (entry.action === 'trash_item') {
           await firebaseBackend.pushTrashItem(entry.payload.uid, entry.payload.trashed, entry.payload.trashedAt, userId);
+        } else if (entry.action === 'set_category') {
+          await firebaseBackend.pushSetCategory(entry.payload.uid, entry.payload.category, userId);
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
@@ -417,6 +443,7 @@ const firebaseBackend = {
             await db.practiceItems.add({
               uid: data.uid,
               name: data.name,
+              category: data.category ?? 'fundamentals',
               sortOrder,
               archived: data.archived ?? false,
               trashed: data.trashed ?? false,
@@ -435,6 +462,9 @@ const firebaseBackend = {
           if (data.trashed != null && local.trashed !== data.trashed) {
             updates.trashed = data.trashed;
             updates.trashedAt = data.trashed_at || null;
+          }
+          if (data.category !== undefined && local.category !== data.category) {
+            updates.category = data.category;
           }
           if (!local.syncedOnce) updates.syncedOnce = true;
           if (Object.keys(updates).length > 0) {
