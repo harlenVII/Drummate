@@ -411,54 +411,47 @@ const firebaseBackend = {
     const unsubItems = onSnapshot(itemsRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
         const data = change.doc.data();
+
+        // Skip legacy docs in the live stream — pullAll handles their migration.
+        if (!data.uid) continue;
+
         if (change.type === 'added') {
-          const existing = await db.practiceItems
-            .where('name').equals(data.name).first();
+          const existing = await db.practiceItems.where('uid').equals(data.uid).first();
           if (!existing) {
             const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
             const sortOrder = data.sort_order ?? (maxOrder ? maxOrder.sortOrder + 1 : 0);
             await db.practiceItems.add({
+              uid: data.uid,
               name: data.name,
               sortOrder,
               archived: data.archived ?? false,
               trashed: data.trashed ?? false,
               trashedAt: data.trashed_at || null,
+              syncedOnce: true,
             });
             onDataChanged();
           }
         } else if (change.type === 'modified') {
-          const localItem = await db.practiceItems
-            .where('name').equals(data.name).first();
-          if (localItem) {
-            const updates = {};
-            if (data.sort_order != null && localItem.sortOrder !== data.sort_order) {
-              updates.sortOrder = data.sort_order;
-            }
-            if (data.archived != null && localItem.archived !== data.archived) {
-              updates.archived = data.archived;
-            }
-            if (data.trashed != null && localItem.trashed !== data.trashed) {
-              updates.trashed = data.trashed;
-              updates.trashedAt = data.trashed_at || null;
-            }
-            if (Object.keys(updates).length > 0) {
-              await db.practiceItems.update(localItem.id, updates);
-            }
+          const local = await db.practiceItems.where('uid').equals(data.uid).first();
+          if (!local) continue;
+          const updates = {};
+          if (data.name != null && local.name !== data.name) updates.name = data.name;
+          if (data.sort_order != null && local.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
+          if (data.archived != null && local.archived !== data.archived) updates.archived = data.archived;
+          if (data.trashed != null && local.trashed !== data.trashed) {
+            updates.trashed = data.trashed;
+            updates.trashedAt = data.trashed_at || null;
           }
-          // Handle renames: find local item with old name
-          const allLocal = await db.practiceItems.toArray();
-          const allRemoteNames = new Set();
-          const itemsSnap = await getDocs(itemsRef(userId));
-          itemsSnap.forEach(d => allRemoteNames.add(d.data().name));
-          const stale = allLocal.find(li => !allRemoteNames.has(li.name));
-          if (stale) {
-            await db.practiceItems.update(stale.id, { name: data.name });
+          if (!local.syncedOnce) updates.syncedOnce = true;
+          if (Object.keys(updates).length > 0) {
+            await db.practiceItems.update(local.id, updates);
+            onDataChanged();
           }
-          onDataChanged();
         } else if (change.type === 'removed') {
-          const existing = await db.practiceItems
-            .where('name').equals(data.name).first();
+          const existing = await db.practiceItems.where('uid').equals(data.uid).first();
           if (existing) {
+            // Safe cascade: in the uid model, "removed" means truly deleted
+            // (not a rename — renames are now in-place modifications).
             await db.practiceLogs.where('itemId').equals(existing.id).delete();
             await db.practiceItems.delete(existing.id);
             onDataChanged();
@@ -470,30 +463,38 @@ const firebaseBackend = {
     const unsubLogs = onSnapshot(logsRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
         const data = change.doc.data();
-        if (change.type === 'added' && data.uid) {
-          const existing = await db.practiceLogs
-            .where('uid').equals(data.uid).first();
-          if (!existing) {
-            const localItem = await db.practiceItems
-              .where('name').equals(data.item_name).first();
-            if (localItem) {
-              await db.practiceLogs.add({
-                itemId: localItem.id,
-                date: data.date,
-                duration: data.duration,
-                uid: data.uid,
-              });
-              onDataChanged();
-            }
+        if (!data.uid) continue;
+
+        if (change.type === 'added') {
+          const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
+          if (existing) continue;
+
+          let localItem = null;
+          if (data.item_uid) {
+            localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
           }
-        } else if (change.type === 'removed' && data.uid) {
-          const existing = await db.practiceLogs
-            .where('uid').equals(data.uid).first();
+          if (!localItem && data.item_name) {
+            localItem = await db.practiceItems.where('name').equals(data.item_name).first();
+          }
+          if (!localItem) continue;
+
+          await db.practiceLogs.add({
+            itemId: localItem.id,
+            itemUid: localItem.uid,
+            date: data.date,
+            duration: data.duration,
+            uid: data.uid,
+          });
+          onDataChanged();
+        } else if (change.type === 'removed') {
+          const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
           if (existing) {
             await db.practiceLogs.delete(existing.id);
             onDataChanged();
           }
         }
+        // 'modified' on logs is a no-op: only the denormalized item_name field
+        // changes on rename, and we don't store item_name locally.
       }
     });
 
