@@ -50,6 +50,11 @@ const pocketbaseBackend = {
     return !!err?.isAbort;
   },
 
+  isNetworkError(err) {
+    // PocketBase ClientResponseError with status 0 = no response received (network down, DNS failure, etc.)
+    return err?.status === 0 || err?.originalError?.name === 'TypeError';
+  },
+
   // Sync
   pushItem,
   pushLog,

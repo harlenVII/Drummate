@@ -8,6 +8,8 @@
  *   getUser() → { id, email, name } | null
  *   onAuthChange(callback: (user | null) => void) → unsubscribe: () => void
  *   refreshAuth() → { id, email, name } | null  (throws if token invalid)
+ *   isAbortError(err) → boolean  (true if err is from a cancelled request)
+ *   isNetworkError(err) → boolean  (true if err is from a network failure, not auth rejection)
  *
  * Sync methods:
  *   pushItem(localItem, userId) → void

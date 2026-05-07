@@ -97,6 +97,10 @@ const firebaseBackend = {
     return false; // Firebase doesn't have auto-cancellation like PocketBase
   },
 
+  isNetworkError(err) {
+    return err?.code === 'auth/network-request-failed';
+  },
+
   // Sync — push
   async pushItem(localItem, userId) {
     try {

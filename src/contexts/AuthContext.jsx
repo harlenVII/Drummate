@@ -13,17 +13,28 @@ export function AuthProvider({ children }) {
     // Reset auth state when backend changes
     const currentUser = backend.getUser();
     if (currentUser) {
-      backend.refreshAuth()
-        .then((refreshedUser) => {
-          setUser(refreshedUser);
-        })
-        .catch((err) => {
-          if (backend.isAbortError(err)) return;
-          backend.signOut();
-          setUser(null);
-          setSessionExpired(true);
-        })
-        .finally(() => setAuthReady(true));
+      if (!navigator.onLine) {
+        // Offline: trust the cached session; the server will be re-checked next time we boot online.
+        setUser(currentUser);
+        Promise.resolve().then(() => setAuthReady(true));
+      } else {
+        backend.refreshAuth()
+          .then((refreshedUser) => {
+            setUser(refreshedUser);
+          })
+          .catch((err) => {
+            if (backend.isAbortError(err)) return;
+            if (backend.isNetworkError?.(err)) {
+              // Network failed mid-refresh — keep the cached session rather than booting the user out.
+              setUser(currentUser);
+              return;
+            }
+            backend.signOut();
+            setUser(null);
+            setSessionExpired(true);
+          })
+          .finally(() => setAuthReady(true));
+      }
     } else {
       Promise.resolve().then(() => setAuthReady(true));
     }
