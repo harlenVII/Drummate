@@ -55,6 +55,7 @@ function PracticeItemList({
   onArchiveItem,
   onRestoreItem,
   onPermanentDelete,
+  onSetItemCategory,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
@@ -65,6 +66,7 @@ function PracticeItemList({
   const [showTrashed, setShowTrashed] = useState(false);
   const [showArchivedNormal, setShowArchivedNormal] = useState(false);
   const [now] = useState(Date.now);
+  const [addCategory, setAddCategory] = useState('fundamentals');
 
   const activeItems = items.filter(item => !item.archived && !item.trashed);
   const archivedItems = items.filter(item => item.archived && !item.trashed);
@@ -152,10 +154,14 @@ function PracticeItemList({
     }
   }, [activeItems, focusedIndex]);
 
+  useEffect(() => {
+    if (editing) setAddCategory('fundamentals');
+  }, [editing]);
+
   const handleAdd = () => {
     const name = newName.trim();
     if (!name) return;
-    onAddItem(name);
+    onAddItem(name, addCategory);
     setNewName('');
   };
 
@@ -184,6 +190,33 @@ function PracticeItemList({
       setEditingName('');
     }
   };
+
+  const CategoryToggle = ({ value, onChange, ariaLabel }) => (
+    <div role="group" aria-label={ariaLabel || t('selectCategory')} className="inline-flex rounded-md overflow-hidden border border-gray-300">
+      <button
+        type="button"
+        onClick={() => onChange('fundamentals')}
+        title={t('categories.fundamentals')}
+        aria-pressed={value === 'fundamentals'}
+        className={`px-2 py-1 text-xs font-semibold ${
+          value === 'fundamentals' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        {t('categories.fundamentalsShort')}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('songs')}
+        title={t('categories.songs')}
+        aria-pressed={value === 'songs'}
+        className={`px-2 py-1 text-xs font-semibold border-l border-gray-300 ${
+          value === 'songs' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        {t('categories.songsShort')}
+      </button>
+    </div>
+  );
 
   // --- Edit mode ---
   if (editing) {
@@ -228,6 +261,11 @@ function PracticeItemList({
                     </span>
                   )}
                   <div className="flex items-center gap-1">
+                    <CategoryToggle
+                      value={item.category}
+                      onChange={(c) => onSetItemCategory(item.id, c)}
+                      ariaLabel={`${t('selectCategory')}: ${item.name}`}
+                    />
                     <button
                       onClick={() => onArchiveItem(item.id, !item.archived)}
                       className="p-1.5 text-gray-400 hover:text-amber-500 transition-colors"
@@ -268,7 +306,8 @@ function PracticeItemList({
           </p>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <CategoryToggle value={addCategory} onChange={setAddCategory} />
           <input
             type="text"
             value={newName}
@@ -429,7 +468,7 @@ function PracticeItemList({
             className="w-full text-left px-1 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2"
             aria-expanded={showArchivedNormal}
           >
-            <span className="text-xs">{showArchivedNormal ? '▾' : '▸'}</span>
+            <span className="text-xs" aria-hidden="true">{showArchivedNormal ? '▾' : '▸'}</span>
             {t('categories.archived')} ({archivedItems.length})
           </button>
           {showArchivedNormal && (
