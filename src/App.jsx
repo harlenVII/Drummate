@@ -53,6 +53,8 @@ function App() {
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const activeItemIdRef = useRef(null);
+  const metronomeSubpageRef = useRef(metronomeSubpage);
+  const reportSubpageRef = useRef(reportSubpage);
   const [activeTab, setActiveTab] = useState('practice');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timeUnit, setTimeUnit] = useState(() => {
@@ -1149,6 +1151,9 @@ function App() {
     };
   }, []);
 
+  useEffect(() => { metronomeSubpageRef.current = metronomeSubpage; }, [metronomeSubpage]);
+  useEffect(() => { reportSubpageRef.current = reportSubpage; }, [reportSubpage]);
+
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1158,10 +1163,29 @@ function App() {
       else if (e.code === 'Digit3') handleTabChange('report');
       else if (e.code === 'KeyM') setTimeUnit('minutes');
       else if (e.code === 'KeyH') setTimeUnit('hours');
+      else if (e.key === 'Tab') {
+        if (activeTab === 'metronome') {
+          e.preventDefault();
+          const pages = ['metronome', 'sequencer'];
+          const idx = pages.indexOf(metronomeSubpageRef.current);
+          const next = e.shiftKey
+            ? pages[(idx - 1 + pages.length) % pages.length]
+            : pages[(idx + 1) % pages.length];
+          handleSubpageChange(next);
+        } else if (activeTab === 'report') {
+          e.preventDefault();
+          const pages = ['daily', 'weekly', 'monthly', 'yearly', 'stats'];
+          const idx = pages.indexOf(reportSubpageRef.current);
+          const next = e.shiftKey
+            ? pages[(idx - 1 + pages.length) % pages.length]
+            : pages[(idx + 1) % pages.length];
+          setReportSubpage(next);
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTabChange]);
+  }, [handleTabChange, handleSubpageChange, setReportSubpage]);
 
   if (!user) {
     return <AuthScreen />;
