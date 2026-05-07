@@ -38,6 +38,7 @@ import {
   getTodaysLogs,
   getLogsByDate,
   getLogsByDateRange,
+  mergeItem,
 } from './services/database';
 import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
 
@@ -573,6 +574,26 @@ function App() {
       await loadData();
       if (user && item) {
         firebaseBackend.pushSetCategory(item.uid, category, user.id).catch(console.error);
+      }
+    },
+    [loadData, user],
+  );
+
+  const handleMergeItem = useCallback(
+    async (sourceId, targetId) => {
+      if (sourceId === targetId) return;
+      let result;
+      try {
+        result = await mergeItem(sourceId, targetId);
+      } catch (err) {
+        console.error('mergeItem failed:', err);
+        return;
+      }
+      await loadData();
+      if (user && result) {
+        firebaseBackend
+          .mergeItems(result.sourceUid, result.targetUid, result.targetName, user.id)
+          .catch(console.error);
       }
     },
     [loadData, user],
@@ -1180,6 +1201,7 @@ function App() {
               onPermanentDelete={handlePermanentDelete}
               onArchiveItem={handleArchiveItem}
               onSetItemCategory={handleSetItemCategory}
+              onMergeItem={handleMergeItem}
               onReorder={handleReorder}
             />
           )}
