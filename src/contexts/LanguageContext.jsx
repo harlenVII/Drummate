@@ -103,11 +103,6 @@ const translations = {
       syncing: 'Syncing...',
       sessionExpired: 'Session expired. Please sign in again.',
     },
-    backend: {
-      label: 'Sync Service',
-      pocketbase: 'PocketBase',
-      firebase: 'Firebase',
-    },
     settings: 'Settings',
     language: 'Language',
     handsFree: {
@@ -302,11 +297,6 @@ const translations = {
       hasAccount: '已有账号？',
       syncing: '同步中...',
       sessionExpired: '会话已过期，请重新登录。',
-    },
-    backend: {
-      label: '同步服务',
-      pocketbase: 'PocketBase',
-      firebase: 'Firebase',
     },
     settings: '设置',
     language: '语言',
