@@ -177,6 +177,28 @@ export const purgeExpiredTrash = async (daysOld = 30) => {
   return expiredItems;
 };
 
+export const mergeItem = async (sourceId, targetId) => {
+  if (sourceId === targetId) {
+    throw new Error('mergeItem: source and target are the same');
+  }
+  return await db.transaction('rw', db.practiceItems, db.practiceLogs, async () => {
+    const source = await db.practiceItems.get(sourceId);
+    const target = await db.practiceItems.get(targetId);
+    if (!source) throw new Error('mergeItem: source item not found');
+    if (!target) throw new Error('mergeItem: target item not found');
+    if (source.trashed) throw new Error('mergeItem: source item is trashed');
+    if (target.trashed) throw new Error('mergeItem: target item is trashed');
+
+    await db.practiceLogs.where('itemId').equals(sourceId).modify({
+      itemId: targetId,
+      itemUid: target.uid,
+    });
+    await db.practiceItems.delete(sourceId);
+
+    return { sourceUid: source.uid, targetUid: target.uid, targetName: target.name };
+  });
+};
+
 // --- Practice Logs ---
 
 export const addLog = async (itemId, duration, date) => {
