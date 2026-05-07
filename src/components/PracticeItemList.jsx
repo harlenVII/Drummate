@@ -39,6 +39,36 @@ function SortableItem({ item, children }) {
   );
 }
 
+function CategoryToggle({ value, onChange, ariaLabel }) {
+  const { t } = useLanguage();
+  return (
+    <div role="group" aria-label={ariaLabel || t('selectCategory')} className="inline-flex rounded-md overflow-hidden border border-gray-300">
+      <button
+        type="button"
+        onClick={() => onChange('fundamentals')}
+        title={t('categories.fundamentals')}
+        aria-pressed={value === 'fundamentals'}
+        className={`px-2 py-1 text-xs font-semibold ${
+          value === 'fundamentals' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        {t('categories.fundamentalsShort')}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('songs')}
+        title={t('categories.songs')}
+        aria-pressed={value === 'songs'}
+        className={`px-2 py-1 text-xs font-semibold border-l border-gray-300 ${
+          value === 'songs' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        {t('categories.songsShort')}
+      </button>
+    </div>
+  );
+}
+
 function PracticeItemList({
   items,
   totals,
@@ -190,33 +220,6 @@ function PracticeItemList({
       setEditingName('');
     }
   };
-
-  const CategoryToggle = ({ value, onChange, ariaLabel }) => (
-    <div role="group" aria-label={ariaLabel || t('selectCategory')} className="inline-flex rounded-md overflow-hidden border border-gray-300">
-      <button
-        type="button"
-        onClick={() => onChange('fundamentals')}
-        title={t('categories.fundamentals')}
-        aria-pressed={value === 'fundamentals'}
-        className={`px-2 py-1 text-xs font-semibold ${
-          value === 'fundamentals' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
-        }`}
-      >
-        {t('categories.fundamentalsShort')}
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('songs')}
-        title={t('categories.songs')}
-        aria-pressed={value === 'songs'}
-        className={`px-2 py-1 text-xs font-semibold border-l border-gray-300 ${
-          value === 'songs' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
-        }`}
-      >
-        {t('categories.songsShort')}
-      </button>
-    </div>
-  );
 
   // --- Edit mode ---
   if (editing) {
