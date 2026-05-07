@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -69,6 +69,20 @@ function CategoryToggle({ value, onChange, ariaLabel }) {
   );
 }
 
+function EmptyDropZone({ id, label }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`text-sm italic px-3 py-4 rounded-lg border border-dashed transition-colors ${
+        isOver ? 'bg-blue-50 border-blue-400 text-blue-600' : 'bg-white border-gray-300 text-gray-400'
+      }`}
+    >
+      {label}
+    </div>
+  );
+}
+
 function PracticeItemList({
   items,
   totals,
@@ -114,14 +128,40 @@ function PracticeItemList({
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = displayItems.findIndex(i => i.id === active.id);
-    const newIndex = displayItems.findIndex(i => i.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-    const newItems = [...displayItems];
-    const [moved] = newItems.splice(oldIndex, 1);
-    newItems.splice(newIndex, 0, moved);
-    onReorder(newItems.map(i => i.id));
+    if (!over) return;
+
+    const activeItem = displayItems.find(i => i.id === active.id);
+    if (!activeItem) return;
+
+    const isEmptyZone = typeof over.id === 'string' && over.id.startsWith('category-');
+    const targetCategory = isEmptyZone
+      ? (over.id === 'category-fundamentals' ? 'fundamentals' : 'songs')
+      : displayItems.find(i => i.id === over.id)?.category;
+    if (!targetCategory) return;
+
+    if (!isEmptyZone && active.id === over.id) return;
+
+    const fundamentals = displayItems
+      .filter(i => i.category === 'fundamentals' && i.id !== active.id);
+    const songs = displayItems
+      .filter(i => i.category === 'songs' && i.id !== active.id);
+
+    const movedItem = { ...activeItem, category: targetCategory };
+    const targetList = targetCategory === 'fundamentals' ? fundamentals : songs;
+
+    if (isEmptyZone) {
+      targetList.push(movedItem);
+    } else {
+      const dropIndex = targetList.findIndex(i => i.id === over.id);
+      if (dropIndex === -1) {
+        targetList.push(movedItem);
+      } else {
+        targetList.splice(dropIndex, 0, movedItem);
+      }
+    }
+
+    const ordered = [...fundamentals, ...songs];
+    onReorder(ordered.map(i => ({ id: i.id, category: i.category })));
   };
 
   // Keyboard shortcuts (only in normal/timer mode, not edit mode)
@@ -223,6 +263,69 @@ function PracticeItemList({
 
   // --- Edit mode ---
   if (editing) {
+    const editFundamentals = displayItems.filter(i => i.category === 'fundamentals');
+    const editSongs = displayItems.filter(i => i.category === 'songs');
+
+    const renderEditRow = (item) => (
+      <SortableItem key={item.id} item={item}>
+        <div className={`flex-1 flex items-center justify-between ml-2 ${item.archived ? 'opacity-50' : ''}`}>
+          {editingItemId === item.id ? (
+            <input
+              type="text"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onKeyDown={handleRenameKeyDown}
+              onBlur={commitRename}
+              autoFocus
+              className="flex-1 mr-3 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          ) : (
+            <span
+              onClick={() => startRename(item)}
+              className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 transition-colors"
+              title="Click to rename"
+            >
+              {item.name}
+            </span>
+          )}
+          <div className="flex items-center gap-1">
+            <CategoryToggle
+              value={item.category}
+              onChange={(c) => onSetItemCategory(item.id, c)}
+              ariaLabel={`${t('selectCategory')}: ${item.name}`}
+            />
+            <button
+              onClick={() => onArchiveItem(item.id, !item.archived)}
+              className="p-1.5 text-gray-400 hover:text-amber-500 transition-colors"
+              title={item.archived ? t('unarchive') : t('archive')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M4 3a2 2 0 00-2 2v1h16V5a2 2 0 00-2-2H4zM2 9a1 1 0 000 2v5a2 2 0 002 2h12a2 2 0 002-2v-5a1 1 0 100-2H2zm5 4a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => onDeleteItem(item.id)}
+              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+              title="Delete item"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </SortableItem>
+    );
+
     return (
       <div className="flex flex-col gap-3">
         {hasArchivedItems && (
@@ -240,74 +343,32 @@ function PracticeItemList({
           modifiers={[restrictToVerticalAxis]}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={displayItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-            {displayItems.map((item) => (
-              <SortableItem key={item.id} item={item}>
-                <div className={`flex-1 flex items-center justify-between ml-2 ${item.archived ? 'opacity-50' : ''}`}>
-                  {editingItemId === item.id ? (
-                    <input
-                      type="text"
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onKeyDown={handleRenameKeyDown}
-                      onBlur={commitRename}
-                      autoFocus
-                      className="flex-1 mr-3 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  ) : (
-                    <span
-                      onClick={() => startRename(item)}
-                      className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 transition-colors"
-                      title="Click to rename"
-                    >
-                      {item.name}
-                    </span>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <CategoryToggle
-                      value={item.category}
-                      onChange={(c) => onSetItemCategory(item.id, c)}
-                      ariaLabel={`${t('selectCategory')}: ${item.name}`}
-                    />
-                    <button
-                      onClick={() => onArchiveItem(item.id, !item.archived)}
-                      className="p-1.5 text-gray-400 hover:text-amber-500 transition-colors"
-                      title={item.archived ? t('unarchive') : t('archive')}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M4 3a2 2 0 00-2 2v1h16V5a2 2 0 00-2-2H4zM2 9a1 1 0 000 2v5a2 2 0 002 2h12a2 2 0 002-2v-5a1 1 0 100-2H2zm5 4a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => onDeleteItem(item.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                      title="Delete item"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </SortableItem>
-            ))}
-          </SortableContext>
-        </DndContext>
+          <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+              {t('categories.fundamentals')}
+            </h3>
+            <SortableContext items={editFundamentals.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              {editFundamentals.length === 0 ? (
+                <EmptyDropZone id="category-fundamentals" label={t('noFundamentalsYet')} />
+              ) : (
+                editFundamentals.map(item => renderEditRow(item))
+              )}
+            </SortableContext>
+          </div>
 
-        {displayItems.length === 0 && (
-          <p className="text-center text-gray-400 py-4">
-            {t('noPracticeItems')}
-          </p>
-        )}
+          <div className="flex flex-col gap-2 mt-2">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+              {t('categories.songs')}
+            </h3>
+            <SortableContext items={editSongs.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              {editSongs.length === 0 ? (
+                <EmptyDropZone id="category-songs" label={t('noSongsYet')} />
+              ) : (
+                editSongs.map(item => renderEditRow(item))
+              )}
+            </SortableContext>
+          </div>
+        </DndContext>
 
         <div className="flex gap-2 items-center">
           <CategoryToggle value={addCategory} onChange={setAddCategory} />
