@@ -1,7 +1,7 @@
 import { pb } from '../pocketbase';
 import {
   pushItem, pushLog, pushDeleteItem, pushRenameItem, pushReorder,
-  pushArchiveItem, pushTrashItem,
+  pushArchiveItem, pushTrashItem, pushSetCategory,
   pullAll, pushAllLocal, flushSyncQueue, subscribeToChanges,
 } from '../sync';
 
@@ -63,6 +63,7 @@ const pocketbaseBackend = {
   pushReorder,
   pushArchiveItem,
   pushTrashItem,
+  pushSetCategory,
   pullAll,
   pushAllLocal,
   flushSyncQueue,
