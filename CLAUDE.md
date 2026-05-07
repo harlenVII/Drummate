@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Drummate is a Progressive Web App (PWA) for drummers to track practice sessions, view reports, and use an integrated metronome with a rhythm sequencer. Built with React 19, Vite 7, Tailwind CSS v4, and Dexie.js (IndexedDB) with pluggable cloud sync (Firebase or PocketBase).
+Drummate is a Progressive Web App (PWA) for drummers to track practice sessions, view reports, and use an integrated metronome with a rhythm sequencer. Built with React 19, Vite 7, Tailwind CSS v4, and Dexie.js (IndexedDB) with Firebase cloud sync.
 
 **Key docs:**
 - [DEVELOPMENT.md](./docs/DEVELOPMENT.md) — Full architecture, project structure, completed phases
@@ -30,8 +30,6 @@ VITE_FIREBASE_API_KEY       # Firebase API key
 VITE_FIREBASE_AUTH_DOMAIN   # Firebase auth domain
 VITE_FIREBASE_PROJECT_ID    # Firebase project ID
 
-# PocketBase (alternative backend)
-VITE_POCKETBASE_URL         # PocketBase server URL
 ```
 
 ## Architecture Overview
@@ -42,7 +40,7 @@ VITE_POCKETBASE_URL         # PocketBase server URL
 LanguageProvider → BackendProvider → AuthProvider → App
 ```
 
-`BackendProvider` lazy-loads Firebase SDK only when Firebase backend is selected. `AuthProvider` delegates to the active backend from `useBackend()`.
+`AuthProvider` uses `firebaseBackend` directly. Firebase is the sole backend.
 
 ### Global State Management (App.jsx)
 
@@ -54,19 +52,6 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 **Singleton Refs:** `metronomeEngineRef` (audio engine), `noSleepRef` (prevents screen lock)
 
 **Key Pattern:** Metronome/sequencer state persists when switching tabs. The audio engine is initialized once on mount and destroyed only on unmount.
-
-### Pluggable Backend System
-
-Backend abstraction layer allows switching between Firebase and PocketBase:
-
-- `src/services/backends/backendInterface.js` — Contract that all backends must implement (auth + sync methods)
-- `src/services/backends/firebaseBackend.js` — Firebase implementation (Firestore + Firebase Auth)
-- `src/services/backends/pocketbaseBackend.js` — PocketBase implementation (REST API + SSE)
-- `src/contexts/BackendContext.jsx` — `useBackend()` hook returns `{ backend, backendType, switchBackend }`
-
-**Backend interface contract** (every backend must implement):
-- **Auth:** `signIn`, `signUp`, `signOut`, `getUser`, `onAuthChange`, `refreshAuth`
-- **Sync:** `pushItem`, `pushLog`, `pushDeleteItem`, `pushRenameItem`, `pushReorder`, `pushArchiveItem`, `pushTrashItem`, `pushSetCategory`, `pullAll`, `pushAllLocal`, `flushSyncQueue`, `subscribeToChanges`
 
 ### Audio Engine (metronomeEngine.js)
 
@@ -163,14 +148,12 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 6. **Date strings must be YYYY-MM-DD** — use `dateHelpers.js`
 7. **All user-facing text must use `t()` function** for bilingual support
 8. **Metronome state is global in App.jsx** — persists across tab switches
-9. **PocketBase auto-cancellation** — always use `requestKey: null` on API calls to prevent the SDK from cancelling concurrent requests
-10. **Practice item names are mutable; identity is the `uid`** — UI does a case-insensitive duplicate-name check in `handleAddItem` for UX, but cross-device sync identity is the `uid` field. Always pass `item.uid` (not `item.name`) to backend push methods.
-11. **Backend interface compliance** — new sync operations must be added to both `firebaseBackend.js` and `pocketbaseBackend.js`, and declared in `backendInterface.js`
-12. **Firebase SDK lazy-loaded** — `BackendContext` dynamically imports `firebaseBackend.js` to avoid bundling Firebase when using PocketBase
-13. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
-14. **Sync init order is `pullAll → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. The `syncedOnce` flag on items lets `pullAll` distinguish "deleted on another device" (delete locally) from "created here while offline" (preserve and push up).
-15. **`category` is orthogonal to `archived`** — `category` (`'fundamentals'` | `'songs'`) controls which active section an item appears in; `archived` controls whether it's in the active sections or the collapsed Archived section. Both fields are always persisted. Tolerant pull rule: treat absent `category` on remote as "no change" (`if (remote.category !== undefined && ...)`) to avoid clobbering on old clients.
-16. **PocketBase uid-migration** — `pushDeleteItem`, `pushRenameItem`, `pushReorder`, `pushArchiveItem`, `pushTrashItem`, and `pushSetCategory` in `sync.js` are `console.warn` stubs pending a uid-based schema migration for PocketBase. Firebase has full implementations. New category-related sync ops must follow the same stub pattern until the migration lands.
+9. **Practice item names are mutable; identity is the `uid`** — UI does a case-insensitive duplicate-name check in `handleAddItem` for UX, but cross-device sync identity is the `uid` field. Always pass `item.uid` (not `item.name`) to backend push methods.
+10. **Backend interface compliance** — new sync operations must be added to `firebaseBackend.js`
+11. **Firebase SDK** — `firebaseBackend.js` is imported statically; it is always bundled
+12. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
+13. **Sync init order is `pullAll → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. The `syncedOnce` flag on items lets `pullAll` distinguish "deleted on another device" (delete locally) from "created here while offline" (preserve and push up).
+14. **`category` is orthogonal to `archived`** — `category` (`'fundamentals'` | `'songs'`) controls which active section an item appears in; `archived` controls whether it's in the active sections or the collapsed Archived section. Both fields are always persisted. Tolerant pull rule: treat absent `category` on remote as "no change" (`if (remote.category !== undefined && ...)`) to avoid clobbering on old clients.
 
 ## File Naming
 
