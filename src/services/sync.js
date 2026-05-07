@@ -77,107 +77,36 @@ export async function pushLog(localLog, userId) {
   }
 }
 
-export async function pushDeleteItem(name, userId) {
-  try {
-    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
-      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name }),
-      requestKey: null,
-    });
-    if (remoteItems.totalItems > 0) {
-      await pb.collection('practice_items').delete(remoteItems.items[0].id, {
-        requestKey: null,
-      });
-    }
-  } catch (err) {
-    if (!navigator.onLine) {
-      await queueSync('delete_item', { name });
-    } else {
-      throw err;
-    }
-  }
+// TODO(pocketbase-uid-migration): All PocketBase push methods below have had
+// their signatures updated to take `uid` (matching the Firebase backend and
+// the backendInterface contract), but the underlying PocketBase schema is
+// still name-based. A parallel migration to add a `uid` field to the
+// practice_items collection is required before these will function correctly.
+// Firebase users are unaffected.
+
+export async function pushDeleteItem(uid, userId) {
+  console.warn('pushDeleteItem: PocketBase uid-migration not yet implemented',
+    { uid, userId });
 }
 
-export async function pushRenameItem(oldName, newName, userId) {
-  try {
-    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
-      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: oldName }),
-      requestKey: null,
-    });
-    if (remoteItems.totalItems > 0) {
-      await pb.collection('practice_items').update(remoteItems.items[0].id, { name: newName }, {
-        requestKey: null,
-      });
-    }
-  } catch (err) {
-    if (!navigator.onLine) {
-      await queueSync('rename_item', { oldName, newName });
-    } else {
-      throw err;
-    }
-  }
+export async function pushRenameItem(uid, newName, userId) {
+  console.warn('pushRenameItem: PocketBase uid-migration not yet implemented',
+    { uid, newName, userId });
 }
 
 export async function pushReorder(items, userId) {
-  try {
-    for (const item of items) {
-      const remoteItems = await pb.collection('practice_items').getList(1, 1, {
-        filter: pb.filter('user = {:userId} && name = {:name}', { userId, name: item.name }),
-        requestKey: null,
-      });
-      if (remoteItems.totalItems > 0) {
-        await pb.collection('practice_items').update(remoteItems.items[0].id, {
-          sort_order: item.sortOrder,
-        }, { requestKey: null });
-      }
-    }
-  } catch (err) {
-    if (!navigator.onLine) {
-      await queueSync('reorder', { items: items.map(i => ({ name: i.name, sortOrder: i.sortOrder })) });
-    } else {
-      throw err;
-    }
-  }
+  console.warn('pushReorder: PocketBase uid-migration not yet implemented',
+    { items: items.map(i => ({ uid: i.uid, sortOrder: i.sortOrder })), userId });
 }
 
-export async function pushArchiveItem(name, archived, userId) {
-  try {
-    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
-      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name }),
-      requestKey: null,
-    });
-    if (remoteItems.totalItems > 0) {
-      await pb.collection('practice_items').update(remoteItems.items[0].id, {
-        archived: !!archived,
-      }, { requestKey: null });
-    }
-  } catch (err) {
-    if (!navigator.onLine) {
-      await queueSync('archive_item', { name, archived: !!archived });
-    } else {
-      throw err;
-    }
-  }
+export async function pushArchiveItem(uid, archived, userId) {
+  console.warn('pushArchiveItem: PocketBase uid-migration not yet implemented',
+    { uid, archived, userId });
 }
 
-export async function pushTrashItem(name, trashed, trashedAt, userId) {
-  try {
-    const remoteItems = await pb.collection('practice_items').getList(1, 1, {
-      filter: pb.filter('user = {:userId} && name = {:name}', { userId, name }),
-      requestKey: null,
-    });
-    if (remoteItems.totalItems > 0) {
-      await pb.collection('practice_items').update(remoteItems.items[0].id, {
-        trashed: !!trashed,
-        trashed_at: trashedAt || '',
-      }, { requestKey: null });
-    }
-  } catch (err) {
-    if (!navigator.onLine) {
-      await queueSync('trash_item', { name, trashed: !!trashed, trashedAt: trashedAt || '' });
-    } else {
-      throw err;
-    }
-  }
+export async function pushTrashItem(uid, trashed, trashedAt, userId) {
+  console.warn('pushTrashItem: PocketBase uid-migration not yet implemented',
+    { uid, trashed, trashedAt, userId });
 }
 
 // --- Sync queue for offline writes ---
