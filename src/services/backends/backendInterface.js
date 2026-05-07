@@ -18,14 +18,15 @@
  *
  * Sync methods:
  *   pushItem(localItem, userId) → void
- *     localItem must include: { uid, name, sortOrder?, archived?, trashed?, trashedAt? }
+ *     localItem must include: { uid, name, category, sortOrder?, archived?, trashed?, trashedAt? }
  *   pushLog(localLog, userId) → void
  *     localLog must include: { uid, itemUid, date, duration }
  *   pushDeleteItem(uid, userId) → void
  *   pushRenameItem(uid, newName, userId) → void
- *   pushReorder(items, userId) → void       // items: [{ uid, sortOrder }]
+ *   pushReorder(items, userId) → void       // items: [{ uid, sortOrder, category? }]
  *   pushArchiveItem(uid, archived, userId) → void
  *   pushTrashItem(uid, trashed, trashedAt, userId) → void
+ *   pushSetCategory(uid, category, userId) → void
  *   pullAll(userId) → void
  *   pushAllLocal(userId) → void
  *   flushSyncQueue(userId) → void
