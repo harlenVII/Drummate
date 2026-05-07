@@ -63,6 +63,7 @@ function PracticeItemList({
   const [focusedIndex, setFocusedIndex] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [showTrashed, setShowTrashed] = useState(false);
+  const [showArchivedNormal, setShowArchivedNormal] = useState(false);
   const [now] = useState(Date.now);
 
   const activeItems = items.filter(item => !item.archived && !item.trashed);
@@ -95,22 +96,25 @@ function PracticeItemList({
   const handleKeyDown = useCallback((e) => {
     if (editing) return;
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (activeItems.length === 0) return;
+    const orderedActive = [
+      ...activeItems.filter(i => i.category === 'fundamentals'),
+      ...activeItems.filter(i => i.category === 'songs'),
+    ];
+    if (orderedActive.length === 0) return;
 
     if (e.code === 'ArrowUp') {
       e.preventDefault();
-      setFocusedIndex((prev) => prev === null ? activeItems.length - 1 : Math.max(0, prev - 1));
+      setFocusedIndex((prev) => prev === null ? orderedActive.length - 1 : Math.max(0, prev - 1));
     } else if (e.code === 'ArrowDown') {
       e.preventDefault();
-      setFocusedIndex((prev) => prev === null ? 0 : Math.min(activeItems.length - 1, prev + 1));
+      setFocusedIndex((prev) => prev === null ? 0 : Math.min(orderedActive.length - 1, prev + 1));
     } else if (e.code === 'Space') {
       e.preventDefault();
-      // If nothing is focused but something is running, stop it
       if (focusedIndex === null) {
         if (activeItemId != null) onStop();
         return;
       }
-      const focusedItem = activeItems[focusedIndex];
+      const focusedItem = orderedActive[focusedIndex];
       if (!focusedItem) return;
       if (activeItemId === focusedItem.id) {
         onStop();
@@ -128,17 +132,25 @@ function PracticeItemList({
   // When returning to this tab with an active item, restore focus to it
   useEffect(() => {
     if (focusedIndex === null && activeItemId != null) {
-      const idx = activeItems.findIndex((item) => item.id === activeItemId);
+      const orderedActive = [
+        ...activeItems.filter(i => i.category === 'fundamentals'),
+        ...activeItems.filter(i => i.category === 'songs'),
+      ];
+      const idx = orderedActive.findIndex((item) => item.id === activeItemId);
       if (idx !== -1) setFocusedIndex(idx);
     }
   }, [activeItemId, activeItems, focusedIndex]);
 
   // Keep focusedIndex in bounds if items list changes
   useEffect(() => {
-    if (focusedIndex !== null && focusedIndex >= activeItems.length) {
-      setFocusedIndex(activeItems.length > 0 ? activeItems.length - 1 : null);
+    const orderedActive = [
+      ...activeItems.filter(i => i.category === 'fundamentals'),
+      ...activeItems.filter(i => i.category === 'songs'),
+    ];
+    if (focusedIndex !== null && focusedIndex >= orderedActive.length) {
+      setFocusedIndex(orderedActive.length > 0 ? orderedActive.length - 1 : null);
     }
-  }, [activeItems.length, focusedIndex]);
+  }, [activeItems, focusedIndex]);
 
   const handleAdd = () => {
     const name = newName.trim();
@@ -342,49 +354,110 @@ function PracticeItemList({
   }
 
   // --- Normal (timer) mode ---
+  const fundamentalsItems = activeItems.filter(i => i.category === 'fundamentals');
+  const songsItems = activeItems.filter(i => i.category === 'songs');
+
+  const renderRow = (item, indexInActive) => {
+    const isActive = activeItemId === item.id;
+    const isFocused = focusedIndex !== null && indexInActive === focusedIndex;
+    const savedTotal = totals[item.id] || 0;
+    const displayTime = isActive ? savedTotal + elapsedTime : savedTotal;
+    return (
+      <div
+        key={item.id}
+        className={`bg-white rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors ${
+          isActive ? 'ring-2 ring-blue-500' : isFocused ? 'ring-2 ring-gray-300' : ''
+        }`}
+      >
+        <div className="flex flex-col">
+          <span className="font-medium text-gray-800">{item.name}</span>
+          <span className="font-mono text-lg text-gray-600">
+            {formatTime(displayTime)}
+          </span>
+        </div>
+        {isActive ? (
+          <button
+            onClick={onStop}
+            className="px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
+          >
+            {t('stop')}
+          </button>
+        ) : (
+          <button
+            onClick={() => onStart(item.id)}
+            className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+          >
+            {t('start')}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // Compute display index for keyboard focus (fundamentals first, then songs)
+  const orderedActive = [...fundamentalsItems, ...songsItems];
+  const indexOf = (id) => orderedActive.findIndex(i => i.id === id);
+
   return (
     <div className="flex flex-col gap-3">
-      {activeItems.map((item, index) => {
-        const isActive = activeItemId === item.id;
-        const isFocused = focusedIndex !== null && index === focusedIndex;
-        const savedTotal = totals[item.id] || 0;
-        const displayTime = isActive ? savedTotal + elapsedTime : savedTotal;
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+          {t('categories.fundamentals')}
+        </h3>
+        {fundamentalsItems.length === 0 ? (
+          <p className="text-sm text-gray-400 italic px-1">{t('noFundamentalsYet')}</p>
+        ) : (
+          fundamentalsItems.map(item => renderRow(item, indexOf(item.id)))
+        )}
+      </div>
 
-        return (
-          <div
-            key={item.id}
-            className={`bg-white rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors ${
-              isActive ? 'ring-2 ring-blue-500' : isFocused ? 'ring-2 ring-gray-300' : ''
-            }`}
+      <div className="flex flex-col gap-2 mt-2">
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+          {t('categories.songs')}
+        </h3>
+        {songsItems.length === 0 ? (
+          <p className="text-sm text-gray-400 italic px-1">{t('noSongsYet')}</p>
+        ) : (
+          songsItems.map(item => renderRow(item, indexOf(item.id)))
+        )}
+      </div>
+
+      {hasArchivedItems && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowArchivedNormal(!showArchivedNormal)}
+            className="w-full text-left px-1 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2"
+            aria-expanded={showArchivedNormal}
           >
-            <div className="flex flex-col">
-              <span className="font-medium text-gray-800">{item.name}</span>
-              <span className="font-mono text-lg text-gray-600">
-                {formatTime(displayTime)}
-              </span>
+            <span className="text-xs">{showArchivedNormal ? '▾' : '▸'}</span>
+            {t('categories.archived')} ({archivedItems.length})
+          </button>
+          {showArchivedNormal && (
+            <div className="flex flex-col gap-2 mt-1">
+              {archivedItems.map(item => {
+                const savedTotal = totals[item.id] || 0;
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between opacity-50"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-800">{item.name}</span>
+                      <span className="font-mono text-lg text-gray-600">
+                        {formatTime(savedTotal)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            {isActive ? (
-              <button
-                onClick={onStop}
-                className="px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
-              >
-                {t('stop')}
-              </button>
-            ) : (
-              <button
-                onClick={() => onStart(item.id)}
-                className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-              >
-                {t('start')}
-              </button>
-            )}
-          </div>
-        );
-      })}
+          )}
+        </div>
+      )}
 
       {activeItems.length === 0 && (
         <p className="text-center text-gray-400 py-4">
-          {t('noPracticeItems')}
+          {t('addFirstItem')}
         </p>
       )}
 
