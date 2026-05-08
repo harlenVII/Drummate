@@ -3,9 +3,11 @@ import { formatDuration } from '../utils/formatTime';
 import { getTodayString, shiftDate } from '../utils/dateHelpers';
 import { getAllLogs } from '../services/database';
 import { useLanguage } from '../contexts/LanguageContext';
+import ReportGeneratorModal from './ReportGeneratorModal';
 
 function StatsReport({ items, timeUnit }) {
   const { t } = useLanguage();
+  const [showModal, setShowModal] = useState(false);
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
@@ -47,32 +49,48 @@ function StatsReport({ items, timeUnit }) {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      {sections.map((section) => (
-        <div key={section.title} className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
-            {section.title}
-          </h3>
-          {section.items.map((item) => (
-            <div key={item.label} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-              <span className="text-gray-600 text-sm">{item.label}</span>
-              <div className="text-right">
-                <span className="font-mono font-semibold text-gray-800">{item.value}</span>
-                {item.sub && (
-                  <div className="text-xs text-gray-400 mt-0.5">{item.sub}</div>
-                )}
+    <>
+      <div className="flex flex-col gap-4">
+        {sections.map((section) => (
+          <div key={section.title} className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+              {section.title}
+            </h3>
+            {section.items.map((item) => (
+              <div key={item.label} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
+                <span className="text-gray-600 text-sm">{item.label}</span>
+                <div className="text-right">
+                  <span className="font-mono font-semibold text-gray-800">{item.value}</span>
+                  {item.sub && (
+                    <div className="text-xs text-gray-400 mt-0.5">{item.sub}</div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ))}
+            ))}
+          </div>
+        ))}
 
-      {stats.totalSessions === 0 && (
-        <p className="text-center text-gray-400 py-8">
-          {t('noPracticeRecorded')}
-        </p>
-      )}
-    </div>
+        {stats.totalSessions === 0 && (
+          <p className="text-center text-gray-400 py-8">
+            {t('noPracticeRecorded')}
+          </p>
+        )}
+      </div>
+
+      <button
+        onClick={() => setShowModal(true)}
+        className="mt-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+      >
+        {t('generateReport')}
+      </button>
+
+      <ReportGeneratorModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        items={items}
+        timeUnit={timeUnit}
+      />
+    </>
   );
 }
 
