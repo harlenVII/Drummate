@@ -1,0 +1,205 @@
+import { useState, useEffect } from 'react';
+import { getTodayString, shiftDate, getMonthStart } from '../utils/dateHelpers';
+import { formatDuration } from '../utils/formatTime';
+import { getLogsByDateRange } from '../services/database';
+import { useLanguage } from '../contexts/LanguageContext';
+
+function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
+  const { t } = useLanguage();
+  const [startDate, setStartDate] = useState(getTodayString);
+  const [endDate, setEndDate] = useState(getTodayString);
+  const [reportText, setReportText] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // Reset to today whenever the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const today = getTodayString();
+      setStartDate(today);
+      setEndDate(today);
+      setReportText(null);
+      setCopied(false);
+    }
+  }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const today = getTodayString();
+
+  function handleStartDateChange(value) {
+    setStartDate(value);
+    if (value > endDate) setEndDate(value);
+    setReportText(null);
+    setCopied(false);
+  }
+
+  function handleEndDateChange(value) {
+    setEndDate(value);
+    if (value < startDate) setStartDate(value);
+    setReportText(null);
+    setCopied(false);
+  }
+
+  function applyPreset(start, end) {
+    setStartDate(start);
+    setEndDate(end);
+    setReportText(null);
+    setCopied(false);
+  }
+
+  async function handleGenerate() {
+    const logs = await getLogsByDateRange(startDate, endDate);
+    const text = buildReportText(logs, startDate, endDate, items, t, timeUnit);
+    setReportText(text);
+    setCopied(false);
+  }
+
+  const presets = [
+    { label: t('today'), start: today, end: today },
+    { label: t('reportGenerator.last7Days'), start: shiftDate(today, -6), end: today },
+    { label: t('reportGenerator.thisMonth'), start: getMonthStart(today), end: today },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 flex flex-col gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-bold text-gray-800">{t('reportGenerator.title')}</h2>
+
+        {/* Preset buttons */}
+        <div className="flex gap-2">
+          {presets.map((preset) => {
+            const active = startDate === preset.start && endDate === preset.end;
+            return (
+              <button
+                key={preset.label}
+                onClick={() => applyPreset(preset.start, preset.end)}
+                className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
+                  active
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Date inputs */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-gray-600 w-20 shrink-0">
+              {t('reportGenerator.startDate')}
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              max={today}
+              onChange={(e) => handleStartDateChange(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-gray-600 w-20 shrink-0">
+              {t('reportGenerator.endDate')}
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              max={today}
+              onChange={(e) => handleEndDateChange(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Generate button */}
+        <button
+          onClick={handleGenerate}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
+          {t('reportGenerator.generate')}
+        </button>
+
+        {/* Report output */}
+        {reportText !== null && (
+          <>
+            <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap select-text">
+              {reportText}
+            </pre>
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(reportText);
+                setCopied(true);
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                copied
+                  ? 'bg-green-600 text-white'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {copied ? t('copied') : t('copyToClipboard')}
+            </button>
+          </>
+        )}
+
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+        >
+          {t('close')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function buildReportText(logs, startDate, endDate, items, t, timeUnit) {
+  const totals = {};
+  for (const log of logs) {
+    totals[log.itemId] = (totals[log.itemId] || 0) + log.duration;
+  }
+
+  const breakdown = Object.entries(totals)
+    .map(([itemId, duration]) => ({
+      name: items.find((i) => i.id === Number(itemId))?.name,
+      duration,
+    }))
+    .filter((e) => e.name != null && e.duration > 0)
+    .sort((a, b) => b.duration - a.duration);
+
+  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
+  const fmt = (d) => `${formatDuration(d, timeUnit)} ${t(timeUnit)}`;
+
+  const dateLabel =
+    startDate === endDate
+      ? formatReportDate(startDate)
+      : `${formatReportDate(startDate)} – ${formatReportDate(endDate)}`;
+
+  return [
+    `${t('date')}: ${dateLabel}`,
+    `${t('total')}: ${fmt(grandTotal)}`,
+    ...breakdown.map((e) => `${e.name}: ${fmt(e.duration)}`),
+  ].join('\n');
+}
+
+function formatReportDate(dateString) {
+  const [year, month, day] = dateString.split('-');
+  return `${year}/${month}/${day}`;
+}
+
+export default ReportGeneratorModal;
