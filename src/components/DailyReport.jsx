@@ -253,9 +253,20 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
                   className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between"
                 >
                   <span className="font-medium text-gray-800">{item.name}</span>
-                  {item.archived && (
-                    <span className="text-xs text-gray-400 ml-2">{t('archived')}</span>
-                  )}
+                  <div className="flex items-center gap-2 ml-2">
+                    {item.category && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        item.category === 'fundamentals'
+                          ? 'bg-blue-100 text-blue-600'
+                          : 'bg-purple-100 text-purple-600'
+                      }`}>
+                        {t(`categories.${item.category}`)}
+                      </span>
+                    )}
+                    {item.archived && (
+                      <span className="text-xs text-gray-400">{t('archived')}</span>
+                    )}
+                  </div>
                 </button>
               ))
             )}
