@@ -204,6 +204,15 @@ const translations = {
       errorTitle: 'Could not load AI',
       errorGeneric: 'Something went wrong. Please try again.',
     },
+    reportGenerator: {
+      title: 'Report Generator',
+      startDate: 'Start Date',
+      endDate: 'End Date',
+      last7Days: 'Last 7 Days',
+      thisMonth: 'This Month',
+      generate: 'Generate',
+      dateRange: 'Date Range',
+    },
   },
   zh: {
     appName: 'Drummate',
@@ -407,6 +416,15 @@ const translations = {
       regenerate: '再来一次鼓励',
       errorTitle: '无法加载AI',
       errorGeneric: '出现了一些问题，请重试。',
+    },
+    reportGenerator: {
+      title: '报告生成器',
+      startDate: '开始日期',
+      endDate: '结束日期',
+      last7Days: '最近7天',
+      thisMonth: '本月',
+      generate: '生成',
+      dateRange: '日期范围',
     },
   },
 };
