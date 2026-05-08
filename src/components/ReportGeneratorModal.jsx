@@ -56,16 +56,19 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
   }
 
   async function handleGenerate() {
-    const logs = await getLogsByDateRange(startDate, endDate);
-    const text = buildReportText(logs, startDate, endDate, items, t, timeUnit);
-    setReportText(text);
-    setCopied(false);
+    try {
+      const logs = await getLogsByDateRange(startDate, endDate);
+      setReportText(buildReportText(logs, startDate, endDate, items, t, timeUnit));
+      setCopied(false);
+    } catch (err) {
+      console.error('ReportGeneratorModal: failed to generate report', err);
+    }
   }
 
   const presets = [
-    { label: t('today'), start: today, end: today },
-    { label: t('reportGenerator.last7Days'), start: shiftDate(today, -6), end: today },
-    { label: t('reportGenerator.thisMonth'), start: getMonthStart(today), end: today },
+    { id: 'today', label: t('today'), start: today, end: today },
+    { id: 'last7', label: t('reportGenerator.last7Days'), start: shiftDate(today, -6), end: today },
+    { id: 'thisMonth', label: t('reportGenerator.thisMonth'), start: getMonthStart(today), end: today },
   ];
 
   return (
@@ -85,7 +88,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
             const active = startDate === preset.start && endDate === preset.end;
             return (
               <button
-                key={preset.label}
+                key={preset.id}
                 onClick={() => applyPreset(preset.start, preset.end)}
                 className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
                   active
@@ -102,10 +105,11 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
         {/* Date inputs */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600 w-20 shrink-0">
+            <label htmlFor="report-start-date" className="text-sm text-gray-600 w-20 shrink-0">
               {t('reportGenerator.startDate')}
             </label>
             <input
+              id="report-start-date"
               type="date"
               value={startDate}
               max={today}
@@ -114,13 +118,15 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
             />
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600 w-20 shrink-0">
+            <label htmlFor="report-end-date" className="text-sm text-gray-600 w-20 shrink-0">
               {t('reportGenerator.endDate')}
             </label>
             <input
+              id="report-end-date"
               type="date"
               value={endDate}
               max={today}
+              min={startDate}
               onChange={(e) => handleEndDateChange(e.target.value)}
               className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -143,8 +149,12 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
             </pre>
             <button
               onClick={async () => {
-                await navigator.clipboard.writeText(reportText);
-                setCopied(true);
+                try {
+                  await navigator.clipboard.writeText(reportText);
+                  setCopied(true);
+                } catch (err) {
+                  console.error('ReportGeneratorModal: clipboard write failed', err);
+                }
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 copied
@@ -174,6 +184,7 @@ function buildReportText(logs, startDate, endDate, items, t, timeUnit) {
     totals[log.itemId] = (totals[log.itemId] || 0) + log.duration;
   }
 
+  // items with no matching name are omitted (e.g. trashed items), matching DailyReport behaviour
   const breakdown = Object.entries(totals)
     .map(([itemId, duration]) => ({
       name: items.find((i) => i.id === Number(itemId))?.name,
