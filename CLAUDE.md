@@ -104,7 +104,7 @@ All operations are async/await. Date strings always use `YYYY-MM-DD` format. Del
 Five subpages in `reportSubpage`: `daily`, `weekly`, `monthly`, `yearly`, `stats`.
 
 - `DailyReport` / `WeeklyReport` / `MonthlyReport` / `YearlyReport` — scoped to their time window; receive a date/week/month/year start prop from App
-- `StatsReport` — all-time aggregated stats (total time, total days, streaks, best month, top item). Computed in-component from `getAllLogs()`. Includes a "Generate Report" button that opens `ReportGeneratorModal`.
+- `StatsReport` — all-time aggregated stats (total time, total days, streaks, best month, top item). Calls `getAllLogs()` then filters to active (non-trashed) items before computing. Includes a "Generate Report" button that opens `ReportGeneratorModal`. Also renders `GoalCard` at the bottom.
 - `ReportGeneratorModal` — generates a copyable plain-text summary for a user-selected date range. Uses `getLogsByDateRange` and respects `timeUnit`.
 
 ### Voice Commands & AI Features
@@ -120,7 +120,17 @@ Five subpages in `reportSubpage`: `daily`, `weekly`, `monthly`, `yearly`, `stats
 
 ### Internationalization (LanguageContext.jsx)
 
-React Context providing `t(key)` function for translations. Supports nested keys (e.g., `t('tempoNames.allegro')`) and interpolation. Languages: `en`, `zh`. Does NOT persist across refresh.
+React Context providing `t(key)` function for translations. Supports nested keys (e.g., `t('tempoNames.allegro')`) and interpolation (`{param}` syntax). Languages: `en`, `zh`. Persisted to `localStorage` key `drummate_language`.
+
+### Practice Goal (GoalCard / GoalBanner / GoalSetupModal)
+
+A single time-boxed practice goal stored in `localStorage` key `drummate_goal` as `{ startDate, endDate, targetHours }`. Three self-contained components — none require new props from `App.jsx`:
+
+- `GoalSetupModal` — create/edit modal; validates and writes to localStorage, then calls `onSave()`
+- `GoalCard` — full-detail card in the Stats tab (`StatsReport`); reads localStorage + `getLogsByDateRange`, shows progress bar, required daily average, edit/clear
+- `GoalBanner` — compact read-only strip at top of Practice tab (`PracticeItemList`); reads goal once on mount via `useState(readGoal)` with no setter (refreshes on remount/tab switch); returns `null` when no goal is set
+
+Both `GoalCard` and `GoalBanner` define `readGoal()` and `dateDiffDays()` locally — intentionally duplicated to keep components self-contained. `daysLeft` always includes today (`dateDiffDays(today, endDate) + 1`) to avoid divide-by-zero on the last day.
 
 ### Keyboard Shortcuts (App.jsx)
 
@@ -202,7 +212,7 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 ## Commit Conventions
 
 - `feat:`, `fix:`, `refactor:`, `docs:`
-- Always include: `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
+- Always include: `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`
 
 ## Testing Checklist
 
