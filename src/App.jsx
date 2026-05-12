@@ -40,7 +40,7 @@ import {
   getLogsByDateRange,
   mergeItem,
 } from './services/database';
-import { getTodayString, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
+import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
@@ -56,6 +56,10 @@ function App() {
   const activeItemIdRef = useRef(null);
   const metronomeSubpageRef = useRef('metronome');
   const reportSubpageRef = useRef('daily');
+  const reportDateRef = useRef(getTodayString());
+  const weekStartRef = useRef(getWeekStart(getTodayString()));
+  const monthStartRef = useRef(getMonthStart(getTodayString()));
+  const yearStartRef = useRef(getYearStart(getTodayString()));
   const [activeTab, setActiveTab] = useState('practice');
   const activeTabRef = useRef('practice');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1156,6 +1160,10 @@ function App() {
   useEffect(() => { metronomeSubpageRef.current = metronomeSubpage; }, [metronomeSubpage]);
   useEffect(() => { reportSubpageRef.current = reportSubpage; }, [reportSubpage]);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => { reportDateRef.current = reportDate; }, [reportDate]);
+  useEffect(() => { weekStartRef.current = weekStart; }, [weekStart]);
+  useEffect(() => { monthStartRef.current = monthStart; }, [monthStart]);
+  useEffect(() => { yearStartRef.current = yearStart; }, [yearStart]);
 
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
   useEffect(() => {
@@ -1184,11 +1192,38 @@ function App() {
             : pages[(idx + 1) % pages.length];
           setReportSubpage(next);
         }
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (activeTabRef.current === 'report') {
+          const dir = e.key === 'ArrowLeft' ? -1 : 1;
+          const subpage = reportSubpageRef.current;
+          const today = getTodayString();
+          if (subpage === 'daily') {
+            e.preventDefault();
+            const newDate = shiftDate(reportDateRef.current, dir);
+            if (newDate <= today) handleReportDateChange(newDate);
+          } else if (subpage === 'weekly') {
+            e.preventDefault();
+            const newWeekStart = getWeekStart(shiftDate(weekStartRef.current, dir * 7));
+            if (newWeekStart <= getWeekStart(today)) handleWeekChange(newWeekStart);
+          } else if (subpage === 'monthly') {
+            e.preventDefault();
+            const newMonthStart = dir === -1
+              ? getMonthStart(shiftDate(monthStartRef.current, -1))
+              : getMonthStart(shiftDate(monthStartRef.current, 32));
+            if (newMonthStart <= getMonthStart(today)) handleMonthChange(newMonthStart);
+          } else if (subpage === 'yearly') {
+            e.preventDefault();
+            const newYearStart = dir === -1
+              ? getYearStart(shiftDate(yearStartRef.current, -1))
+              : getYearStart(shiftDate(yearStartRef.current, 366));
+            if (newYearStart <= getYearStart(today)) handleYearChange(newYearStart);
+          }
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTabChange, handleSubpageChange, setReportSubpage]);
+  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange]);
 
   if (!user) {
     return <AuthScreen />;
