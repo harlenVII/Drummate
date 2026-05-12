@@ -211,7 +211,6 @@ const translations = {
       last7Days: 'Last 7 Days',
       thisMonth: 'This Month',
       generate: 'Generate',
-      dateRange: 'Date Range',
     },
   },
   zh: {
@@ -424,7 +423,6 @@ const translations = {
       last7Days: '最近7天',
       thisMonth: '本月',
       generate: '生成',
-      dateRange: '日期范围',
     },
   },
 };
