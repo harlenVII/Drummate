@@ -102,10 +102,7 @@ function GoalCard() {
     <>
       <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between">
-          <div>
-            <span className="font-semibold text-gray-800 text-sm">{t('goal.title')}</span>
-            <div className="text-xs text-gray-400 mt-0.5">{goal.startDate} – {goal.endDate}</div>
-          </div>
+          <div className="text-xs text-gray-400">{goal.startDate} – {goal.endDate}</div>
           <div className="flex gap-3">
             <button onClick={() => setShowModal(true)} className="text-xs text-blue-600 hover:underline">
               {t('goal.editGoal')}
