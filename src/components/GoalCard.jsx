@@ -125,7 +125,7 @@ function GoalCard() {
 
         <div className="flex justify-between text-xs text-gray-600">
           <span>
-            {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')}
+            {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')} ({progressPercent.toFixed(2)}%)
           </span>
           <span className={goalMet || (expired && goalMet) ? 'text-green-600 font-medium' : ''}>
             {statusText}
