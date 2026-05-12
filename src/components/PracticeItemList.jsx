@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../utils/formatTime';
 import { useLanguage } from '../contexts/LanguageContext';
 import MergeTargetPicker from './MergeTargetPicker';
+import GoalBanner from './GoalBanner';
 
 function DragHandle({ listeners, attributes }) {
   return (
@@ -550,6 +551,7 @@ function PracticeItemList({
 
   return (
     <div className="flex flex-col gap-3">
+      <GoalBanner />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
