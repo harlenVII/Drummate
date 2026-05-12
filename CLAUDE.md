@@ -29,7 +29,6 @@ npm run lint             # Run ESLint
 VITE_FIREBASE_API_KEY       # Firebase API key
 VITE_FIREBASE_AUTH_DOMAIN   # Firebase auth domain
 VITE_FIREBASE_PROJECT_ID    # Firebase project ID
-
 ```
 
 ## Architecture Overview
@@ -48,6 +47,8 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 
 **Practice State:** `items`, `totals`, `activeItemId`, `elapsedTime`, `editing`
 **Metronome/Sequencer State:** `metronomeBpm`, `metronomeIsPlaying`, `metronomeCurrentBeat`, `metronomeTimeSignature`, `metronomeSubdivision`, `metronomeSoundType`, `metronomeSubpage`, `sequencerSlots`, `sequencerPlayingSlot`
+**Report State:** `reportSubpage` (`'daily' | 'weekly' | 'monthly' | 'yearly' | 'stats'`), `reportDate`, `weekStart`, `monthStart`, `yearStart`
+**Shared Display:** `timeUnit` (`'minutes' | 'hours'`) — persisted to localStorage, controls how durations display across all reports
 **Voice State:** STT service instance, voice listening state, floating voice indicator
 **Singleton Refs:** `metronomeEngineRef` (audio engine), `noSleepRef` (prevents screen lock)
 
@@ -67,7 +68,7 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 - `onBeat({ beat, subdivisionIndex })` — UI beat indicators
 - `onSequenceBeat(slotIndex)` — sequencer UI
 
-**Implementation:** Lookahead scheduler (25ms wake-up, 100ms lookahead). Web Worker at `/metronome-worker.js` (must be in `public/`). Subdivision patterns are arrays of integers (0=quarter, 1=eighth, 2=triplet, 3=sixteenth). Rest beats use `[-1]`.
+**Implementation:** Lookahead scheduler (25ms wake-up, 100ms lookahead). Web Worker at `/metronome-worker.js` (must be in `public/`). Subdivision patterns are fractional beat positions (0.0–1.0, e.g. `[0, 0.5]` for eighth notes). Negative values mark silent subdivisions. Rest beats use `null` (from `SUBDIVISIONS` constant in `src/constants/subdivisions.js`).
 
 ### Database Layer (database.js)
 
@@ -94,9 +95,17 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
 - Ordering: `updateItemOrder(orderedIds)` — batch updates sortOrder in a transaction
 - Archive/Trash: `archiveItem(id, bool)`, `trashItem(id)`, `restoreItem(id)`, `purgeExpiredTrash(daysOld=30)`
 - Merge: `mergeItem(sourceId, targetId)` — reassigns all logs from source to target (updating both `itemId` and `itemUid`), hard-deletes the source item (no cascade). Returns `{ sourceUid, targetUid, targetName }` for the sync layer. Does NOT call `deleteItem` (which would cascade-delete logs).
-- Logs: `addLog`, `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`
+- Logs: `addLog`, `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`, `getAllLogs`
 
 All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs. Practice item names must be unique (case-insensitive check in UI).
+
+### Report Tab
+
+Five subpages in `reportSubpage`: `daily`, `weekly`, `monthly`, `yearly`, `stats`.
+
+- `DailyReport` / `WeeklyReport` / `MonthlyReport` / `YearlyReport` — scoped to their time window; receive a date/week/month/year start prop from App
+- `StatsReport` — all-time aggregated stats (total time, total days, streaks, best month, top item). Computed in-component from `getAllLogs()`. Includes a "Generate Report" button that opens `ReportGeneratorModal`.
+- `ReportGeneratorModal` — generates a copyable plain-text summary for a user-selected date range. Uses `getLogsByDateRange` and respects `timeUnit`.
 
 ### Voice Commands & AI Features
 
@@ -112,6 +121,32 @@ All operations are async/await. Date strings always use `YYYY-MM-DD` format. Del
 ### Internationalization (LanguageContext.jsx)
 
 React Context providing `t(key)` function for translations. Supports nested keys (e.g., `t('tempoNames.allegro')`) and interpolation. Languages: `en`, `zh`. Does NOT persist across refresh.
+
+### Keyboard Shortcuts (App.jsx)
+
+All shortcuts are blocked when focus is in an `<input>` or `<textarea>`.
+
+| Key | Action |
+|-----|--------|
+| `1` / `2` / `3` | Switch to Practice / Metronome / Report tab |
+| `Tab` / `Shift+Tab` | Cycle metronome subpages (metronome↔sequencer) or report subpages (daily→weekly→monthly→yearly→stats) |
+| `←` / `→` | Step report date back/forward (daily=1 day, weekly=1 week, monthly=1 month, yearly=1 year) |
+| `M` / `H` | Set time unit to minutes / hours |
+| `E` / `C` | Switch language to English / Chinese |
+
+## Utilities
+
+### dateHelpers.js
+
+All date functions operate on `YYYY-MM-DD` strings using noon time (`T12:00:00`) to avoid DST edge cases.
+
+Key exports: `getTodayString()`, `toDateString(date)`, `shiftDate(dateStr, days)`, `formatDateLabel(dateStr, t)`, `getWeekStart/End(dateStr)`, `getMonthStart/End(dateStr)`, `getYearStart/End(dateStr)`, `getDaysInRange(start, end)`
+
+### formatTime.js
+
+Two distinct formatters:
+- `formatTime(seconds)` → `"HH:MM:SS"` — used for the live practice timer display
+- `formatDuration(seconds, unit)` → number (minutes or hours) — used in all reports; respects `timeUnit` state
 
 ## Critical Implementation Patterns
 
