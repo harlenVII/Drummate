@@ -29,6 +29,9 @@ export class MetronomeEngine {
     // Flag for rest beats (no sound)
     this._isRestBeat = false;
 
+    // When false, beat 0 uses the normal buffer instead of the accent buffer
+    this.accentFirstBeat = true;
+
     this._lookaheadMs = 25.0;
     this._scheduleAhead = 0.1;
     this._workerFallbackID = null;
@@ -417,6 +420,10 @@ export class MetronomeEngine {
     this.subdivisionIndex = 0;
   }
 
+  setAccentFirstBeat(enabled) {
+    this.accentFirstBeat = enabled;
+  }
+
   setSoundType(type) {
     if (this.soundType === type) return;
     this.soundType = type;
@@ -476,7 +483,7 @@ export class MetronomeEngine {
     }
 
     const isMainBeat = subIndex === 0;
-    const isAccent = beat === 0 && isMainBeat;
+    const isAccent = this.accentFirstBeat && beat === 0 && isMainBeat;
 
     let buffer;
     if (isAccent) {

@@ -131,6 +131,15 @@ function App() {
     }
   });
 
+  const [metronomeAccentFirstBeat, setMetronomeAccentFirstBeat] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_metronome_accent_first_beat');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
+
   // Subpage toggle within metronome tab
   const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
   // 'metronome' | 'sequencer'
@@ -222,6 +231,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('drummate_metronome_subdivision', metronomeSubdivision);
   }, [metronomeSubdivision]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_metronome_accent_first_beat', String(metronomeAccentFirstBeat));
+  }, [metronomeAccentFirstBeat]);
 
   useEffect(() => {
     localStorage.setItem('drummate_time_unit', timeUnit);
@@ -1312,6 +1325,8 @@ function App() {
                   setSubdivision={setMetronomeSubdivision}
                   soundType={metronomeSoundType}
                   setSoundType={setMetronomeSoundType}
+                  accentFirstBeat={metronomeAccentFirstBeat}
+                  setAccentFirstBeat={setMetronomeAccentFirstBeat}
                 />
               ) : (
                 <SequencerPage

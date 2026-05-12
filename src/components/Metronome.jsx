@@ -29,6 +29,8 @@ function Metronome({
   setSubdivision,
   soundType,
   setSoundType,
+  accentFirstBeat,
+  setAccentFirstBeat,
 }) {
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
@@ -65,6 +67,12 @@ function Metronome({
       engineRef.current.setSoundType(soundType);
     }
   }, [engineRef, soundType]);
+
+  useEffect(() => {
+    if (engineRef.current) {
+      engineRef.current.setAccentFirstBeat(accentFirstBeat);
+    }
+  }, [engineRef, accentFirstBeat]);
 
   const handleTogglePlay = useCallback(async () => {
     if (isPlaying) {
@@ -210,6 +218,18 @@ function Metronome({
           </button>
         ))}
       </div>
+
+      {/* Accent toggle */}
+      <button
+        onClick={() => setAccentFirstBeat(!accentFirstBeat)}
+        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+          accentFirstBeat
+            ? 'bg-blue-600 text-white'
+            : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+        }`}
+      >
+        {t('accentBeat1')}
+      </button>
 
       {/* Play/Stop button */}
       <button
