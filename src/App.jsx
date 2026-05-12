@@ -62,6 +62,7 @@ function App() {
   const yearStartRef = useRef(getYearStart(getTodayString()));
   const [activeTab, setActiveTab] = useState('practice');
   const activeTabRef = useRef('practice');
+  const languageRef = useRef(language);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timeUnit, setTimeUnit] = useState(() => {
     try {
@@ -1170,6 +1171,7 @@ function App() {
     };
   }, []);
 
+  useEffect(() => { languageRef.current = language; }, [language]);
   useEffect(() => { metronomeSubpageRef.current = metronomeSubpage; }, [metronomeSubpage]);
   useEffect(() => { reportSubpageRef.current = reportSubpage; }, [reportSubpage]);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
@@ -1187,6 +1189,8 @@ function App() {
       else if (e.code === 'Digit3') handleTabChange('report');
       else if (e.code === 'KeyM') setTimeUnit('minutes');
       else if (e.code === 'KeyH') setTimeUnit('hours');
+      else if (e.code === 'KeyE') { if (languageRef.current !== 'en') toggleLanguage(); }
+      else if (e.code === 'KeyC') { if (languageRef.current !== 'zh') toggleLanguage(); }
       else if (e.key === 'Tab') {
         if (activeTabRef.current === 'metronome') {
           e.preventDefault();
@@ -1236,7 +1240,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange]);
+  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage]);
 
   if (!user) {
     return <AuthScreen />;
