@@ -4,6 +4,7 @@ import { getTodayString, shiftDate } from '../utils/dateHelpers';
 import { getAllLogs } from '../services/database';
 import { useLanguage } from '../contexts/LanguageContext';
 import ReportGeneratorModal from './ReportGeneratorModal';
+import GoalCard from './GoalCard';
 
 function StatsReport({ items, timeUnit }) {
   const { t } = useLanguage();
@@ -51,6 +52,12 @@ function StatsReport({ items, timeUnit }) {
   return (
     <>
       <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+            {t('goal.title')}
+          </h3>
+          <GoalCard />
+        </div>
         {sections.map((section) => (
           <div key={section.title} className="flex flex-col gap-2">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
