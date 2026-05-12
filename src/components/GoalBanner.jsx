@@ -67,7 +67,7 @@ function GoalBanner() {
     <div className="bg-white rounded-lg shadow-sm px-4 py-2.5 flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-xs text-gray-600">
         <span>
-          {t('goal.title')}: {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')}
+          {t('goal.title')}: {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')} ({Math.round(progressPercent)}%)
         </span>
         <span className={goalMet ? 'text-green-600 font-medium' : ''}>
           {rightText}

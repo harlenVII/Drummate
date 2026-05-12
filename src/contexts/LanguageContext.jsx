@@ -452,7 +452,7 @@ const translations = {
       noGoal: '未设置练习目标',
       startDate: '开始日期',
       endDate: '结束日期',
-      targetHours: '目标时长（例如 20）',
+      targetHours: '目标小时',
       met: '目标达成！',
       missed: '目标未达成',
       startsIn: '{days} 天后开始',
