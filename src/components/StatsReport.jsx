@@ -112,7 +112,10 @@ function formatDisplayDate(dateString) {
 }
 
 function computeStats(allLogs, items) {
-  if (allLogs.length === 0) {
+  const activeItemIds = new Set(items.map(i => i.id));
+  const logs = allLogs.filter(log => activeItemIds.has(log.itemId));
+
+  if (logs.length === 0) {
     return {
       totalTime: 0,
       totalDays: 0,
@@ -127,14 +130,14 @@ function computeStats(allLogs, items) {
 
   // Total time & sessions
   let totalTime = 0;
-  for (const log of allLogs) {
+  for (const log of logs) {
     totalTime += log.duration;
   }
-  const totalSessions = allLogs.length;
+  const totalSessions = logs.length;
 
   // Days with practice
   const dayTotals = {};
-  for (const log of allLogs) {
+  for (const log of logs) {
     dayTotals[log.date] = (dayTotals[log.date] || 0) + log.duration;
   }
   const practiceDays = Object.keys(dayTotals).sort();
@@ -177,7 +180,7 @@ function computeStats(allLogs, items) {
 
   // Most practiced item
   const itemTotals = {};
-  for (const log of allLogs) {
+  for (const log of logs) {
     itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
   }
   let topItemId = null;
@@ -194,7 +197,7 @@ function computeStats(allLogs, items) {
 
   // Best month
   const monthTotals = {};
-  for (const log of allLogs) {
+  for (const log of logs) {
     const month = log.date.slice(0, 7); // "YYYY-MM"
     monthTotals[month] = (monthTotals[month] || 0) + log.duration;
   }
