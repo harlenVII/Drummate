@@ -17,15 +17,18 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   const monthDays = getDaysInRange(monthStart, monthEnd);
   const today = getTodayString();
 
+  const activeItemIds = new Set(items.map(i => i.id));
+  const activeLogs = monthLogs.filter(log => activeItemIds.has(log.itemId));
+
   // Per-item totals
   const itemTotals = {};
-  for (const log of monthLogs) {
+  for (const log of activeLogs) {
     itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
   }
 
   // Per-day totals
   const dayTotals = {};
-  for (const log of monthLogs) {
+  for (const log of activeLogs) {
     dayTotals[log.date] = (dayTotals[log.date] || 0) + log.duration;
   }
 

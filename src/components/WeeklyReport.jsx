@@ -15,15 +15,18 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   const weekDays = getDaysInRange(weekStart, weekEnd);
   const today = getTodayString();
 
+  const activeItemIds = new Set(items.map(i => i.id));
+  const activeLogs = weekLogs.filter(log => activeItemIds.has(log.itemId));
+
   // Per-item totals
   const itemTotals = {};
-  for (const log of weekLogs) {
+  for (const log of activeLogs) {
     itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
   }
 
   // Per-day totals for bar chart
   const dayTotals = {};
-  for (const log of weekLogs) {
+  for (const log of activeLogs) {
     dayTotals[log.date] = (dayTotals[log.date] || 0) + log.duration;
   }
   const maxDay = Math.max(...weekDays.map((d) => dayTotals[d] || 0), 1);
