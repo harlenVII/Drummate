@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getAllNotes } from '../services/database';
 import { getTodayString, shiftDate, formatDateLabel } from '../utils/dateHelpers';
 
-const PAGE_SIZE = 50; // note count threshold per page
+const PAGE_SIZE = 20; // note count threshold per page
 
 function NotesByDate({ items, refreshKey, onEdit }) {
   const { t } = useLanguage();
