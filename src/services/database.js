@@ -342,7 +342,13 @@ export const getTrashedNotes = async () => {
   const notes = await db.notes.toArray();
   return notes
     .filter(n => n.trashed)
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
+        return a.createdAt < b.createdAt ? 1 : -1;
+      }
+      return b.id - a.id;
+    });
 };
 
 export const purgeNote = async (id) => {
