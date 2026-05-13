@@ -274,12 +274,15 @@ function App() {
 
   useEffect(() => {
     const purge = async () => {
-      const expired = await purgeExpiredTrash();
-      if (expired.length > 0) {
+      const { expiredItems, expiredNotes } = await purgeExpiredTrash();
+      if (expiredItems.length > 0 || expiredNotes.length > 0) {
         await loadData();
         if (user) {
-          for (const item of expired) {
+          for (const item of expiredItems) {
             firebaseBackend.pushDeleteItem(item.uid, user.id).catch(console.error);
+          }
+          for (const note of expiredNotes) {
+            firebaseBackend.deleteNoteRemote(note.uid, user.id).catch(console.error);
           }
         }
       }

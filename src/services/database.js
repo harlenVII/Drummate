@@ -128,8 +128,14 @@ export const renameItem = async (id, newName) => {
 };
 
 export const deleteItem = async (id) => {
-  await db.practiceLogs.where('itemId').equals(id).delete();
-  return await db.practiceItems.delete(id);
+  return await db.transaction('rw', db.practiceItems, db.practiceLogs, db.notes, async () => {
+    const item = await db.practiceItems.get(id);
+    await db.practiceLogs.where('itemId').equals(id).delete();
+    if (item?.uid) {
+      await db.notes.where('itemUid').equals(item.uid).delete();
+    }
+    return await db.practiceItems.delete(id);
+  });
 };
 
 export const updateItemOrder = async (orderedIds) => {
@@ -174,22 +180,29 @@ export const purgeExpiredTrash = async (daysOld = 30) => {
   const expiredItems = await db.practiceItems
     .filter(item => item.trashed && item.trashedAt && item.trashedAt < cutoffISO)
     .toArray();
+  const expiredNotes = await db.notes
+    .filter(n => n.trashed && n.trashedAt && n.trashedAt < cutoffISO)
+    .toArray();
 
-  await db.transaction('rw', db.practiceItems, db.practiceLogs, async () => {
+  await db.transaction('rw', db.practiceItems, db.practiceLogs, db.notes, async () => {
     for (const item of expiredItems) {
       await db.practiceLogs.where('itemId').equals(item.id).delete();
+      await db.notes.where('itemUid').equals(item.uid).delete();
       await db.practiceItems.delete(item.id);
+    }
+    for (const note of expiredNotes) {
+      await db.notes.delete(note.id);
     }
   });
 
-  return expiredItems;
+  return { expiredItems, expiredNotes };
 };
 
 export const mergeItem = async (sourceId, targetId) => {
   if (sourceId === targetId) {
     throw new Error('mergeItem: source and target are the same');
   }
-  return await db.transaction('rw', db.practiceItems, db.practiceLogs, async () => {
+  return await db.transaction('rw', db.practiceItems, db.practiceLogs, db.notes, async () => {
     const source = await db.practiceItems.get(sourceId);
     const target = await db.practiceItems.get(targetId);
     if (!source) throw new Error('mergeItem: source item not found');
@@ -199,6 +212,9 @@ export const mergeItem = async (sourceId, targetId) => {
 
     await db.practiceLogs.where('itemId').equals(sourceId).modify({
       itemId: targetId,
+      itemUid: target.uid,
+    });
+    await db.notes.where('itemUid').equals(source.uid).modify({
       itemUid: target.uid,
     });
     await db.practiceItems.delete(sourceId);
