@@ -49,6 +49,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
   const renderItem = (item) => {
     const itemNotes = notesByItemUid.get(item.uid) || [];
     const isOpen = expanded.has(item.uid);
+    const mostRecent = itemNotes[0];
     return (
       <div key={item.uid} className="bg-white rounded-lg shadow-sm">
         <button
@@ -60,6 +61,17 @@ function NotesByItem({ items, refreshKey, onEdit }) {
             {itemNotes.length}
           </span>
         </button>
+        {!isOpen && mostRecent && (
+          <button
+            onClick={() => onEdit(mostRecent)}
+            className="w-full text-left border-t border-gray-100 px-3 py-2 hover:bg-gray-50 transition-colors"
+          >
+            <p className="text-xs text-gray-500 mb-0.5">{mostRecent.date}</p>
+            <p className="text-sm text-gray-800 whitespace-pre-wrap break-words line-clamp-2">
+              {mostRecent.body}
+            </p>
+          </button>
+        )}
         {isOpen && (
           <div className="border-t border-gray-100 px-3 py-2 flex flex-col gap-2">
             {itemNotes.length === 0 ? (
