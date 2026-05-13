@@ -1,0 +1,81 @@
+import { useEffect, useState, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getAllNotes } from '../services/database';
+import { getTodayString, shiftDate, formatDateLabel } from '../utils/dateHelpers';
+
+function NotesByDate({ items, refreshKey, onEdit }) {
+  const { t } = useLanguage();
+  const [notes, setNotes] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const all = await getAllNotes();
+      if (!cancelled) setNotes(all);
+    })();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  const itemNameByUid = useMemo(() => {
+    const map = new Map();
+    for (const it of items) map.set(it.uid, it.name);
+    return map;
+  }, [items]);
+
+  const groups = useMemo(() => {
+    const byDate = new Map();
+    for (const n of notes) {
+      if (!byDate.has(n.date)) byDate.set(n.date, []);
+      byDate.get(n.date).push(n);
+    }
+    return Array.from(byDate.entries()); // already in date-desc order from getAllNotes
+  }, [notes]);
+
+  const dateHeader = (dateStr) => {
+    const today = getTodayString();
+    if (dateStr === today) return t('notes.todayLabel');
+    if (dateStr === shiftDate(today, -1)) return t('notes.yesterdayLabel');
+    return formatDateLabel(dateStr, t);
+  };
+
+  if (notes.length === 0) {
+    return (
+      <p className="text-gray-500 text-center py-12">{t('notes.emptyByDate')}</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {groups.map(([date, notesForDate]) => (
+        <section key={date}>
+          <h3 className="text-sm font-semibold text-gray-500 mb-2 sticky top-0 bg-gray-100 py-1">
+            {dateHeader(date)}
+          </h3>
+          <div className="flex flex-col gap-2">
+            {notesForDate.map(note => {
+              const itemName = itemNameByUid.get(note.itemUid) || t('notes.itemDeleted');
+              return (
+                <button
+                  key={note.id}
+                  onClick={() => onEdit(note)}
+                  className="text-left bg-white rounded-lg shadow-sm p-3 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                      {itemName}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                    {note.body}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+export default NotesByDate;
