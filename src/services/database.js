@@ -104,6 +104,20 @@ db.version(10).stores({
   syncQueue: '++id, action, collection, localId',
 });
 
+// v11 adds created_at to notes for stable cross-device ordering within the same date.
+// Existing notes get a synthetic timestamp derived from their local id so within-device
+// relative order is preserved (exact value is arbitrary for pre-existing records).
+db.version(11).stores({
+  practiceItems: '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs: '++id, itemId, itemUid, date, duration, uid',
+  notes: '++id, &uid, itemUid, date, trashed',
+  syncQueue: '++id, action, collection, localId',
+}).upgrade(tx => {
+  return tx.table('notes').toCollection().modify(note => {
+    if (!note.createdAt) note.createdAt = new Date(note.id).toISOString();
+  });
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -272,6 +286,7 @@ export const addNote = async (itemUid, body, date) => {
   const uid = crypto.randomUUID();
   return await db.notes.add({
     uid, itemUid, date, body,
+    createdAt: new Date().toISOString(),
     trashed: false, trashedAt: null,
     syncedOnce: false,
   });
@@ -283,6 +298,10 @@ export const getAllNotes = async () => {
     .filter(n => !n.trashed)
     .sort((a, b) => {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      // Within same date: newer createdAt first; fall back to id for legacy rows
+      if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
+        return a.createdAt < b.createdAt ? 1 : -1;
+      }
       return b.id - a.id;
     });
 };
@@ -293,6 +312,9 @@ export const getNotesByItem = async (itemUid) => {
     .filter(n => !n.trashed)
     .sort((a, b) => {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
+        return a.createdAt < b.createdAt ? 1 : -1;
+      }
       return b.id - a.id;
     });
 };

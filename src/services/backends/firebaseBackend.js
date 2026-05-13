@@ -175,6 +175,7 @@ const firebaseBackend = {
         body: localNote.body ?? '',
         trashed: !!localNote.trashed,
         trashed_at: localNote.trashedAt || '',
+        created_at: localNote.createdAt || '',
         updated_at: serverTimestamp(),
       }, { merge: true });
 
@@ -488,6 +489,7 @@ const firebaseBackend = {
         body: data.body ?? '',
         trashed: !!data.trashed,
         trashedAt: data.trashed_at || null,
+        createdAt: data.created_at || '',
         syncedOnce: true,
       };
 
@@ -502,6 +504,7 @@ const firebaseBackend = {
           updates.trashed = !!data.trashed;
           updates.trashedAt = data.trashed_at || null;
         }
+        if (data.created_at && !local.createdAt) updates.createdAt = data.created_at;
         if (!local.syncedOnce) updates.syncedOnce = true;
         if (Object.keys(updates).length > 0) {
           await db.notes.update(local.id, updates);
@@ -716,6 +719,7 @@ const firebaseBackend = {
             body: data.body ?? '',
             trashed: !!data.trashed,
             trashedAt: data.trashed_at || null,
+            createdAt: data.created_at || '',
             syncedOnce: true,
           });
           onDataChanged();
