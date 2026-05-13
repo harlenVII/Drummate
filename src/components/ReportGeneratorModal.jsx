@@ -186,10 +186,10 @@ function buildReportText(logs, startDate, endDate, items, t, timeUnit) {
 
   // items with no matching name are omitted (e.g. trashed items), matching DailyReport behaviour
   const breakdown = Object.entries(totals)
-    .map(([itemId, duration]) => ({
-      name: items.find((i) => i.id === Number(itemId))?.name,
-      duration,
-    }))
+    .map(([itemId, duration]) => {
+      const item = items.find((i) => i.id === Number(itemId));
+      return { name: item?.name, category: item?.category, duration };
+    })
     .filter((e) => e.name != null && e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
 
@@ -201,11 +201,31 @@ function buildReportText(logs, startDate, endDate, items, t, timeUnit) {
       ? formatReportDate(startDate)
       : `${formatReportDate(startDate)} – ${formatReportDate(endDate)}`;
 
-  return [
+  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
+  const songs = breakdown.filter((e) => e.category === 'songs');
+
+  const lines = [
     `${t('date')}: ${dateLabel}`,
     `${t('total')}: ${fmt(grandTotal)}`,
-    ...breakdown.map((e) => `${e.name}: ${fmt(e.duration)}`),
-  ].join('\n');
+  ];
+
+  if (fundamentals.length > 0) {
+    lines.push('');
+    lines.push(`${t('categories.fundamentals')}:`);
+    for (const entry of fundamentals) {
+      lines.push(`${entry.name}: ${fmt(entry.duration)}`);
+    }
+  }
+
+  if (songs.length > 0) {
+    lines.push('');
+    lines.push(`${t('categories.songs')}:`);
+    for (const entry of songs) {
+      lines.push(`${entry.name}: ${fmt(entry.duration)}`);
+    }
+  }
+
+  return lines.join('\n');
 }
 
 function formatReportDate(dateString) {
