@@ -64,8 +64,8 @@ function NoteEditModal({
 
   if (!isEdit && activeItems.length === 0) {
     return (
-      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
           <p className="text-gray-700">{t('notes.noActiveItems')}</p>
           <div className="mt-4 flex justify-end">
             <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600">
@@ -78,8 +78,8 @@ function NoteEditModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           {isEdit ? t('notes.editTitle') : t('notes.createTitle')}
         </h2>
