@@ -20,10 +20,6 @@ function NotesByDate({ items, refreshKey, onEdit }) {
     return () => { cancelled = true; };
   }, [refreshKey]);
 
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [items]);
-
   const itemNameByUid = useMemo(() => {
     const map = new Map();
     for (const it of items) {
