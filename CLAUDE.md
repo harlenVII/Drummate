@@ -114,7 +114,7 @@ Fourth tab (after Report). Two subpages: **By Date** (chronological feed, `Notes
 
 - `notesSubpage` and `notesRefreshKey` live in `App.jsx`. `notesRefreshKey` is bumped by `loadData` (so every remote sync event also refreshes the Notes view) and by `bumpNotesRefresh` after local mutations. `NotesPage` receives both as props.
 - `NoteEditModal.jsx` — create/edit modal. Create mode: item dropdown + date picker + textarea. Edit mode: textarea only (date/item locked). Dismissed only by Escape, Cancel, Save, or Delete — backdrop click is intentionally disabled.
-- Notes attached to a trashed practice item remain visible in By Date with a "(deleted)" chip, but are hidden from By Item (trashed items are excluded from the accordion). Hard-deleting an item cascades to its notes.
+- Notes attached to a trashed practice item are hidden from **both** By Date and By Item. By Item filters via `activeItems = items.filter(i => !i.trashed)`; By Date filters via `itemNameByUid` (only non-trashed items populate the map) and skips notes whose `itemUid` has no entry. Hard-deleting an item cascades to its notes.
 - Firestore path: `users/{userId}/notes/{noteUid}`. Soft-deletes (`trashed: true`) are pushed as upserts, not hard-deletes, so other devices can still restore within the 30-day window.
 - `mergeItem` reassigns notes' `itemUid` in the same transaction as logs. `subscribeToChanges` handles cross-device merge by remapping `itemUid` on `modified` events (same as logs).
 
