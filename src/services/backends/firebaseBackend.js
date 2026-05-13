@@ -175,7 +175,7 @@ const firebaseBackend = {
         body: localNote.body ?? '',
         trashed: !!localNote.trashed,
         trashed_at: localNote.trashedAt || '',
-        updated: serverTimestamp(),
+        updated_at: serverTimestamp(),
       }, { merge: true });
 
       if (localNote.id != null && !localNote.syncedOnce) {

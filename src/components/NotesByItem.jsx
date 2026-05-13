@@ -94,11 +94,17 @@ function NotesByItem({ items, refreshKey, onEdit }) {
     <div className="flex flex-col gap-4">
       {sections.fundamentals.length > 0 && (
         <section className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+            {t('categories.fundamentals')}
+          </h3>
           {sections.fundamentals.map(renderItem)}
         </section>
       )}
       {sections.songs.length > 0 && (
         <section className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+            {t('categories.songs')}
+          </h3>
           {sections.songs.map(renderItem)}
         </section>
       )}
