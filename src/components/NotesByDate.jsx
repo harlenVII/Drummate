@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getAllNotes } from '../services/database';
 import { getTodayString, shiftDate, formatDateLabel } from '../utils/dateHelpers';
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 50; // note count threshold per page
 
 function NotesByDate({ items, refreshKey, onEdit }) {
   const { t } = useLanguage();
@@ -51,8 +51,15 @@ function NotesByDate({ items, refreshKey, onEdit }) {
     );
   }
 
-  const visibleGroups = groups.slice(0, visibleCount);
-  const hasMore = visibleCount < groups.length;
+  // Walk groups accumulating note counts; always complete the last date group
+  let notesSeen = 0;
+  let cutoff = groups.length;
+  for (let i = 0; i < groups.length; i++) {
+    notesSeen += groups[i][1].length;
+    if (notesSeen >= visibleCount) { cutoff = i + 1; break; }
+  }
+  const visibleGroups = groups.slice(0, cutoff);
+  const hasMore = cutoff < groups.length;
 
   return (
     <div className="flex flex-col gap-6">
