@@ -31,9 +31,12 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
 
   // Create sorted list: items with data first (sorted by duration desc)
   const breakdown = items
-    .map((item) => ({ id: item.id, name: item.name, duration: Math.max(0, itemTotals[item.id] || 0) }))
+    .map((item) => ({ id: item.id, name: item.name, category: item.category, duration: Math.max(0, itemTotals[item.id] || 0) }))
     .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
+
+  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
+  const songs = breakdown.filter((e) => e.category === 'songs');
 
   // Derive total from breakdown so trashed items' logs don't inflate the count
   const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
@@ -48,6 +51,37 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
     });
 
   const isToday = reportDate === getTodayString();
+
+  function renderItemCard(entry) {
+    const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
+    return (
+      <div
+        key={entry.id}
+        className={`bg-white rounded-lg shadow-sm p-4 transition-colors ${
+          editMode ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''
+        }`}
+        onClick={editMode ? () => onEditTime(entry.id, entry.name, entry.duration) : undefined}
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-medium text-gray-800">{entry.name}</span>
+          <div className="text-right text-gray-600">
+            <div>{formatDuration(entry.duration, timeUnit)} {t(timeUnit)}</div>
+            {entry.duration > 0 && (
+              <div className="text-xs text-gray-500">({percentage}%)</div>
+            )}
+          </div>
+        </div>
+        {grandTotal > 0 && (
+          <div className="mt-2 bg-gray-100 rounded-full h-1.5">
+            <div
+              className="bg-blue-500 rounded-full h-1.5"
+              style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -129,40 +163,33 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       </div>
 
       {/* Per-item breakdown */}
-      {breakdown.map((entry) => {
-        const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
-        return (
-          <div
-            key={entry.id}
-            className={`bg-white rounded-lg shadow-sm p-4 transition-colors ${
-              editMode ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''
-            }`}
-            onClick={editMode ? () => onEditTime(entry.id, entry.name, entry.duration) : undefined}
-          >
-            <div className="flex items-center justify-between">
-              <span className={`font-medium ${entry.duration > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
-                {entry.name}
-              </span>
-              <div className={`text-right ${entry.duration > 0 ? 'text-gray-600' : 'text-gray-400'}`}>
-                <div>
-                  {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0} {t(timeUnit)}
-                </div>
-                {entry.duration > 0 && (
-                  <div className="text-xs text-gray-500">({percentage}%)</div>
-                )}
-              </div>
-            </div>
-          {entry.duration > 0 && grandTotal > 0 && (
-            <div className="mt-2 bg-gray-100 rounded-full h-1.5">
-              <div
-                className="bg-blue-500 rounded-full h-1.5"
-                style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
-              />
-            </div>
-          )}
-        </div>
-        );
-      })}
+      {fundamentals.length > 0 && (
+        <>
+          <div className="flex justify-between items-center px-1 pt-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              {t('categories.fundamentals')}
+            </span>
+            <span className="text-xs text-gray-400">
+              {formatDuration(fundamentals.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
+            </span>
+          </div>
+          {fundamentals.map(renderItemCard)}
+        </>
+      )}
+
+      {songs.length > 0 && (
+        <>
+          <div className="flex justify-between items-center px-1 pt-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              {t('categories.songs')}
+            </span>
+            <span className="text-xs text-gray-400">
+              {formatDuration(songs.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
+            </span>
+          </div>
+          {songs.map(renderItemCard)}
+        </>
+      )}
 
       {items.length === 0 && (
         <p className="text-center text-gray-400 py-8">
