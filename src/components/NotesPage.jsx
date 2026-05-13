@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import NotesByDate from './NotesByDate';
 import NotesByItem from './NotesByItem';
 import NoteEditModal from './NoteEditModal';
 import {
-  addNote, updateNote, trashNote, db,
+  addNote, updateNote, trashNote, restoreNote, getTrashedNotes, purgeNote, db,
 } from '../services/database';
 
 function NotesPage({
@@ -20,6 +20,13 @@ function NotesPage({
   const { t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashedNotes, setTrashedNotes] = useState([]);
+
+  useEffect(() => {
+    if (!showTrash) return;
+    getTrashedNotes().then(setTrashedNotes);
+  }, [showTrash, notesRefreshKey]);
 
   const handleCreate = useCallback(async ({ itemUid, date, body }) => {
     const localId = await addNote(itemUid, body, date);
@@ -49,6 +56,24 @@ function NotesPage({
       firebaseBackend.pushNote(note, user.id).catch(console.error);
     }
   }, [editingNote, user, firebaseBackend, onNotesRefresh]);
+
+  const handleRestore = useCallback(async (note) => {
+    await restoreNote(note.id);
+    onNotesRefresh();
+    if (user) {
+      const updated = await db.notes.get(note.id);
+      firebaseBackend.pushNote(updated, user.id).catch(console.error);
+    }
+  }, [user, firebaseBackend, onNotesRefresh]);
+
+  const handlePermanentDelete = useCallback(async (note) => {
+    if (!window.confirm(t('notes.confirmPermanentDelete'))) return;
+    await purgeNote(note.id);
+    onNotesRefresh();
+    if (user) {
+      firebaseBackend.deleteNoteRemote(note.uid, user.id).catch(console.error);
+    }
+  }, [user, firebaseBackend, onNotesRefresh, t]);
 
   const openCreate = () => {
     setEditingNote(null);
@@ -108,6 +133,63 @@ function NotesPage({
           onDelete={editingNote ? handleDelete : null}
           onClose={closeModal}
         />
+      )}
+
+      {(trashedNotes.length > 0 || showTrash) && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowTrash(prev => !prev)}
+            className="px-3 py-1 text-sm text-red-500 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+          >
+            {showTrash ? t('notes.hideTrash') : t('notes.showTrash', { count: trashedNotes.length })}
+          </button>
+
+          {showTrash && (
+            <div className="flex flex-col gap-2 mt-3">
+              {trashedNotes.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-2">{t('notes.emptyByDate')}</p>
+              )}
+              {trashedNotes.map((note) => {
+                const daysLeft = note.trashedAt
+                  ? Math.max(0, 30 - Math.floor((Date.now() - new Date(note.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
+                  : 0;
+                const itemName = items.find(i => i.uid === note.itemUid)?.name ?? t('notes.itemDeleted');
+                const preview = note.body.length > 80 ? note.body.slice(0, 80) + '…' : note.body;
+                return (
+                  <div key={note.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center opacity-50">
+                    <div className="flex-1 flex items-center justify-between gap-2">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs text-gray-500">{note.date} · {itemName}</span>
+                        <span className="text-sm text-gray-700 truncate">{preview}</span>
+                        <span className="text-xs text-red-400">{t('daysLeft', { days: daysLeft })}</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleRestore(note)}
+                          className="p-1.5 text-gray-400 hover:text-green-500 transition-colors"
+                          title={t('restore')}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 15.707a1 1 0 010-1.414l5-5a1 1 0 011.414 0l5 5a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414zm0-6a1 1 0 010-1.414l5-5a1 1 0 011.414 0l5 5a1 1 0 01-1.414 1.414L10 5.414 5.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handlePermanentDelete(note)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                          title={t('permanentDelete')}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
     </>
   );
