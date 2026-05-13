@@ -19,6 +19,7 @@ import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
 import EncouragementButton from './components/EncouragementButton';
 import EncouragementModal from './components/EncouragementModal';
 import EditTimeModal from './components/EditTimeModal';
+import NotesPage from './components/NotesPage';
 import { createSttService } from './services/sttService';
 import { parseIntent, findBestItemMatch } from './services/intentParser';
 import { speak, getLang, cancelSpeech } from './services/voiceFeedback';
@@ -75,6 +76,8 @@ function App() {
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
   const [reportSubpage, setReportSubpage] = useState('daily');
+  const [notesSubpage, setNotesSubpage] = useState('byDate');
+  const notesSubpageRef = useRef('byDate');
   const [weekStart, setWeekStart] = useState(() => getWeekStart(getTodayString()));
   const [weekLogs, setWeekLogs] = useState([]);
   const [monthStart, setMonthStart] = useState(() => getMonthStart(getTodayString()));
@@ -1178,6 +1181,7 @@ function App() {
   useEffect(() => { languageRef.current = language; }, [language]);
   useEffect(() => { metronomeSubpageRef.current = metronomeSubpage; }, [metronomeSubpage]);
   useEffect(() => { reportSubpageRef.current = reportSubpage; }, [reportSubpage]);
+  useEffect(() => { notesSubpageRef.current = notesSubpage; }, [notesSubpage]);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
   useEffect(() => { reportDateRef.current = reportDate; }, [reportDate]);
   useEffect(() => { weekStartRef.current = weekStart; }, [weekStart]);
@@ -1191,6 +1195,7 @@ function App() {
       if (e.code === 'Digit1') handleTabChange('practice');
       else if (e.code === 'Digit2') handleTabChange('metronome');
       else if (e.code === 'Digit3') handleTabChange('report');
+      else if (e.code === 'Digit4') handleTabChange('notes');
       else if (e.code === 'KeyM') setTimeUnit('minutes');
       else if (e.code === 'KeyH') setTimeUnit('hours');
       else if (e.code === 'KeyE') { if (languageRef.current !== 'en') toggleLanguage(); }
@@ -1212,6 +1217,14 @@ function App() {
             ? pages[(idx - 1 + pages.length) % pages.length]
             : pages[(idx + 1) % pages.length];
           setReportSubpage(next);
+        } else if (activeTabRef.current === 'notes') {
+          e.preventDefault();
+          const pages = ['byDate', 'byItem'];
+          const idx = pages.indexOf(notesSubpageRef.current);
+          const next = e.shiftKey
+            ? pages[(idx - 1 + pages.length) % pages.length]
+            : pages[(idx + 1) % pages.length];
+          setNotesSubpage(next);
         }
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         if (activeTabRef.current === 'report') {
@@ -1428,6 +1441,21 @@ function App() {
                 />
               )}
             </>
+          )}
+
+          {activeTab === 'notes' && (
+            <NotesPage
+              items={items}
+              user={user}
+              firebaseBackend={firebaseBackend}
+              defaultItemUid={
+                focusedPracticeItemId != null
+                  ? items.find(i => i.id === focusedPracticeItemId)?.uid
+                  : null
+              }
+              notesSubpage={notesSubpage}
+              onSubpageChange={setNotesSubpage}
+            />
           )}
         </div>
       </div>
