@@ -255,7 +255,7 @@ const translations = {
       hideTrash: 'Hide Trash',
       confirmPermanentDelete: 'This will permanently delete this note. This cannot be undone. Continue?',
       emptyTrash: 'Trash is empty.',
-      loadMore: 'Load more',
+      loadMore: 'Load More',
     },
   },
   zh: {
