@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Drummate is a Progressive Web App (PWA) for drummers to track practice sessions, view reports, and use an integrated metronome with a rhythm sequencer. Built with React 19, Vite 7, Tailwind CSS v4, and Dexie.js (IndexedDB) with Firebase cloud sync.
+Drummate is a Progressive Web App (PWA) for drummers to track practice sessions, view reports, and use an integrated metronome with a rhythm sequencer. Also includes a Notes tab for dated, free-text journal entries attached to practice items. Built with React 19, Vite 7, Tailwind CSS v4, and Dexie.js (IndexedDB) with Firebase cloud sync.
 
 **Key docs:**
 - [DEVELOPMENT.md](./docs/DEVELOPMENT.md) — Full architecture, project structure, completed phases
@@ -48,6 +48,7 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 **Practice State:** `items`, `totals`, `activeItemId`, `elapsedTime`, `editing`
 **Metronome/Sequencer State:** `metronomeBpm`, `metronomeIsPlaying`, `metronomeCurrentBeat`, `metronomeTimeSignature`, `metronomeSubdivision`, `metronomeSoundType`, `metronomeSubpage`, `sequencerSlots`, `sequencerPlayingSlot`
 **Report State:** `reportSubpage` (`'daily' | 'weekly' | 'monthly' | 'yearly' | 'stats'`), `reportDate`, `weekStart`, `monthStart`, `yearStart`
+**Notes State:** `notesSubpage` (`'byDate' | 'byItem'`), `notesRefreshKey` (counter bumped by `loadData` on every sync event and by local note mutations via `bumpNotesRefresh`)
 **Shared Display:** `timeUnit` (`'minutes' | 'hours'`) — persisted to localStorage, controls how durations display across all reports
 **Voice State:** STT service instance, voice listening state, floating voice indicator
 **Singleton Refs:** `metronomeEngineRef` (audio engine), `noSleepRef` (prevents screen lock)
@@ -72,7 +73,7 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 
 ### Database Layer (database.js)
 
-Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: 9.
+Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: **10**.
 
 **Tables:**
 - `practiceItems` — Schema: `'++id, &uid, name, sortOrder, archived, trashed, category'`
@@ -87,6 +88,13 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
   - `itemUid`: parent item's uid; the cross-device link.
   - `itemId`: local Dexie pk for this device only; do not use across devices.
   - `uid`: UUID for the log itself; cross-device dedup key.
+- `notes` — Schema: `'++id, &uid, itemUid, date, trashed'`
+  - `uid`: UUID; cross-device dedup key. Unique index.
+  - `itemUid`: parent practice item's `uid`. Indexed.
+  - `date`: `YYYY-MM-DD`. Indexed for chronological queries.
+  - `body`: arbitrary text; the only user-editable field after creation.
+  - `trashed` / `trashedAt`: soft-delete (same 30-day purge pattern as items).
+  - `syncedOnce` (stored, not indexed): same offline-deletion reconciliation role as on items.
 - `syncQueue` — Schema: `'++id, action, collection, localId'` (offline retry queue)
 
 **Key Operations:**
@@ -94,10 +102,21 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
 - Category: `setItemCategory(id, category)` — updates `'fundamentals'` | `'songs'`
 - Ordering: `updateItemOrder(orderedIds)` — batch updates sortOrder in a transaction
 - Archive/Trash: `archiveItem(id, bool)`, `trashItem(id)`, `restoreItem(id)`, `purgeExpiredTrash(daysOld=30)`
-- Merge: `mergeItem(sourceId, targetId)` — reassigns all logs from source to target (updating both `itemId` and `itemUid`), hard-deletes the source item (no cascade). Returns `{ sourceUid, targetUid, targetName }` for the sync layer. Does NOT call `deleteItem` (which would cascade-delete logs).
+- Merge: `mergeItem(sourceId, targetId)` — reassigns all logs **and notes** from source to target, hard-deletes the source item. Returns `{ sourceUid, targetUid, targetName }`.
 - Logs: `addLog`, `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`, `getAllLogs`
+- Notes: `addNote(itemUid, body, date?)`, `getAllNotes()`, `getNotesByItem(itemUid)`, `updateNote(id, body)`, `trashNote(id)`, `restoreNote(id)`
 
-All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs. Practice item names must be unique (case-insensitive check in UI).
+All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs **and notes** (wrapped in a single Dexie transaction). `purgeExpiredTrash` returns `{ expiredItems, expiredNotes }` — callers must handle both. Practice item names must be unique (case-insensitive check in UI).
+
+### Notes Tab
+
+Fourth tab (after Report). Two subpages: **By Date** (chronological feed, `NotesByDate.jsx`) and **By Item** (accordion grouped by category, `NotesByItem.jsx`). Managed by `NotesPage.jsx`.
+
+- `notesSubpage` and `notesRefreshKey` live in `App.jsx`. `notesRefreshKey` is bumped by `loadData` (so every remote sync event also refreshes the Notes view) and by `bumpNotesRefresh` after local mutations. `NotesPage` receives both as props.
+- `NoteEditModal.jsx` — create/edit modal. Create mode: item dropdown + date picker + textarea. Edit mode: textarea only (date/item locked). Dismissed only by Escape, Cancel, Save, or Delete — backdrop click is intentionally disabled.
+- Notes attached to a trashed practice item remain visible in By Date with a "(deleted)" chip, but are hidden from By Item (trashed items are excluded from the accordion). Hard-deleting an item cascades to its notes.
+- Firestore path: `users/{userId}/notes/{noteUid}`. Soft-deletes (`trashed: true`) are pushed as upserts, not hard-deletes, so other devices can still restore within the 30-day window.
+- `mergeItem` reassigns notes' `itemUid` in the same transaction as logs. `subscribeToChanges` handles cross-device merge by remapping `itemUid` on `modified` events (same as logs).
 
 ### Report Tab
 
@@ -138,9 +157,9 @@ All shortcuts are blocked when focus is in an `<input>` or `<textarea>`.
 
 | Key | Action |
 |-----|--------|
-| `1` / `2` / `3` | Switch to Practice / Metronome / Report tab |
-| `Tab` / `Shift+Tab` | Cycle metronome subpages (metronome↔sequencer) or report subpages (daily→weekly→monthly→yearly→stats) |
-| `←` / `→` | Step report date back/forward (daily=1 day, weekly=1 week, monthly=1 month, yearly=1 year) |
+| `1` / `2` / `3` / `4` | Switch to Practice / Metronome / Report / Notes tab |
+| `Tab` / `Shift+Tab` | Cycle metronome subpages (metronome↔sequencer), report subpages (daily→weekly→monthly→yearly→stats), or notes subpages (byDate↔byItem) |
+| `←` / `→` | Step report date back/forward (daily=1 day, weekly=1 week, monthly=1 month, yearly=1 year); **not bound on Notes tab** |
 | `M` / `H` | Set time unit to minutes / hours |
 | `E` / `C` | Switch language to English / Chinese |
 
@@ -198,10 +217,13 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 10. **Backend interface compliance** — new sync operations must be added to `firebaseBackend.js`
 11. **Firebase SDK** — `firebaseBackend.js` is imported statically; it is always bundled
 12. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
-13. **Sync init order is `pullAll → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. The `syncedOnce` flag on items lets `pullAll` distinguish "deleted on another device" (delete locally) from "created here while offline" (preserve and push up).
+13. **Sync init order is `pullAll → pullAllNotes → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. Notes pull last among the pulls so item truth is in place first (notes reference `itemUid`).
 14. **`pullAll` pulls logs BEFORE reconciling item deletions** — the log-pull loop runs first and remaps existing logs' `itemUid`/`itemId` if `item_uid` changed remotely (e.g. from a cross-device merge). Item-deletion reconciliation runs after. If you change this order, cross-device merges will cause silent log data loss.
 15. **`subscribeToChanges` log `modified` events must remap parent** — the live Firestore listener handles `modified` on logs by updating local `itemUid`/`itemId` if `item_uid` changed. This mirrors the `pullAll` remap logic and prevents data loss when a merge on another device arrives via real-time subscription.
 16. **`category` is orthogonal to `archived`** — `category` (`'fundamentals'` | `'songs'`) controls which active section an item appears in; `archived` controls whether it's in the active sections or the collapsed Archived section. Both fields are always persisted. Tolerant pull rule: treat absent `category` on remote as "no change" (`if (remote.category !== undefined && ...)`) to avoid clobbering on old clients.
+17. **`notesRefreshKey` lives in App.jsx, not NotesPage** — `loadData` bumps it on every call (including remote sync events from `subscribeToChanges`). Local note mutations call `bumpNotesRefresh` (the setter) passed as `onNotesRefresh` prop. This ensures the Notes tab re-fetches both after local writes and after remote sync arrives.
+18. **`purgeExpiredTrash` returns `{ expiredItems, expiredNotes }`** — the App.jsx caller destructures both arrays and calls `pushDeleteItem` for items and `deleteNoteRemote` for notes to propagate hard-deletes to Firestore.
+19. **Note soft-delete is a push, not a hard-delete** — `trashNote` sets `trashed: true` locally, then `pushNote` upserts the full note (including `trashed: true`) to Firestore. `deleteNoteRemote` is only called by `purgeExpiredTrash` (after 30 days) and by the `deleteItem` cascade.
 
 ## File Naming
 
@@ -218,8 +240,10 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 
 After changes:
 - [ ] `npm run build` succeeds
-- [ ] All tabs work (Practice, Metronome subpages, Report)
+- [ ] All tabs work (Practice, Metronome subpages, Report, Notes subpages)
 - [ ] Database persists after refresh
 - [ ] Metronome/sequencer plays in background when switching tabs
 - [ ] Language toggle works
 - [ ] Mobile responsive (if UI changes)
+- [ ] Notes: create/edit/delete a note → both By Date and By Item reflect changes immediately
+- [ ] Notes: remote sync (another device or Firestore write) refreshes Notes tab without switching tabs
