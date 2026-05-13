@@ -331,6 +331,7 @@ function App() {
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await firebaseBackend.pullAll(user.id);
+        await firebaseBackend.pullAllNotes(user.id);
         await firebaseBackend.flushSyncQueue(user.id);
         await firebaseBackend.pushAllLocal(user.id);
         await loadData();

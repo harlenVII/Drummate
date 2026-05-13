@@ -29,6 +29,11 @@ function logsRef(userId) {
   return collection(firestore, 'users', userId, 'practice_logs');
 }
 
+function notesRef(userId) {
+  const { db: firestore } = getFirebaseApp();
+  return collection(firestore, 'users', userId, 'notes');
+}
+
 // --- Offline sync queue (reuses Dexie syncQueue table) ---
 
 async function queueSync(action, payload) {
@@ -153,12 +158,61 @@ const firebaseBackend = {
     }
   },
 
+  async pushNote(localNote, userId) {
+    if (!localNote.uid) {
+      console.error('pushNote: missing uid', localNote);
+      return;
+    }
+    if (!localNote.itemUid) {
+      console.error('pushNote: missing itemUid', localNote);
+      return;
+    }
+    try {
+      await setDoc(doc(notesRef(userId), localNote.uid), {
+        uid: localNote.uid,
+        item_uid: localNote.itemUid,
+        date: localNote.date,
+        body: localNote.body ?? '',
+        trashed: !!localNote.trashed,
+        trashed_at: localNote.trashedAt || '',
+        updated: serverTimestamp(),
+      }, { merge: true });
+
+      if (localNote.id != null && !localNote.syncedOnce) {
+        await db.notes.update(localNote.id, { syncedOnce: true });
+      }
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('push_note', { uid: localNote.uid });
+      } else {
+        throw err;
+      }
+    }
+  },
+
+  async deleteNoteRemote(noteUid, userId) {
+    try {
+      await deleteDoc(doc(notesRef(userId), noteUid));
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('delete_note', { uid: noteUid });
+      } else {
+        throw err;
+      }
+    }
+  },
+
   async pushDeleteItem(uid, userId) {
     try {
-      const q = query(logsRef(userId), where('item_uid', '==', uid));
-      const snap = await getDocs(q);
-      for (const logDoc of snap.docs) {
+      const logQ = query(logsRef(userId), where('item_uid', '==', uid));
+      const logSnap = await getDocs(logQ);
+      for (const logDoc of logSnap.docs) {
         await deleteDoc(logDoc.ref);
+      }
+      const noteQ = query(notesRef(userId), where('item_uid', '==', uid));
+      const noteSnap = await getDocs(noteQ);
+      for (const noteDoc of noteSnap.docs) {
+        await deleteDoc(noteDoc.ref);
       }
       await deleteDoc(doc(itemsRef(userId), uid));
     } catch (err) {
@@ -251,13 +305,18 @@ const firebaseBackend = {
   async mergeItems(sourceUid, targetUid, targetName, userId) {
     if (sourceUid === targetUid) return;
     try {
-      const q = query(logsRef(userId), where('item_uid', '==', sourceUid));
-      const snap = await getDocs(q);
-      for (const logDoc of snap.docs) {
+      const logQ = query(logsRef(userId), where('item_uid', '==', sourceUid));
+      const logSnap = await getDocs(logQ);
+      for (const logDoc of logSnap.docs) {
         await updateDoc(logDoc.ref, {
           item_uid: targetUid,
           item_name: targetName,
         });
+      }
+      const noteQ = query(notesRef(userId), where('item_uid', '==', sourceUid));
+      const noteSnap = await getDocs(noteQ);
+      for (const noteDoc of noteSnap.docs) {
+        await updateDoc(noteDoc.ref, { item_uid: targetUid });
       }
       await deleteDoc(doc(itemsRef(userId), sourceUid));
     } catch (err) {
@@ -412,6 +471,62 @@ const firebaseBackend = {
     }
   },
 
+  async pullAllNotes(userId) {
+    const snap = await getDocs(notesRef(userId));
+    const remoteUids = new Set();
+
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      if (!data.uid) continue;
+      remoteUids.add(data.uid);
+
+      const local = await db.notes.where('uid').equals(data.uid).first();
+      const fields = {
+        uid: data.uid,
+        itemUid: data.item_uid,
+        date: data.date,
+        body: data.body ?? '',
+        trashed: !!data.trashed,
+        trashedAt: data.trashed_at || null,
+        syncedOnce: true,
+      };
+
+      if (!local) {
+        await db.notes.add(fields);
+      } else {
+        const updates = {};
+        if (data.item_uid && local.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
+        if (data.date != null && local.date !== data.date) updates.date = data.date;
+        if (data.body != null && local.body !== data.body) updates.body = data.body;
+        if (data.trashed != null && local.trashed !== !!data.trashed) {
+          updates.trashed = !!data.trashed;
+          updates.trashedAt = data.trashed_at || null;
+        }
+        if (!local.syncedOnce) updates.syncedOnce = true;
+        if (Object.keys(updates).length > 0) {
+          await db.notes.update(local.id, updates);
+        }
+      }
+    }
+
+    // Reconcile deletes: a local note that has been synced before but is
+    // missing remotely was deleted on another device.
+    const allLocal = await db.notes.toArray();
+    for (const local of allLocal) {
+      if (local.syncedOnce && !remoteUids.has(local.uid)) {
+        await db.notes.delete(local.id);
+      }
+    }
+  },
+
+  async pushAllLocalNotes(userId) {
+    const notes = await db.notes.toArray();
+    for (const note of notes) {
+      if (!note.uid || !note.itemUid) continue;
+      await firebaseBackend.pushNote(note, userId);
+    }
+  },
+
   async pushAllLocal(userId) {
     const items = await db.practiceItems.toArray();
     for (const item of items) {
@@ -422,6 +537,7 @@ const firebaseBackend = {
     for (const log of logs) {
       await firebaseBackend.pushLog(log, userId);
     }
+    await firebaseBackend.pushAllLocalNotes(userId);
   },
 
   async flushSyncQueue(userId) {
@@ -457,6 +573,11 @@ const firebaseBackend = {
             entry.payload.targetName,
             userId,
           );
+        } else if (entry.action === 'push_note') {
+          const local = await db.notes.where('uid').equals(entry.payload.uid).first();
+          if (local) await firebaseBackend.pushNote(local, userId);
+        } else if (entry.action === 'delete_note') {
+          await firebaseBackend.deleteNoteRemote(entry.payload.uid, userId);
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
@@ -580,9 +701,55 @@ const firebaseBackend = {
       }
     });
 
+    const unsubNotes = onSnapshot(notesRef(userId), async (snap) => {
+      for (const change of snap.docChanges()) {
+        const data = change.doc.data();
+        if (!data.uid) continue;
+
+        if (change.type === 'added') {
+          const existing = await db.notes.where('uid').equals(data.uid).first();
+          if (existing) continue;
+          await db.notes.add({
+            uid: data.uid,
+            itemUid: data.item_uid,
+            date: data.date,
+            body: data.body ?? '',
+            trashed: !!data.trashed,
+            trashedAt: data.trashed_at || null,
+            syncedOnce: true,
+          });
+          onDataChanged();
+        } else if (change.type === 'modified') {
+          const existing = await db.notes.where('uid').equals(data.uid).first();
+          if (!existing) continue;
+          const updates = {};
+          // Remap itemUid if it changed (cross-device merge — mirrors logs gotcha #15).
+          if (data.item_uid && existing.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
+          if (data.date != null && existing.date !== data.date) updates.date = data.date;
+          if (data.body != null && existing.body !== data.body) updates.body = data.body;
+          if (data.trashed != null && existing.trashed !== !!data.trashed) {
+            updates.trashed = !!data.trashed;
+            updates.trashedAt = data.trashed_at || null;
+          }
+          if (!existing.syncedOnce) updates.syncedOnce = true;
+          if (Object.keys(updates).length > 0) {
+            await db.notes.update(existing.id, updates);
+            onDataChanged();
+          }
+        } else if (change.type === 'removed') {
+          const existing = await db.notes.where('uid').equals(data.uid).first();
+          if (existing) {
+            await db.notes.delete(existing.id);
+            onDataChanged();
+          }
+        }
+      }
+    });
+
     return () => {
       unsubItems();
       unsubLogs();
+      unsubNotes();
     };
   },
 };
