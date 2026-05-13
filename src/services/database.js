@@ -96,6 +96,14 @@ db.version(9).stores({
   });
 });
 
+// v10 adds the notes table. No .upgrade() needed — the table is new with nothing to back-fill.
+db.version(10).stores({
+  practiceItems: '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs: '++id, itemId, itemUid, date, duration, uid',
+  notes: '++id, &uid, itemUid, date, trashed',
+  syncQueue: '++id, action, collection, localId',
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
