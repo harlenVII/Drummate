@@ -318,19 +318,34 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
 }
 
 function generateReportText(reportDate, grandTotal, breakdown, t, timeUnit) {
-  // Format date as YYYY/MM/DD
   const [year, month, day] = reportDate.split('-');
   const formattedDate = `${year}/${month}/${day}`;
+  const fmt = (d) => `${formatDuration(d, timeUnit)} ${t(timeUnit)}`;
+
+  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
+  const songs = breakdown.filter((e) => e.category === 'songs');
 
   const lines = [
     `${t('date')}: ${formattedDate}`,
-    `${t('total')}: ${formatDuration(grandTotal, timeUnit)} ${t(timeUnit)}`,
+    `${t('total')}: ${fmt(grandTotal)}`,
   ];
-  for (const entry of breakdown) {
-    if (entry.duration > 0) {
-      lines.push(`${entry.name}: ${formatDuration(entry.duration, timeUnit)} ${t(timeUnit)}`);
+
+  if (fundamentals.length > 0) {
+    lines.push('');
+    lines.push(`${t('categories.fundamentals')}:`);
+    for (const entry of fundamentals) {
+      lines.push(`${entry.name}: ${fmt(entry.duration)}`);
     }
   }
+
+  if (songs.length > 0) {
+    lines.push('');
+    lines.push(`${t('categories.songs')}:`);
+    for (const entry of songs) {
+      lines.push(`${entry.name}: ${fmt(entry.duration)}`);
+    }
+  }
+
   return lines.join('\n');
 }
 
