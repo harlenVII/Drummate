@@ -255,6 +255,7 @@ const translations = {
       hideTrash: 'Hide Trash',
       confirmPermanentDelete: 'This will permanently delete this note. This cannot be undone. Continue?',
       emptyTrash: 'Trash is empty.',
+      loadMore: 'Load more',
     },
   },
   zh: {
@@ -511,6 +512,7 @@ const translations = {
       hideTrash: '隐藏回收站',
       confirmPermanentDelete: '这将永久删除此笔记。此操作无法撤销。是否继续？',
       emptyTrash: '回收站为空。',
+      loadMore: '加载更多',
     },
   },
 };
