@@ -251,6 +251,9 @@ const translations = {
       todayLabel: 'Today',
       yesterdayLabel: 'Yesterday',
       noActiveItems: 'No practice items yet. Add one on the Practice tab first.',
+      showTrash: 'Show Trash ({count})',
+      hideTrash: 'Hide Trash',
+      confirmPermanentDelete: 'This will permanently delete this note. This cannot be undone. Continue?',
     },
   },
   zh: {
@@ -503,6 +506,9 @@ const translations = {
       todayLabel: '今天',
       yesterdayLabel: '昨天',
       noActiveItems: '还没有练习项目。请先在练习页添加一个。',
+      showTrash: '显示回收站（{count}）',
+      hideTrash: '隐藏回收站',
+      confirmPermanentDelete: '这将永久删除此笔记。此操作无法撤销。是否继续？',
     },
   },
 };
