@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { formatTime, formatMinutes, formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -52,10 +52,11 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
 
   const isToday = reportDate === getTodayString();
 
-  const renderItemCard = useCallback((entry) => {
+  function renderItemCard(entry) {
     const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
     return (
       <div
+        key={entry.id}
         className={`bg-white rounded-lg shadow-sm p-4 transition-colors ${
           editMode ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''
         }`}
@@ -80,7 +81,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         )}
       </div>
     );
-  }, [grandTotal, editMode, onEditTime, timeUnit, t]);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -172,11 +173,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
               {formatDuration(fundamentals.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
             </span>
           </div>
-          {fundamentals.map((entry) => (
-            <React.Fragment key={entry.id}>
-              {renderItemCard(entry)}
-            </React.Fragment>
-          ))}
+          {fundamentals.map(renderItemCard)}
         </>
       )}
 
@@ -190,11 +187,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
               {formatDuration(songs.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
             </span>
           </div>
-          {songs.map((entry) => (
-            <React.Fragment key={entry.id}>
-              {renderItemCard(entry)}
-            </React.Fragment>
-          ))}
+          {songs.map(renderItemCard)}
         </>
       )}
 
