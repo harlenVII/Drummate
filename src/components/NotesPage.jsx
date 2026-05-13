@@ -69,6 +69,7 @@ function NotesPage({
   const handlePermanentDelete = useCallback(async (note) => {
     if (!window.confirm(t('notes.confirmPermanentDelete'))) return;
     await purgeNote(note.id);
+    setTrashedNotes(prev => prev.filter(n => n.id !== note.id));
     onNotesRefresh();
     if (user) {
       firebaseBackend.deleteNoteRemote(note.uid, user.id).catch(console.error);
@@ -147,7 +148,7 @@ function NotesPage({
           {showTrash && (
             <div className="flex flex-col gap-2 mt-3">
               {trashedNotes.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-2">{t('notes.emptyByDate')}</p>
+                <p className="text-sm text-gray-400 text-center py-2">{t('notes.emptyTrash')}</p>
               )}
               {trashedNotes.map((note) => {
                 const daysLeft = note.trashedAt
