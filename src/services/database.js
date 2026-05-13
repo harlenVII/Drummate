@@ -338,6 +338,17 @@ export const restoreNote = async (id) => {
   });
 };
 
+export const getTrashedNotes = async () => {
+  const notes = await db.notes.toArray();
+  return notes
+    .filter(n => n.trashed)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+};
+
+export const purgeNote = async (id) => {
+  await db.notes.delete(id);
+};
+
 export const getNoteByUid = async (uid) => {
   return await db.notes.where('uid').equals(uid).first();
 };
