@@ -246,3 +246,60 @@ export const getItemByUid = async (uid) => {
 export const getItemByName = async (name) => {
   return await db.practiceItems.where('name').equals(name).first();
 };
+
+// --- Notes ---
+
+export const addNote = async (itemUid, body, date) => {
+  if (!itemUid) throw new Error('addNote: itemUid is required');
+  if (typeof body !== 'string') throw new Error('addNote: body must be a string');
+  if (!date) date = getTodayString();
+  const uid = crypto.randomUUID();
+  return await db.notes.add({
+    uid, itemUid, date, body,
+    trashed: false, trashedAt: null,
+    syncedOnce: false,
+  });
+};
+
+export const getAllNotes = async () => {
+  const notes = await db.notes.toArray();
+  return notes
+    .filter(n => !n.trashed)
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return b.id - a.id;
+    });
+};
+
+export const getNotesByItem = async (itemUid) => {
+  const notes = await db.notes.where('itemUid').equals(itemUid).toArray();
+  return notes
+    .filter(n => !n.trashed)
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return b.id - a.id;
+    });
+};
+
+export const updateNote = async (id, body) => {
+  if (typeof body !== 'string') throw new Error('updateNote: body must be a string');
+  return await db.notes.update(id, { body });
+};
+
+export const trashNote = async (id) => {
+  return await db.notes.update(id, {
+    trashed: true,
+    trashedAt: new Date().toISOString(),
+  });
+};
+
+export const restoreNote = async (id) => {
+  return await db.notes.update(id, {
+    trashed: false,
+    trashedAt: null,
+  });
+};
+
+export const getNoteByUid = async (uid) => {
+  return await db.notes.where('uid').equals(uid).first();
+};
