@@ -12,6 +12,7 @@ function NotesByDate({ items, refreshKey, onEdit }) {
 
   useEffect(() => {
     let cancelled = false;
+    setVisibleCount(PAGE_SIZE);
     (async () => {
       const all = await getAllNotes();
       if (!cancelled) setNotes(all);
@@ -21,7 +22,7 @@ function NotesByDate({ items, refreshKey, onEdit }) {
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [refreshKey]);
+  }, [items]);
 
   const itemNameByUid = useMemo(() => {
     const map = new Map();
