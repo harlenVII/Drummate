@@ -258,6 +258,9 @@ function App() {
     localStorage.setItem('drummate_sequencer_next_id', String(sequencerNextIdRef.current));
   }, [sequencerSlots]);
 
+  const [notesRefreshKey, setNotesRefreshKey] = useState(0);
+  const bumpNotesRefresh = useCallback(() => setNotesRefreshKey(k => k + 1), []);
+
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
     setItems(allItems);
@@ -269,6 +272,7 @@ function App() {
       }
     }
     setTotals(totalsMap);
+    setNotesRefreshKey(k => k + 1);
   }, []);
 
   useEffect(() => {
@@ -1455,6 +1459,8 @@ function App() {
               }
               notesSubpage={notesSubpage}
               onSubpageChange={setNotesSubpage}
+              notesRefreshKey={notesRefreshKey}
+              onNotesRefresh={bumpNotesRefresh}
             />
           )}
         </div>

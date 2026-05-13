@@ -14,42 +14,41 @@ function NotesPage({
   defaultItemUid,
   notesSubpage,
   onSubpageChange,
+  notesRefreshKey,
+  onNotesRefresh,
 }) {
   const { t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const bumpRefresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
   const handleCreate = useCallback(async ({ itemUid, date, body }) => {
     const localId = await addNote(itemUid, body, date);
-    bumpRefresh();
+    onNotesRefresh();
     if (user) {
       const note = await db.notes.get(localId);
       firebaseBackend.pushNote(note, user.id).catch(console.error);
     }
-  }, [user, firebaseBackend, bumpRefresh]);
+  }, [user, firebaseBackend, onNotesRefresh]);
 
   const handleEdit = useCallback(async ({ body }) => {
     if (!editingNote) return;
     await updateNote(editingNote.id, body);
-    bumpRefresh();
+    onNotesRefresh();
     if (user) {
       const note = await db.notes.get(editingNote.id);
       firebaseBackend.pushNote(note, user.id).catch(console.error);
     }
-  }, [editingNote, user, firebaseBackend, bumpRefresh]);
+  }, [editingNote, user, firebaseBackend, onNotesRefresh]);
 
   const handleDelete = useCallback(async () => {
     if (!editingNote) return;
     await trashNote(editingNote.id);
-    bumpRefresh();
+    onNotesRefresh();
     if (user) {
       const note = await db.notes.get(editingNote.id);
       firebaseBackend.pushNote(note, user.id).catch(console.error);
     }
-  }, [editingNote, user, firebaseBackend, bumpRefresh]);
+  }, [editingNote, user, firebaseBackend, onNotesRefresh]);
 
   const openCreate = () => {
     setEditingNote(null);
@@ -95,9 +94,9 @@ function NotesPage({
       </button>
 
       {notesSubpage === 'byDate' ? (
-        <NotesByDate items={items} refreshKey={refreshKey} onEdit={openEdit} />
+        <NotesByDate items={items} refreshKey={notesRefreshKey} onEdit={openEdit} />
       ) : (
-        <NotesByItem items={items} refreshKey={refreshKey} onEdit={openEdit} />
+        <NotesByItem items={items} refreshKey={notesRefreshKey} onEdit={openEdit} />
       )}
 
       {modalOpen && (
