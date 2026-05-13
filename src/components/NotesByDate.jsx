@@ -3,9 +3,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { getAllNotes } from '../services/database';
 import { getTodayString, shiftDate, formatDateLabel } from '../utils/dateHelpers';
 
+const PAGE_SIZE = 30;
+
 function NotesByDate({ items, refreshKey, onEdit }) {
   const { t } = useLanguage();
   const [notes, setNotes] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     let cancelled = false;
@@ -14,6 +17,10 @@ function NotesByDate({ items, refreshKey, onEdit }) {
       if (!cancelled) setNotes(all);
     })();
     return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
   }, [refreshKey]);
 
   const itemNameByUid = useMemo(() => {
@@ -47,9 +54,12 @@ function NotesByDate({ items, refreshKey, onEdit }) {
     );
   }
 
+  const visibleGroups = groups.slice(0, visibleCount);
+  const hasMore = visibleCount < groups.length;
+
   return (
     <div className="flex flex-col gap-6">
-      {groups.map(([date, notesForDate]) => (
+      {visibleGroups.map(([date, notesForDate]) => (
         <section key={date}>
           <h3 className="text-sm font-semibold text-gray-500 mb-2 sticky top-0 bg-gray-100 py-1">
             {dateHeader(date)}
@@ -77,6 +87,14 @@ function NotesByDate({ items, refreshKey, onEdit }) {
           </div>
         </section>
       ))}
+      {hasMore && (
+        <button
+          onClick={() => setVisibleCount(n => n + PAGE_SIZE)}
+          className="self-center px-4 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          {t('notes.loadMore')}
+        </button>
+      )}
     </div>
   );
 }
