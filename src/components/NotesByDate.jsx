@@ -18,18 +18,21 @@ function NotesByDate({ items, refreshKey, onEdit }) {
 
   const itemNameByUid = useMemo(() => {
     const map = new Map();
-    for (const it of items) map.set(it.uid, it.name);
+    for (const it of items) {
+      if (!it.trashed) map.set(it.uid, it.name);
+    }
     return map;
   }, [items]);
 
   const groups = useMemo(() => {
     const byDate = new Map();
     for (const n of notes) {
+      if (!itemNameByUid.has(n.itemUid)) continue;
       if (!byDate.has(n.date)) byDate.set(n.date, []);
       byDate.get(n.date).push(n);
     }
     return Array.from(byDate.entries()); // already in date-desc order from getAllNotes
-  }, [notes]);
+  }, [notes, itemNameByUid]);
 
   const dateHeader = (dateStr) => {
     const today = getTodayString();
@@ -38,7 +41,7 @@ function NotesByDate({ items, refreshKey, onEdit }) {
     return formatDateLabel(dateStr, t);
   };
 
-  if (notes.length === 0) {
+  if (groups.length === 0) {
     return (
       <p className="text-gray-500 text-center py-12">{t('notes.emptyByDate')}</p>
     );
@@ -53,7 +56,7 @@ function NotesByDate({ items, refreshKey, onEdit }) {
           </h3>
           <div className="flex flex-col gap-2">
             {notesForDate.map(note => {
-              const itemName = itemNameByUid.get(note.itemUid) || t('notes.itemDeleted');
+              const itemName = itemNameByUid.get(note.itemUid);
               return (
                 <button
                   key={note.id}
