@@ -24,7 +24,6 @@ function NotesPage({
   const [trashedNotes, setTrashedNotes] = useState([]);
 
   useEffect(() => {
-    if (!showTrash) return;
     getTrashedNotes().then(setTrashedNotes);
   }, [showTrash, notesRefreshKey]);
 
@@ -59,6 +58,7 @@ function NotesPage({
 
   const handleRestore = useCallback(async (note) => {
     await restoreNote(note.id);
+    setTrashedNotes(prev => prev.filter(n => n.id !== note.id));
     onNotesRefresh();
     if (user) {
       const updated = await db.notes.get(note.id);
