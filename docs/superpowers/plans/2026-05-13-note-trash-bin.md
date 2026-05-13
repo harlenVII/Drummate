@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Add `getTrashedNotes` and `purgeNote` to `database.js`
+### Task 1: Add `getTrashedNotes` and `purgeNote` to `database.js` [model: haiku]
 
 **Files:**
 - Modify: `src/services/database.js` (after the existing `restoreNote` export, around line 336)
@@ -48,7 +48,7 @@ git commit -m "feat(notes): add getTrashedNotes and purgeNote DB helpers"
 
 ---
 
-### Task 2: Add i18n strings for the trash bin UI
+### Task 2: Add i18n strings for the trash bin UI [model: haiku]
 
 **Files:**
 - Modify: `src/contexts/LanguageContext.jsx`
@@ -91,7 +91,7 @@ git commit -m "feat(notes): add trash bin i18n strings"
 
 ---
 
-### Task 3: Add trash bin state, handlers, and UI to `NotesPage`
+### Task 3: Add trash bin state, handlers, and UI to `NotesPage` [model: sonnet]
 
 **Files:**
 - Modify: `src/components/NotesPage.jsx`
