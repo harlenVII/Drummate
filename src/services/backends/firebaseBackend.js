@@ -34,6 +34,11 @@ function notesRef(userId) {
   return collection(firestore, 'users', userId, 'notes');
 }
 
+function practicesRef(userId) {
+  const { db: firestore } = getFirebaseApp();
+  return collection(firestore, 'users', userId, 'metronomePractices');
+}
+
 // --- Offline sync queue (reuses Dexie syncQueue table) ---
 
 async function queueSync(action, payload) {
@@ -197,6 +202,68 @@ const firebaseBackend = {
     } catch (err) {
       if (!navigator.onLine) {
         await queueSync('delete_note', { uid: noteUid });
+      } else {
+        throw err;
+      }
+    }
+  },
+
+  async pushPractice(localPractice, userId) {
+    if (!localPractice.uid) {
+      console.error('pushPractice: missing uid', localPractice);
+      return;
+    }
+    try {
+      await setDoc(doc(practicesRef(userId), localPractice.uid), {
+        uid: localPractice.uid,
+        name: localPractice.name,
+        start_bpm: localPractice.startBpm,
+        end_bpm: localPractice.endBpm,
+        bpm_increment: localPractice.bpmIncrement,
+        bars_per_step: localPractice.barsPerStep,
+        time_signature_beats: localPractice.timeSignature.beats,
+        time_signature_note_value: localPractice.timeSignature.noteValue,
+        subdivision: localPractice.subdivision,
+        sound_type: localPractice.soundType,
+        sort_order: localPractice.sortOrder ?? 0,
+        created_at: localPractice.createdAt || '',
+        updated_at: localPractice.updatedAt || '',
+      }, { merge: true });
+
+      if (localPractice.id != null && !localPractice.syncedOnce) {
+        await db.metronomePractices.update(localPractice.id, { syncedOnce: true });
+      }
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('push_practice', { uid: localPractice.uid });
+      } else {
+        throw err;
+      }
+    }
+  },
+
+  async pushDeletePractice(uid, userId) {
+    try {
+      await deleteDoc(doc(practicesRef(userId), uid));
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('delete_practice', { uid });
+      } else {
+        throw err;
+      }
+    }
+  },
+
+  async pushPracticeReorder(practices, userId) {
+    try {
+      for (const p of practices) {
+        await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
+      }
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('reorder_practices', {
+          practices: practices.map(p => ({ uid: p.uid, sortOrder: p.sortOrder })),
+        });
       } else {
         throw err;
       }
@@ -522,11 +589,77 @@ const firebaseBackend = {
     }
   },
 
+  async pullAllPractices(userId) {
+    const snap = await getDocs(practicesRef(userId));
+    const remoteUids = new Set();
+
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      if (!data.uid) continue;
+      remoteUids.add(data.uid);
+
+      const fields = {
+        uid: data.uid,
+        name: data.name ?? '',
+        startBpm: data.start_bpm ?? 60,
+        endBpm: data.end_bpm ?? 60,
+        bpmIncrement: data.bpm_increment ?? 1,
+        barsPerStep: data.bars_per_step ?? 1,
+        timeSignature: {
+          beats: data.time_signature_beats ?? 4,
+          noteValue: data.time_signature_note_value ?? 4,
+        },
+        subdivision: data.subdivision ?? 'quarter',
+        soundType: data.sound_type ?? 'click',
+        sortOrder: data.sort_order ?? 0,
+        createdAt: data.created_at || '',
+        updatedAt: data.updated_at || '',
+        syncedOnce: true,
+      };
+
+      const local = await db.metronomePractices.where('uid').equals(data.uid).first();
+      if (!local) {
+        await db.metronomePractices.add(fields);
+      } else {
+        const updates = {};
+        for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
+                         'subdivision', 'soundType', 'sortOrder', 'createdAt', 'updatedAt']) {
+          if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
+        }
+        if (local.timeSignature?.beats !== fields.timeSignature.beats ||
+            local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
+          updates.timeSignature = fields.timeSignature;
+        }
+        if (!local.syncedOnce) updates.syncedOnce = true;
+        if (Object.keys(updates).length > 0) {
+          await db.metronomePractices.update(local.id, updates);
+        }
+      }
+    }
+
+    // Reconcile deletes: any local that synced before but is now missing
+    // remotely was deleted on another device.
+    const allLocal = await db.metronomePractices.toArray();
+    for (const local of allLocal) {
+      if (local.syncedOnce && !remoteUids.has(local.uid)) {
+        await db.metronomePractices.delete(local.id);
+      }
+    }
+  },
+
   async pushAllLocalNotes(userId) {
     const notes = await db.notes.toArray();
     for (const note of notes) {
       if (!note.uid || !note.itemUid) continue;
       await firebaseBackend.pushNote(note, userId);
+    }
+  },
+
+  async pushAllLocalPractices(userId) {
+    const practices = await db.metronomePractices.toArray();
+    for (const p of practices) {
+      if (!p.uid) continue;
+      await firebaseBackend.pushPractice(p, userId);
     }
   },
 
@@ -541,6 +674,7 @@ const firebaseBackend = {
       await firebaseBackend.pushLog(log, userId);
     }
     await firebaseBackend.pushAllLocalNotes(userId);
+    await firebaseBackend.pushAllLocalPractices(userId);
   },
 
   async flushSyncQueue(userId) {
@@ -581,6 +715,15 @@ const firebaseBackend = {
           if (local) await firebaseBackend.pushNote(local, userId);
         } else if (entry.action === 'delete_note') {
           await firebaseBackend.deleteNoteRemote(entry.payload.uid, userId);
+        } else if (entry.action === 'push_practice') {
+          const local = await db.metronomePractices.where('uid').equals(entry.payload.uid).first();
+          if (local) await firebaseBackend.pushPractice(local, userId);
+        } else if (entry.action === 'delete_practice') {
+          await firebaseBackend.pushDeletePractice(entry.payload.uid, userId);
+        } else if (entry.action === 'reorder_practices') {
+          for (const p of entry.payload.practices) {
+            await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
+          }
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
@@ -750,10 +893,68 @@ const firebaseBackend = {
       }
     });
 
+    const unsubPractices = onSnapshot(practicesRef(userId), async (snap) => {
+      for (const change of snap.docChanges()) {
+        const data = change.doc.data();
+        if (!data.uid) continue;
+
+        const buildFields = () => ({
+          uid: data.uid,
+          name: data.name ?? '',
+          startBpm: data.start_bpm ?? 60,
+          endBpm: data.end_bpm ?? 60,
+          bpmIncrement: data.bpm_increment ?? 1,
+          barsPerStep: data.bars_per_step ?? 1,
+          timeSignature: {
+            beats: data.time_signature_beats ?? 4,
+            noteValue: data.time_signature_note_value ?? 4,
+          },
+          subdivision: data.subdivision ?? 'quarter',
+          soundType: data.sound_type ?? 'click',
+          sortOrder: data.sort_order ?? 0,
+          createdAt: data.created_at || '',
+          updatedAt: data.updated_at || '',
+          syncedOnce: true,
+        });
+
+        if (change.type === 'added') {
+          const existing = await db.metronomePractices.where('uid').equals(data.uid).first();
+          if (existing) continue;
+          await db.metronomePractices.add(buildFields());
+          onDataChanged();
+        } else if (change.type === 'modified') {
+          const local = await db.metronomePractices.where('uid').equals(data.uid).first();
+          if (!local) continue;
+          const fields = buildFields();
+          const updates = {};
+          for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
+                           'subdivision', 'soundType', 'sortOrder', 'createdAt', 'updatedAt']) {
+            if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
+          }
+          if (local.timeSignature?.beats !== fields.timeSignature.beats ||
+              local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
+            updates.timeSignature = fields.timeSignature;
+          }
+          if (!local.syncedOnce) updates.syncedOnce = true;
+          if (Object.keys(updates).length > 0) {
+            await db.metronomePractices.update(local.id, updates);
+            onDataChanged();
+          }
+        } else if (change.type === 'removed') {
+          const existing = await db.metronomePractices.where('uid').equals(data.uid).first();
+          if (existing) {
+            await db.metronomePractices.delete(existing.id);
+            onDataChanged();
+          }
+        }
+      }
+    });
+
     return () => {
       unsubItems();
       unsubLogs();
       unsubNotes();
+      unsubPractices();
     };
   },
 };
