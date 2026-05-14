@@ -532,14 +532,14 @@ function PracticeItemList({
         </div>
         {isActive ? (
           <button
-            onClick={(e) => { e.stopPropagation(); onStop(); }}
+            onClick={() => onStop()}
             className="px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
           >
             {t('stop')}
           </button>
         ) : (
           <button
-            onClick={(e) => { e.stopPropagation(); onStart(item.id); }}
+            onClick={() => onStart(item.id)}
             className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
           >
             {t('start')}
