@@ -117,6 +117,7 @@ function PracticeItemList({
   const [addCategory, setAddCategory] = useState('fundamentals');
   const [mergeSourceItem, setMergeSourceItem] = useState(null);
   const [activeDragId, setActiveDragId] = useState(null);
+  const [dragItems, setDragItems] = useState(null);
 
   const activeItems = items.filter(item => !item.archived && !item.trashed);
   const archivedItems = items.filter(item => item.archived && !item.trashed);
@@ -181,6 +182,26 @@ function PracticeItemList({
 
     const ordered = [...fundamentals, ...songs];
     onReorder(ordered.map(i => ({ id: i.id, category: i.category })));
+  };
+
+  const handleDragOver = ({ active, over }) => {
+    if (!over) return;
+    setDragItems(prev => {
+      if (!prev) return prev;
+      const activeItem = prev.find(i => i.id === active.id);
+      if (!activeItem) return prev;
+      const isEmptyZone = typeof over.id === 'string' && over.id.startsWith('category-');
+      const overItem = isEmptyZone ? null : prev.find(i => i.id === over.id);
+      const overCategory = isEmptyZone
+        ? (over.id === 'category-fundamentals' ? 'fundamentals' : 'songs')
+        : overItem?.category;
+      if (!overCategory || activeItem.category === overCategory) return prev;
+      const without = prev.filter(i => i.id !== active.id);
+      const moved = { ...activeItem, category: overCategory };
+      if (isEmptyZone) return [...without, moved];
+      const idx = without.findIndex(i => i.id === over.id);
+      return [...without.slice(0, idx), moved, ...without.slice(idx)];
+    });
   };
 
   // Keyboard shortcuts (only in normal/timer mode, not edit mode)
@@ -286,8 +307,9 @@ function PracticeItemList({
 
   // --- Edit mode ---
   if (editing) {
-    const editFundamentals = displayItems.filter(i => i.category === 'fundamentals');
-    const editSongs = displayItems.filter(i => i.category === 'songs');
+    const workingItems = dragItems ?? displayItems;
+    const editFundamentals = workingItems.filter(i => i.category === 'fundamentals');
+    const editSongs = workingItems.filter(i => i.category === 'songs');
 
     const renderEditRow = (item) => (
       <SortableItem key={item.id} item={item}>
@@ -373,9 +395,10 @@ function PracticeItemList({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragStart={({ active }) => setActiveDragId(active.id)}
-          onDragEnd={(event) => { setActiveDragId(null); handleDragEnd(event); }}
-          onDragCancel={() => setActiveDragId(null)}
+          onDragStart={({ active }) => { setActiveDragId(active.id); setDragItems(displayItems); }}
+          onDragOver={handleDragOver}
+          onDragEnd={(event) => { setActiveDragId(null); setDragItems(null); handleDragEnd(event); }}
+          onDragCancel={() => { setActiveDragId(null); setDragItems(null); }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
