@@ -133,55 +133,71 @@ function PracticeItemList({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
-    if (!over) return;
-
-    const activeItem = displayItems.find(i => i.id === active.id);
-    if (!activeItem) return;
-
-    const isEmptyZone = typeof over.id === 'string' && over.id.startsWith('category-');
-    const targetCategory = isEmptyZone
-      ? (over.id === 'category-fundamentals' ? 'fundamentals' : 'songs')
-      : displayItems.find(i => i.id === over.id)?.category;
-    if (!targetCategory) return;
-
-    if (!isEmptyZone && active.id === over.id) return;
-
-    const isSameCategory = !isEmptyZone && activeItem.category === targetCategory;
-
-    let fundamentals = displayItems.filter(i => i.category === 'fundamentals');
-    let songs = displayItems.filter(i => i.category === 'songs');
-
-    if (isSameCategory) {
-      // Use arrayMove to correctly handle all positions including last
-      const list = targetCategory === 'fundamentals' ? fundamentals : songs;
-      const oldIndex = list.findIndex(i => i.id === active.id);
-      const newIndex = list.findIndex(i => i.id === over.id);
-      const reordered = arrayMove(list, oldIndex, newIndex);
-      if (targetCategory === 'fundamentals') {
-        fundamentals = reordered;
-      } else {
-        songs = reordered;
-      }
-    } else {
-      // Cross-category: remove from source list, insert at target position
-      fundamentals = displayItems.filter(i => i.category === 'fundamentals' && i.id !== active.id);
-      songs = displayItems.filter(i => i.category === 'songs' && i.id !== active.id);
-
-      const movedItem = { ...activeItem, category: targetCategory };
-      const targetList = targetCategory === 'fundamentals' ? fundamentals : songs;
-
-      if (isEmptyZone) {
-        targetList.push(movedItem);
-      } else {
-        const dropIndex = targetList.findIndex(i => i.id === over.id);
-        targetList.splice(dropIndex === -1 ? targetList.length : dropIndex, 0, movedItem);
-      }
+    if (!over) {
+      setDragItems(null);
+      return;
     }
 
-    const ordered = [...fundamentals, ...songs];
-    onReorder(ordered.map(i => ({ id: i.id, category: i.category })));
+    // `working` reflects the optimistic state maintained by handleDragOver
+    // (which already applies cross-category moves). Use it as the source of truth.
+    const working = dragItems ?? displayItems;
+    const activeItem = working.find(i => i.id === active.id);
+    if (!activeItem) {
+      setDragItems(null);
+      return;
+    }
+
+    const isEmptyZone = typeof over.id === 'string' && over.id.startsWith('category-');
+    const overItem = isEmptyZone ? null : working.find(i => i.id === over.id);
+    const targetCategory = isEmptyZone
+      ? (over.id === 'category-fundamentals' ? 'fundamentals' : 'songs')
+      : overItem?.category;
+    if (!targetCategory) {
+      setDragItems(null);
+      return;
+    }
+
+    let final;
+
+    if (isEmptyZone) {
+      const withoutActive = working.filter(i => i.id !== active.id);
+      const moved = { ...activeItem, category: targetCategory };
+      const fundamentals = withoutActive.filter(i => i.category === 'fundamentals');
+      const songs = withoutActive.filter(i => i.category === 'songs');
+      if (targetCategory === 'fundamentals') fundamentals.push(moved);
+      else songs.push(moved);
+      final = [...fundamentals, ...songs];
+    } else if (active.id === over.id) {
+      // Active hovering over its own (possibly cross-category-relocated) slot.
+      // working already reflects the desired state — commit it as-is.
+      final = working;
+    } else {
+      // Reorder within target category using arrayMove. handleDragOver has
+      // already placed `active` into `targetCategory` in `working` for cross-
+      // category drags, so both `active` and `over` are in `targetCategory`.
+      const targetList = working.filter(i => i.category === targetCategory);
+      const otherList = working.filter(i => i.category !== targetCategory);
+      const oldIndex = targetList.findIndex(i => i.id === active.id);
+      const newIndex = targetList.findIndex(i => i.id === over.id);
+
+      if (oldIndex === -1 || newIndex === -1) {
+        setDragItems(null);
+        return;
+      }
+
+      const reordered = arrayMove(targetList, oldIndex, newIndex);
+      final = targetCategory === 'fundamentals'
+        ? [...reordered, ...otherList]
+        : [...otherList, ...reordered];
+    }
+
+    // Optimistically render the final order so the UI doesn't flash back
+    // to the pre-drag order while the DB write is in flight.
+    setDragItems(final);
+    await onReorder(final.map(i => ({ id: i.id, category: i.category })));
+    setDragItems(null);
   };
 
   const handleDragOver = ({ active, over }) => {
@@ -397,7 +413,7 @@ function PracticeItemList({
           collisionDetection={closestCenter}
           onDragStart={({ active }) => { setActiveDragId(active.id); setDragItems(displayItems); }}
           onDragOver={handleDragOver}
-          onDragEnd={(event) => { setActiveDragId(null); setDragItems(null); handleDragEnd(event); }}
+          onDragEnd={(event) => { setActiveDragId(null); handleDragEnd(event); }}
           onDragCancel={() => { setActiveDragId(null); setDragItems(null); }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
