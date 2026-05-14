@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../utils/formatTime';
@@ -23,11 +23,12 @@ function DragHandle({ listeners, attributes }) {
 }
 
 function SortableItem({ item, children }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
@@ -115,6 +116,7 @@ function PracticeItemList({
   const [now] = useState(Date.now);
   const [addCategory, setAddCategory] = useState('fundamentals');
   const [mergeSourceItem, setMergeSourceItem] = useState(null);
+  const [activeDragId, setActiveDragId] = useState(null);
 
   const activeItems = items.filter(item => !item.archived && !item.trashed);
   const archivedItems = items.filter(item => item.archived && !item.trashed);
@@ -371,7 +373,9 @@ function PracticeItemList({
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+          onDragStart={({ active }) => setActiveDragId(active.id)}
+          onDragEnd={(event) => { setActiveDragId(null); handleDragEnd(event); }}
+          onDragCancel={() => setActiveDragId(null)}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
@@ -400,6 +404,18 @@ function PracticeItemList({
               </SortableContext>
             </div>
           </div>
+          <DragOverlay>
+            {activeDragId != null ? (() => {
+              const item = displayItems.find(i => i.id === activeDragId);
+              if (!item) return null;
+              return (
+                <div className="bg-white rounded-lg shadow-sm p-4 flex items-center cursor-grabbing">
+                  <DragHandle listeners={{}} attributes={{}} />
+                  <span className="ml-2 font-medium text-gray-800">{item.name}</span>
+                </div>
+              );
+            })() : null}
+          </DragOverlay>
         </DndContext>
 
         <div className="flex gap-2 items-center">
