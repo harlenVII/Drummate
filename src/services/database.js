@@ -118,6 +118,16 @@ db.version(11).stores({
   });
 });
 
+// v12 adds the metronomePractices table for the tempo-trainer feature.
+// New table — no .upgrade() body needed.
+db.version(12).stores({
+  practiceItems: '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs: '++id, itemId, itemUid, date, duration, uid',
+  notes: '++id, &uid, itemUid, date, trashed',
+  metronomePractices: '++id, &uid, sortOrder',
+  syncQueue: '++id, action, collection, localId',
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -357,4 +367,82 @@ export const purgeNote = async (id) => {
 
 export const getNoteByUid = async (uid) => {
   return await db.notes.where('uid').equals(uid).first();
+};
+
+// --- Metronome Practices ---
+
+const VALID_SOUND_TYPES = new Set(['click', 'woodBlock', 'hiHat', 'rimshot', 'beep']);
+
+function validatePractice(input) {
+  const { name, startBpm, endBpm, bpmIncrement, barsPerStep, timeSignature, subdivision, soundType } = input;
+  if (typeof name !== 'string' || !name.trim()) throw new Error('practice: name required');
+  if (!Number.isInteger(startBpm) || startBpm < 30 || startBpm > 300) throw new Error('practice: invalid startBpm');
+  if (!Number.isInteger(endBpm) || endBpm < 30 || endBpm > 300) throw new Error('practice: invalid endBpm');
+  if (endBpm < startBpm) throw new Error('practice: endBpm must be >= startBpm');
+  if (!Number.isInteger(bpmIncrement) || bpmIncrement < 1) throw new Error('practice: bpmIncrement must be >= 1');
+  if (!Number.isInteger(barsPerStep) || barsPerStep < 1) throw new Error('practice: barsPerStep must be >= 1');
+  if (!timeSignature || !Number.isInteger(timeSignature.beats) || !Number.isInteger(timeSignature.noteValue)) {
+    throw new Error('practice: invalid timeSignature');
+  }
+  if (typeof subdivision !== 'string' || !subdivision) throw new Error('practice: subdivision required');
+  if (!VALID_SOUND_TYPES.has(soundType)) throw new Error('practice: invalid soundType');
+}
+
+export const getPractices = async () => {
+  return await db.metronomePractices.orderBy('sortOrder').toArray();
+};
+
+export const getPracticeByUid = async (uid) => {
+  return await db.metronomePractices.where('uid').equals(uid).first();
+};
+
+export const addPractice = async (input) => {
+  validatePractice(input);
+  const maxOrder = await db.metronomePractices.orderBy('sortOrder').last();
+  const sortOrder = maxOrder ? maxOrder.sortOrder + 1 : 0;
+  const now = new Date().toISOString();
+  const record = {
+    uid: crypto.randomUUID(),
+    name: input.name.trim(),
+    startBpm: input.startBpm,
+    endBpm: input.endBpm,
+    bpmIncrement: input.bpmIncrement,
+    barsPerStep: input.barsPerStep,
+    timeSignature: { beats: input.timeSignature.beats, noteValue: input.timeSignature.noteValue },
+    subdivision: input.subdivision,
+    soundType: input.soundType,
+    sortOrder,
+    createdAt: now,
+    updatedAt: now,
+    syncedOnce: false,
+  };
+  const id = await db.metronomePractices.add(record);
+  return { id, ...record };
+};
+
+export const updatePractice = async (id, input) => {
+  validatePractice(input);
+  return await db.metronomePractices.update(id, {
+    name: input.name.trim(),
+    startBpm: input.startBpm,
+    endBpm: input.endBpm,
+    bpmIncrement: input.bpmIncrement,
+    barsPerStep: input.barsPerStep,
+    timeSignature: { beats: input.timeSignature.beats, noteValue: input.timeSignature.noteValue },
+    subdivision: input.subdivision,
+    soundType: input.soundType,
+    updatedAt: new Date().toISOString(),
+  });
+};
+
+export const deletePractice = async (id) => {
+  return await db.metronomePractices.delete(id);
+};
+
+export const updatePracticeOrder = async (orderedIds) => {
+  await db.transaction('rw', db.metronomePractices, async () => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.metronomePractices.update(orderedIds[i], { sortOrder: i });
+    }
+  });
 };
