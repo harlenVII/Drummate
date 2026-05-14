@@ -34,7 +34,7 @@
 
 ---
 
-## Task 1: Database layer — schema v12 + CRUD
+## Task 1: Database layer — schema v12 + CRUD `[model: haiku]`
 
 **Files:**
 - Modify: `src/services/database.js`
@@ -163,7 +163,7 @@ EOF
 
 ---
 
-## Task 2: Firebase backend — push, pull, subscribe, flush
+## Task 2: Firebase backend — push, pull, subscribe, flush `[model: haiku]`
 
 **Files:**
 - Modify: `src/services/backends/firebaseBackend.js`
@@ -458,7 +458,7 @@ EOF
 
 ---
 
-## Task 3: Audio engine — `triggerOneShotAccent`
+## Task 3: Audio engine — `triggerOneShotAccent` `[model: haiku]`
 
 **Files:**
 - Modify: `src/audio/metronomeEngine.js`
@@ -526,7 +526,7 @@ EOF
 
 ---
 
-## Task 4: Translation keys (en + zh)
+## Task 4: Translation keys (en + zh) `[model: haiku]`
 
 **Files:**
 - Modify: `src/contexts/LanguageContext.jsx`
@@ -639,7 +639,7 @@ EOF
 
 ---
 
-## Task 5: `PracticeEditModal` component
+## Task 5: `PracticeEditModal` component `[model: haiku]`
 
 **Files:**
 - Create: `src/components/PracticeEditModal.jsx`
@@ -877,7 +877,7 @@ EOF
 
 ---
 
-## Task 6: `PracticeRunView` component
+## Task 6: `PracticeRunView` component `[model: haiku]`
 
 **Files:**
 - Create: `src/components/PracticeRunView.jsx`
@@ -1119,7 +1119,7 @@ EOF
 
 ---
 
-## Task 7: `PracticePage` component (list view + drag-and-drop)
+## Task 7: `PracticePage` component (list view + drag-and-drop) `[model: haiku]`
 
 **Files:**
 - Create: `src/components/PracticePage.jsx`
@@ -1335,7 +1335,7 @@ EOF
 
 ---
 
-## Task 8: Integrate into `App.jsx`
+## Task 8: Integrate into `App.jsx` `[model: sonnet]`
 
 **Files:**
 - Modify: `src/App.jsx`
@@ -1663,7 +1663,7 @@ EOF
 
 ---
 
-## Task 9: End-to-end verification
+## Task 9: End-to-end verification `[model: sonnet]`
 
 **Files:** none (manual verification only)
 
