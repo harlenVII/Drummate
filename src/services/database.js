@@ -1,5 +1,6 @@
 import Dexie from 'dexie';
 import { getTodayString } from '../utils/dateHelpers';
+import { SUBDIVISIONS } from '../constants/subdivisions';
 
 export const db = new Dexie('DrummateDB');
 
@@ -384,7 +385,11 @@ function validatePractice(input) {
   if (!timeSignature || !Number.isInteger(timeSignature.beats) || !Number.isInteger(timeSignature.noteValue)) {
     throw new Error('practice: invalid timeSignature');
   }
+  if (timeSignature.beats < 1 || timeSignature.beats > 16) throw new Error('practice: timeSignature.beats out of range');
+  if (![2, 4, 8, 16].includes(timeSignature.noteValue)) throw new Error('practice: timeSignature.noteValue must be 2, 4, 8, or 16');
   if (typeof subdivision !== 'string' || !subdivision) throw new Error('practice: subdivision required');
+  const validSubdivisionKeys = new Set(SUBDIVISIONS.filter(s => s.pattern !== null).map(s => s.key));
+  if (!validSubdivisionKeys.has(subdivision)) throw new Error(`practice: invalid subdivision "${subdivision}"`);
   if (!VALID_SOUND_TYPES.has(soundType)) throw new Error('practice: invalid soundType');
 }
 
