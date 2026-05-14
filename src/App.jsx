@@ -260,6 +260,7 @@ function App() {
 
   const [notesRefreshKey, setNotesRefreshKey] = useState(0);
   const bumpNotesRefresh = useCallback(() => setNotesRefreshKey(k => k + 1), []);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const loadData = useCallback(async () => {
     const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
@@ -333,17 +334,20 @@ function App() {
     let cancelled = false;
 
     const init = async () => {
+      setIsSyncing(true);
       try {
         // Order matters: pull first so we adopt cloud truth (renames, deletes
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await firebaseBackend.pullAll(user.id);
         await firebaseBackend.pullAllNotes(user.id);
+        await loadData();
+        if (!cancelled) setIsSyncing(false);
         await firebaseBackend.flushSyncQueue(user.id);
         await firebaseBackend.pushAllLocal(user.id);
-        await loadData();
       } catch (err) {
         console.error('Sync init failed:', err);
+        if (!cancelled) setIsSyncing(false);
       }
       // Subscribe to real-time changes only after initial sync completes
       if (!cancelled) {
@@ -1269,6 +1273,16 @@ function App() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
+      {isSyncing && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-gray-100/80 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-700 font-medium">{t('auth.syncing')}</p>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto">
         <div className={`${activeTab === 'practice' ? 'max-w-4xl' : 'max-w-lg'} mx-auto px-4 py-8 flex flex-col gap-6`}>
           <div className="flex items-center justify-between">
