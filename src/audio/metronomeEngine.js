@@ -32,6 +32,11 @@ export class MetronomeEngine {
     // When false, beat 0 uses the normal buffer instead of the accent buffer
     this.accentFirstBeat = true;
 
+    // One-shot accent for cases like practice-mode step transitions:
+    // the next scheduled downbeat (beat 0, subIndex 0) plays the accent
+    // sound regardless of `accentFirstBeat`.
+    this._oneShotAccent = false;
+
     this._lookaheadMs = 25.0;
     this._scheduleAhead = 0.1;
     this._workerFallbackID = null;
@@ -424,6 +429,10 @@ export class MetronomeEngine {
     this.accentFirstBeat = enabled;
   }
 
+  triggerOneShotAccent() {
+    this._oneShotAccent = true;
+  }
+
   setSoundType(type) {
     if (this.soundType === type) return;
     this.soundType = type;
@@ -483,7 +492,10 @@ export class MetronomeEngine {
     }
 
     const isMainBeat = subIndex === 0;
-    const isAccent = this.accentFirstBeat && beat === 0 && isMainBeat;
+    const isDownbeat = beat === 0 && isMainBeat;
+    const isOneShot = this._oneShotAccent && isDownbeat;
+    const isAccent = isDownbeat && (this.accentFirstBeat || isOneShot);
+    if (isOneShot) this._oneShotAccent = false;
 
     let buffer;
     if (isAccent) {
