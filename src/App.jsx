@@ -8,6 +8,7 @@ import YearlyReport from './components/YearlyReport';
 import StatsReport from './components/StatsReport';
 import Metronome from './components/Metronome';
 import SequencerPage from './components/SequencerPage';
+import PracticePage from './components/PracticePage';
 import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
@@ -40,6 +41,11 @@ import {
   getLogsByDate,
   getLogsByDateRange,
   mergeItem,
+  getPractices,
+  addPractice as dbAddPractice,
+  updatePractice as dbUpdatePractice,
+  deletePractice as dbDeletePractice,
+  updatePracticeOrder,
 } from './services/database';
 import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
 
@@ -146,7 +152,9 @@ function App() {
 
   // Subpage toggle within metronome tab
   const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
-  // 'metronome' | 'sequencer'
+  // 'metronome' | 'sequencer' | 'practice'
+  const [metronomePractices, setMetronomePractices] = useState([]);
+  const [runningPracticeUid, setRunningPracticeUid] = useState(null);
 
   // Sequencer state (persists across tab changes and page reloads)
   const [sequencerBpm, setSequencerBpm] = useState(() => {
@@ -263,8 +271,9 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   const loadData = useCallback(async () => {
-    const [allItems, logs] = await Promise.all([getItems(), getTodaysLogs()]);
+    const [allItems, logs, practices] = await Promise.all([getItems(), getTodaysLogs(), getPractices()]);
     setItems(allItems);
+    setMetronomePractices(practices);
     const trashedIds = new Set(allItems.filter(i => i.trashed).map(i => i.id));
     const totalsMap = {};
     for (const log of logs) {
@@ -341,6 +350,7 @@ function App() {
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await firebaseBackend.pullAll(user.id);
         await firebaseBackend.pullAllNotes(user.id);
+        await firebaseBackend.pullAllPractices(user.id);
         await loadData();
         if (!cancelled) setIsSyncing(false);
         await firebaseBackend.flushSyncQueue(user.id);
@@ -604,6 +614,63 @@ function App() {
     [activeItemId, stopTimer, loadData, user],
   );
 
+  const handleAddPractice = useCallback(
+    async (data) => {
+      const record = await dbAddPractice(data);
+      await loadData();
+      if (user) {
+        firebaseBackend.pushPractice({ ...record }, user.id).catch(console.error);
+      }
+    },
+    [loadData, user],
+  );
+
+  const handleUpdatePractice = useCallback(
+    async (id, data) => {
+      await dbUpdatePractice(id, data);
+      await loadData();
+      if (user) {
+        const updated = await getPractices().then((ps) => ps.find((p) => p.id === id));
+        if (updated) firebaseBackend.pushPractice(updated, user.id).catch(console.error);
+      }
+    },
+    [loadData, user],
+  );
+
+  const handleDeletePractice = useCallback(
+    async (id, uid) => {
+      if (runningPracticeUid && uid === runningPracticeUid) {
+        setRunningPracticeUid(null);
+      }
+      await dbDeletePractice(id);
+      await loadData();
+      if (user) {
+        firebaseBackend.pushDeletePractice(uid, user.id).catch(console.error);
+      }
+    },
+    [loadData, user, runningPracticeUid],
+  );
+
+  const handleReorderPractices = useCallback(
+    async (orderedIds) => {
+      await updatePracticeOrder(orderedIds);
+      await loadData();
+      if (user) {
+        const updated = await getPractices();
+        firebaseBackend.pushPracticeReorder(updated, user.id).catch(console.error);
+      }
+    },
+    [loadData, user],
+  );
+
+  const handleStartPractice = useCallback((uid) => {
+    setRunningPracticeUid(uid);
+  }, []);
+
+  const handleEndPractice = useCallback(() => {
+    setRunningPracticeUid(null);
+  }, []);
+
   const handleSetItemCategory = useCallback(
     async (id, category) => {
       const item = await db.practiceItems.get(id);
@@ -786,9 +853,17 @@ function App() {
         setSequencerPlayingSlot(-1);
         noSleepRef.current.disable();
       }
+      if (runningPracticeUid) {
+        if (metronomeEngineRef.current?.isPlaying) {
+          metronomeEngineRef.current.stop();
+        }
+        if (metronomeEngineRef.current) metronomeEngineRef.current.onBeat = null;
+        noSleepRef.current?.disable?.();
+        setRunningPracticeUid(null);
+      }
       setMetronomeSubpage(subpage);
     },
-    [metronomeIsPlaying],
+    [metronomeIsPlaying, runningPracticeUid],
   );
 
   // TTS wrappers — use Kokoro if enabled and ready, else speechSynthesis
@@ -1211,7 +1286,7 @@ function App() {
       else if (e.key === 'Tab') {
         if (activeTabRef.current === 'metronome') {
           e.preventDefault();
-          const pages = ['metronome', 'sequencer'];
+          const pages = ['metronome', 'sequencer', 'practice'];
           const idx = pages.indexOf(metronomeSubpageRef.current);
           const next = e.shiftKey
             ? pages[(idx - 1 + pages.length) % pages.length]
@@ -1334,7 +1409,7 @@ function App() {
                       : 'text-gray-500'
                   }`}
                 >
-                  {t('metronome')}
+                  {t('metronomeSubpages.metronome')}
                 </button>
                 <button
                   onClick={() => handleSubpageChange('sequencer')}
@@ -1344,7 +1419,17 @@ function App() {
                       : 'text-gray-500'
                   }`}
                 >
-                  {t('sequencer')}
+                  {t('metronomeSubpages.sequencer')}
+                </button>
+                <button
+                  onClick={() => handleSubpageChange('practice')}
+                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    metronomeSubpage === 'practice'
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {t('metronomeSubpages.practice')}
                 </button>
               </div>
 
@@ -1367,7 +1452,7 @@ function App() {
                   accentFirstBeat={metronomeAccentFirstBeat}
                   setAccentFirstBeat={setMetronomeAccentFirstBeat}
                 />
-              ) : (
+              ) : metronomeSubpage === 'sequencer' ? (
                 <SequencerPage
                   engineRef={metronomeEngineRef}
                   noSleepRef={noSleepRef}
@@ -1382,6 +1467,19 @@ function App() {
                   playingSlot={sequencerPlayingSlot}
                   setPlayingSlot={setSequencerPlayingSlot}
                   nextIdRef={sequencerNextIdRef}
+                />
+              ) : (
+                <PracticePage
+                  practices={metronomePractices}
+                  runningPracticeUid={runningPracticeUid}
+                  engineRef={metronomeEngineRef}
+                  noSleepRef={noSleepRef}
+                  onAddPractice={handleAddPractice}
+                  onUpdatePractice={handleUpdatePractice}
+                  onDeletePractice={handleDeletePractice}
+                  onReorderPractices={handleReorderPractices}
+                  onStartPractice={handleStartPractice}
+                  onEndPractice={handleEndPractice}
                 />
               )}
             </>
