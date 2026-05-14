@@ -150,7 +150,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
               onChange={(e) => setField('subdivision', e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2"
             >
-              {SUBDIVISIONS.map((s) => (
+              {SUBDIVISIONS.filter((s) => s.pattern !== null).map((s) => (
                 <option key={s.key} value={s.key}>{s.key}</option>
               ))}
             </select>

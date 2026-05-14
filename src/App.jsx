@@ -155,6 +155,11 @@ function App() {
   // 'metronome' | 'sequencer' | 'practice'
   const [metronomePractices, setMetronomePractices] = useState([]);
   const [runningPracticeUid, setRunningPracticeUid] = useState(null);
+  // Run-view state persisted in App so it survives tab switches.
+  const [practiceRunStepIndex, setPracticeRunStepIndex] = useState(0);
+  const [practiceRunBarIndex, setPracticeRunBarIndex] = useState(0);
+  const [practiceRunIsPlaying, setPracticeRunIsPlaying] = useState(false);
+  const [practiceRunComplete, setPracticeRunComplete] = useState(false);
 
   // Sequencer state (persists across tab changes and page reloads)
   const [sequencerBpm, setSequencerBpm] = useState(() => {
@@ -641,6 +646,10 @@ function App() {
     async (id, uid) => {
       if (runningPracticeUid && uid === runningPracticeUid) {
         setRunningPracticeUid(null);
+        setPracticeRunStepIndex(0);
+        setPracticeRunBarIndex(0);
+        setPracticeRunIsPlaying(false);
+        setPracticeRunComplete(false);
       }
       await dbDeletePractice(id);
       await loadData();
@@ -664,11 +673,19 @@ function App() {
   );
 
   const handleStartPractice = useCallback((uid) => {
+    setPracticeRunStepIndex(0);
+    setPracticeRunBarIndex(0);
+    setPracticeRunIsPlaying(false);
+    setPracticeRunComplete(false);
     setRunningPracticeUid(uid);
   }, []);
 
   const handleEndPractice = useCallback(() => {
     setRunningPracticeUid(null);
+    setPracticeRunStepIndex(0);
+    setPracticeRunBarIndex(0);
+    setPracticeRunIsPlaying(false);
+    setPracticeRunComplete(false);
   }, []);
 
   const handleSetItemCategory = useCallback(
@@ -860,6 +877,10 @@ function App() {
         if (metronomeEngineRef.current) metronomeEngineRef.current.onBeat = null;
         noSleepRef.current?.disable?.();
         setRunningPracticeUid(null);
+        setPracticeRunStepIndex(0);
+        setPracticeRunBarIndex(0);
+        setPracticeRunIsPlaying(false);
+        setPracticeRunComplete(false);
       }
       setMetronomeSubpage(subpage);
     },
@@ -1480,6 +1501,14 @@ function App() {
                   onReorderPractices={handleReorderPractices}
                   onStartPractice={handleStartPractice}
                   onEndPractice={handleEndPractice}
+                  runStepIndex={practiceRunStepIndex}
+                  runBarIndex={practiceRunBarIndex}
+                  runIsPlaying={practiceRunIsPlaying}
+                  runComplete={practiceRunComplete}
+                  setRunStepIndex={setPracticeRunStepIndex}
+                  setRunBarIndex={setPracticeRunBarIndex}
+                  setRunIsPlaying={setPracticeRunIsPlaying}
+                  setRunComplete={setPracticeRunComplete}
                 />
               )}
             </>

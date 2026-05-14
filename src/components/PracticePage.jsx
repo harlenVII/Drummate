@@ -83,6 +83,14 @@ export default function PracticePage({
   onReorderPractices,
   onStartPractice,
   onEndPractice,
+  runStepIndex,
+  runBarIndex,
+  runIsPlaying,
+  runComplete,
+  setRunStepIndex,
+  setRunBarIndex,
+  setRunIsPlaying,
+  setRunComplete,
 }) {
   const { t } = useLanguage();
   const [modalState, setModalState] = useState(null); // null | { mode: 'create' } | { mode: 'edit', practice }
@@ -116,6 +124,14 @@ export default function PracticePage({
         engineRef={engineRef}
         noSleepRef={noSleepRef}
         onEnd={onEndPractice}
+        stepIndex={runStepIndex}
+        barIndex={runBarIndex}
+        isPlaying={runIsPlaying}
+        complete={runComplete}
+        setStepIndex={setRunStepIndex}
+        setBarIndex={setRunBarIndex}
+        setIsPlaying={setRunIsPlaying}
+        setComplete={setRunComplete}
       />
     );
   }
