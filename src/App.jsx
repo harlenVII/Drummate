@@ -924,16 +924,23 @@ function App() {
       if (metronomeIsPlaying) {
         metronomeEngineRef.current.stop();
         metronomeEngineRef.current.setSequence(null);
+        metronomeEngineRef.current.setMeterTrack(null);
         setMetronomeIsPlaying(false);
         setMetronomeCurrentBeat(-1);
         setSequencerPlayingSlot(-1);
+        setMultiMeterPlayingSlot(-1);
         noSleepRef.current.disable();
       }
       if (runningPracticeUid) {
         if (metronomeEngineRef.current?.isPlaying) {
           metronomeEngineRef.current.stop();
         }
-        if (metronomeEngineRef.current) metronomeEngineRef.current.onBeat = null;
+        if (metronomeEngineRef.current) {
+          // Re-wire the App-level beat callback (practice mode overrides it)
+          metronomeEngineRef.current.onBeat = ({ beat, subdivisionIndex }) => {
+            if (subdivisionIndex === 0) setMetronomeCurrentBeat(beat);
+          };
+        }
         noSleepRef.current?.disable?.();
         setRunningPracticeUid(null);
         setPracticeRunStepIndex(0);
@@ -1366,7 +1373,7 @@ function App() {
       else if (e.key === 'Tab') {
         if (activeTabRef.current === 'metronome') {
           e.preventDefault();
-          const pages = ['metronome', 'sequencer', 'practice'];
+          const pages = ['metronome', 'sequencer', 'practice', 'multiMeter'];
           const idx = pages.indexOf(metronomeSubpageRef.current);
           const next = e.shiftKey
             ? pages[(idx - 1 + pages.length) % pages.length]
@@ -1512,6 +1519,16 @@ function App() {
                 >
                   {t('metronomeSubpages.practice')}
                 </button>
+                <button
+                  onClick={() => handleSubpageChange('multiMeter')}
+                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    metronomeSubpage === 'multiMeter'
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {t('metronomeSubpages.multiMeter')}
+                </button>
               </div>
 
               {metronomeSubpage === 'metronome' ? (
@@ -1548,6 +1565,25 @@ function App() {
                   playingSlot={sequencerPlayingSlot}
                   setPlayingSlot={setSequencerPlayingSlot}
                   nextIdRef={sequencerNextIdRef}
+                />
+              ) : metronomeSubpage === 'multiMeter' ? (
+                <MultiMeterPage
+                  engineRef={metronomeEngineRef}
+                  noSleepRef={noSleepRef}
+                  bpm={multiMeterBpm}
+                  setBpm={setMultiMeterBpm}
+                  isPlaying={metronomeIsPlaying}
+                  setIsPlaying={setMetronomeIsPlaying}
+                  soundType={multiMeterSoundType}
+                  setSoundType={setMultiMeterSoundType}
+                  subdivision={multiMeterSubdivision}
+                  setSubdivision={setMultiMeterSubdivision}
+                  slots={multiMeterSlots}
+                  setSlots={setMultiMeterSlots}
+                  playingSlot={multiMeterPlayingSlot}
+                  setPlayingSlot={setMultiMeterPlayingSlot}
+                  currentBeat={metronomeCurrentBeat}
+                  setCurrentBeat={setMetronomeCurrentBeat}
                 />
               ) : (
                 <PracticePage
