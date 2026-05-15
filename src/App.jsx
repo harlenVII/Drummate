@@ -9,6 +9,7 @@ import StatsReport from './components/StatsReport';
 import Metronome from './components/Metronome';
 import SequencerPage from './components/SequencerPage';
 import PracticePage from './components/PracticePage';
+import MultiMeterPage from './components/MultiMeterPage';
 import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
@@ -232,6 +233,46 @@ function App() {
     }
   }
 
+  // Multi-Meter state (persists across tab changes and page reloads)
+  const [multiMeterBpm, setMultiMeterBpm] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_multimeter_bpm');
+      const bpm = saved ? Number(saved) : 120;
+      return bpm >= 30 && bpm <= 300 ? bpm : 120;
+    } catch {
+      return 120;
+    }
+  });
+  const [multiMeterSoundType, setMultiMeterSoundType] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_multimeter_sound_type');
+      const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+      return saved && validTypes.includes(saved) ? saved : 'click';
+    } catch {
+      return 'click';
+    }
+  });
+  const [multiMeterSubdivision, setMultiMeterSubdivision] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_multimeter_subdivision');
+      const validSubdivisions = ['quarter', 'eighth', 'triplet', 'sixteenth',
+                                  'eighthTwoSixteenths', 'twoSixteenthsEighth',
+                                  'sixteenthEighthSixteenth', 'quintuplet', 'sextuplet', 'offbeatSixteenths'];
+      return saved && validSubdivisions.includes(saved) ? saved : 'quarter';
+    } catch {
+      return 'quarter';
+    }
+  });
+  const [multiMeterSlots, setMultiMeterSlots] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_multimeter_slots');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [multiMeterPlayingSlot, setMultiMeterPlayingSlot] = useState(-1);
+
   // Persist metronome settings to localStorage
   useEffect(() => {
     localStorage.setItem('drummate_metronome_bpm', String(metronomeBpm));
@@ -252,6 +293,19 @@ function App() {
   useEffect(() => {
     localStorage.setItem('drummate_metronome_accent_first_beat', String(metronomeAccentFirstBeat));
   }, [metronomeAccentFirstBeat]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_multimeter_bpm', String(multiMeterBpm));
+  }, [multiMeterBpm]);
+  useEffect(() => {
+    localStorage.setItem('drummate_multimeter_sound_type', multiMeterSoundType);
+  }, [multiMeterSoundType]);
+  useEffect(() => {
+    localStorage.setItem('drummate_multimeter_subdivision', multiMeterSubdivision);
+  }, [multiMeterSubdivision]);
+  useEffect(() => {
+    localStorage.setItem('drummate_multimeter_slots', JSON.stringify(multiMeterSlots));
+  }, [multiMeterSlots]);
 
   useEffect(() => {
     localStorage.setItem('drummate_time_unit', timeUnit);
@@ -389,6 +443,9 @@ function App() {
     };
     metronomeEngineRef.current.onSequenceBeat = (slotIndex) => {
       setSequencerPlayingSlot(slotIndex);
+    };
+    metronomeEngineRef.current.onMeterSlot = (slotIndex) => {
+      setMultiMeterPlayingSlot(slotIndex);
     };
 
     return () => {
