@@ -37,6 +37,12 @@ export class MetronomeEngine {
     // sound regardless of `accentFirstBeat`.
     this._oneShotAccent = false;
 
+    // Meter track mode: cycles beatsPerMeasure bar-by-bar through a slot list.
+    // null = mode off.
+    this.meterTrack = null;
+    this.meterTrackIndex = 0;
+    this.onMeterSlot = null;
+
     this._lookaheadMs = 25.0;
     this._scheduleAhead = 0.1;
     this._workerFallbackID = null;
@@ -326,6 +332,12 @@ export class MetronomeEngine {
       }
     }
 
+    // Reset meter track to first slot on each start
+    if (this.meterTrack && this.meterTrack.length > 0) {
+      this.meterTrackIndex = 0;
+      this.beatsPerMeasure = this.meterTrack[0];
+    }
+
     this.nextNoteTime = this.audioCtx.currentTime + 0.05;
 
     console.log('[Metronome] Scheduling start — nextNoteTime:', this.nextNoteTime.toFixed(4),
@@ -439,6 +451,22 @@ export class MetronomeEngine {
     if (this.isPlaying && this.audioCtx) {
       this._createClickBuffers();
     }
+  }
+
+  /**
+   * Enable meter-track mode.
+   * @param {number[]|null} track - Array of beatsPerMeasure values, one per bar slot.
+   *   Pass null to return to normal (fixed beatsPerMeasure) mode.
+   */
+  setMeterTrack(track) {
+    if (!track || track.length === 0) {
+      this.meterTrack = null;
+      this.meterTrackIndex = 0;
+      return;
+    }
+    this.meterTrack = track;
+    this.meterTrackIndex = 0;
+    this.beatsPerMeasure = track[0];
   }
 
   destroy() {
