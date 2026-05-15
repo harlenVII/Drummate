@@ -1359,7 +1359,7 @@ function App() {
       else if (e.key === 'Tab') {
         if (activeTabRef.current === 'metronome') {
           e.preventDefault();
-          const pages = ['metronome', 'sequencer', 'practice', 'multiMeter'];
+          const pages = ['metronome', 'practice', 'sequencer', 'multiMeter'];
           const idx = pages.indexOf(metronomeSubpageRef.current);
           const next = e.shiftKey
             ? pages[(idx - 1 + pages.length) % pages.length]
@@ -1486,16 +1486,6 @@ function App() {
                   {t('metronomeSubpages.metronome')}
                 </button>
                 <button
-                  onClick={() => handleSubpageChange('sequencer')}
-                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    metronomeSubpage === 'sequencer'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500'
-                  }`}
-                >
-                  {t('metronomeSubpages.sequencer')}
-                </button>
-                <button
                   onClick={() => handleSubpageChange('practice')}
                   className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     metronomeSubpage === 'practice'
@@ -1504,6 +1494,16 @@ function App() {
                   }`}
                 >
                   {t('metronomeSubpages.practice')}
+                </button>
+                <button
+                  onClick={() => handleSubpageChange('sequencer')}
+                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    metronomeSubpage === 'sequencer'
+                      ? 'bg-white text-gray-800 shadow-sm'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {t('metronomeSubpages.sequencer')}
                 </button>
                 <button
                   onClick={() => handleSubpageChange('multiMeter')}
