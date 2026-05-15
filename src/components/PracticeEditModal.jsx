@@ -125,23 +125,25 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
             </label>
           </div>
 
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-600">{t('practiceMode.timeSignature')}</span>
-            <select
-              value={`${form.timeSignature.beats}/${form.timeSignature.noteValue}`}
-              onChange={(e) => {
-                const [beats, noteValue] = e.target.value.split('/').map(Number);
-                setField('timeSignature', { beats, noteValue });
-              }}
-              className="border border-gray-300 rounded-lg px-3 py-2"
-            >
+            <div className="flex gap-2 flex-wrap">
               {TIME_SIGNATURES.map((ts) => (
-                <option key={`${ts.beats}/${ts.noteValue}`} value={`${ts.beats}/${ts.noteValue}`}>
+                <button
+                  key={`${ts.beats}/${ts.noteValue}`}
+                  type="button"
+                  onClick={() => setField('timeSignature', { beats: ts.beats, noteValue: ts.noteValue })}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    form.timeSignature.beats === ts.beats && form.timeSignature.noteValue === ts.noteValue
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
                   {ts.beats}/{ts.noteValue}
-                </option>
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-600">{t('practiceMode.subdivision')}</span>
