@@ -281,8 +281,8 @@ function MultiMeterPage({
       {/* Slot grid */}
       <div className="w-full">
         {slots.length === 0 ? (
-          editing ? (
-            <div className="text-center py-8 text-gray-400 text-sm">
+          !editing ? (
+            <div className="text-center py-12 text-gray-500 text-sm">
               {t('multiMeter.emptyState')}
             </div>
           ) : null
