@@ -83,7 +83,7 @@ const translations = {
     sequencerInsertAfter: 'After',
     metronomeSubpages: {
       metronome: 'Metronome',
-      sequencer: 'Sequencer',
+      sequencer: 'Rhythm Builder',
       practice: 'Practice',
       multiMeter: 'Multi-Meter',
     },
@@ -381,7 +381,7 @@ const translations = {
     sequencerInsertAfter: '之后',
     metronomeSubpages: {
       metronome: '节拍器',
-      sequencer: '复杂节奏',
+      sequencer: '节奏构建',
       practice: '练习',
       multiMeter: '多拍号',
     },
