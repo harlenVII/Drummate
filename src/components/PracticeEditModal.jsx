@@ -153,6 +153,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
                 <button
                   key={s.key}
                   type="button"
+                  aria-label={s.key}
                   onClick={() => setField('subdivision', s.key)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     form.subdivision === s.key
