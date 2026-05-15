@@ -85,7 +85,7 @@ const translations = {
       metronome: 'Metronome',
       sequencer: 'Rhythm Builder',
       practice: 'Practice',
-      multiMeter: 'Multi-Meter',
+      multiMeter: 'Meter Builder',
     },
     practiceMode: {
       empty: 'No practices yet. Tap "+" to create one.',
@@ -383,7 +383,7 @@ const translations = {
       metronome: '节拍器',
       sequencer: '节奏构建',
       practice: '练习',
-      multiMeter: '多拍号',
+      multiMeter: '拍号构建',
     },
     practiceMode: {
       empty: '还没有练习。点击"+"创建一个。',
