@@ -62,6 +62,7 @@ export default function PracticeRunView({
     engine.setSubdivision(sub && sub.pattern ? sub.pattern : [0]);
     engine.setSoundType(practice.soundType);
     engine.setSequence(null);
+    engine.setAccentFirstBeat(true);
   }, [engineRef, practice]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-attach the onBeat handler when the engine is playing and we remount

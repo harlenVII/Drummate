@@ -145,6 +145,7 @@ function SequencerPage({
       const patterns = buildSequencePatterns(slots);
       engineRef.current.setSequence(patterns);
       engineRef.current.setBeatsPerMeasure(slots.length);
+      engineRef.current.setAccentFirstBeat(true);
       noSleepRef.current.enable();
       await engineRef.current.start();
       setIsPlaying(true);
