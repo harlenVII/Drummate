@@ -171,6 +171,7 @@ function MultiMeterPage({
       engineRef.current.setSequence(null);
       engineRef.current.setSubdivision([0]);
       engineRef.current.setSoundType(soundType);
+      engineRef.current.setAccentFirstBeat(true);
       engineRef.current.setBpm(bpm * base.divisor);
       engineRef.current.setMeterTrack(slots.map(base.clicks));
       noSleepRef.current.enable();
