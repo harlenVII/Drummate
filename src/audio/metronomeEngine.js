@@ -38,9 +38,11 @@ export class MetronomeEngine {
     this._oneShotAccent = false;
 
     // Meter track mode: cycles beatsPerMeasure bar-by-bar through a slot list.
-    // null = mode off.
+    // null = mode off. meterClickTypes is an optional parallel 2D array
+    // [barIdx][beatIdx] of 'accent' | 'normal' | 'sub' to override per-click sound.
     this.meterTrack = null;
     this.meterTrackIndex = 0;
+    this.meterClickTypes = null;
     this.onMeterSlot = null;
 
     this._lookaheadMs = 25.0;
@@ -462,11 +464,22 @@ export class MetronomeEngine {
     if (!track || track.length === 0) {
       this.meterTrack = null;
       this.meterTrackIndex = 0;
+      this.meterClickTypes = null;
       return;
     }
     this.meterTrack = track;
     this.meterTrackIndex = 0;
     this.beatsPerMeasure = track[0];
+  }
+
+  /**
+   * Optional override for per-click sound in meter-track mode. Pass a 2D array
+   * shaped [barIdx][beatIdx] with values 'accent' | 'normal' | 'sub', or null
+   * to clear. Pass alongside setMeterTrack — cleared automatically when
+   * setMeterTrack(null) is called.
+   */
+  setMeterClickTypes(types) {
+    this.meterClickTypes = (types && types.length > 0) ? types : null;
   }
 
   destroy() {
@@ -525,10 +538,14 @@ export class MetronomeEngine {
     const isAccent = isDownbeat && (this.accentFirstBeat || isOneShot);
     if (isOneShot) this._oneShotAccent = false;
 
+    const typeOverride = this.meterClickTypes && isMainBeat
+      ? this.meterClickTypes[this.meterTrackIndex]?.[beat] ?? null
+      : null;
+
     let buffer;
-    if (isAccent) {
+    if (typeOverride === 'accent' || (typeOverride === null && isAccent)) {
       buffer = this._clickBuffers.accent;
-    } else if (isMainBeat) {
+    } else if (typeOverride === 'normal' || (typeOverride === null && isMainBeat)) {
       buffer = this._clickBuffers.normal;
     } else {
       buffer = this._clickBuffers.sub;

@@ -29,6 +29,22 @@ function getBase(slots) {
   return { divisor, clicks };
 }
 
+// Click sound per position within a bar: first click is the accent, quarter-note
+// positions get the normal click, eighth-only positions get the soft click.
+// In quarter-base mode every click is a quarter, so only accent/normal apply.
+function buildClickTypes(slots, base) {
+  return slots.map((slot) => {
+    const count = base.clicks(slot);
+    const types = new Array(count);
+    for (let i = 0; i < count; i++) {
+      if (i === 0) types[i] = 'accent';
+      else if (base.divisor === 1) types[i] = 'normal';
+      else types[i] = (i % 2 === 0) ? 'normal' : 'sub';
+    }
+    return types;
+  });
+}
+
 const METER_OPTIONS = [
   { beats: 2, noteValue: 4 },
   { beats: 3, noteValue: 4 },
@@ -174,6 +190,7 @@ function MultiMeterPage({
       engineRef.current.setAccentFirstBeat(true);
       engineRef.current.setBpm(bpm * base.divisor);
       engineRef.current.setMeterTrack(slots.map(base.clicks));
+      engineRef.current.setMeterClickTypes(buildClickTypes(slots, base));
       noSleepRef.current.enable();
       await engineRef.current.start();
       setIsPlaying(true);
@@ -214,6 +231,7 @@ function MultiMeterPage({
         const nextBase = getBase(newSlots);
         engineRef.current.setBpm(bpm * nextBase.divisor);
         engineRef.current.setMeterTrack(newSlots.map(nextBase.clicks));
+        engineRef.current.setMeterClickTypes(buildClickTypes(newSlots, nextBase));
         setPlayingSlot(0);
         setCurrentBeat(-1);
       }
