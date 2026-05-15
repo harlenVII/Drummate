@@ -11,12 +11,15 @@ import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sort
 import { CSS } from '@dnd-kit/utilities';
 import BpmDial from './BpmDial';
 import BeatIndicator from './BeatIndicator';
-import SubdivisionIcon from './SubdivisionIcon';
 import { useLanguage } from '../contexts/LanguageContext';
-import { SUBDIVISIONS } from '../constants/subdivisions';
 
 const MAX_SLOTS = 16;
 const SOUND_TYPES = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+
+// Each bar plays one click per eighth note. BPM is interpreted as quarter notes
+// per minute (musical convention), so the engine receives bpm*2 to tick at the
+// eighth-note rate. Slot bar length in eighths = beats * 8 / noteValue.
+const eighthCount = (slot) => slot.beats * 8 / slot.noteValue;
 
 const METER_OPTIONS = [
   { beats: 2, noteValue: 4 },
@@ -114,8 +117,6 @@ function MultiMeterPage({
   setIsPlaying,
   soundType,
   setSoundType,
-  subdivision,
-  setSubdivision,
   slots,
   setSlots,
   playingSlot,
@@ -138,19 +139,12 @@ function MultiMeterPage({
   );
 
   useEffect(() => {
-    if (engineRef.current) engineRef.current.setBpm(bpm);
+    if (engineRef.current) engineRef.current.setBpm(bpm * 2);
   }, [engineRef, bpm]);
 
   useEffect(() => {
     if (engineRef.current) engineRef.current.setSoundType(soundType);
   }, [engineRef, soundType]);
-
-  useEffect(() => {
-    if (engineRef.current) {
-      const sub = SUBDIVISIONS.find((s) => s.key === subdivision);
-      engineRef.current.setSubdivision(sub ? sub.pattern : [0]);
-    }
-  }, [engineRef, subdivision]);
 
   const handleTogglePlay = useCallback(async () => {
     if (isPlaying) {
@@ -164,19 +158,18 @@ function MultiMeterPage({
       if (slots.length === 0) return;
       setEditing(false);
       setSelectedSlotIndex(null);
-      const sub = SUBDIVISIONS.find((s) => s.key === subdivision);
       engineRef.current.setSequence(null);
-      engineRef.current.setSubdivision(sub ? sub.pattern : [0]);
+      engineRef.current.setSubdivision([0]);
       engineRef.current.setSoundType(soundType);
-      engineRef.current.setBpm(bpm);
-      engineRef.current.setMeterTrack(slots.map(s => s.beats));
+      engineRef.current.setBpm(bpm * 2);
+      engineRef.current.setMeterTrack(slots.map(eighthCount));
       noSleepRef.current.enable();
       await engineRef.current.start();
       setIsPlaying(true);
       setPlayingSlot(0);
     }
   }, [engineRef, isPlaying, setIsPlaying, setPlayingSlot, setCurrentBeat,
-      noSleepRef, slots, subdivision, soundType, bpm]);
+      noSleepRef, slots, soundType, bpm]);
 
   const handleAddSlot = useCallback((beats, noteValue) => {
     if (slots.length >= MAX_SLOTS) return;
@@ -207,7 +200,7 @@ function MultiMeterPage({
         setCurrentBeat(-1);
         noSleepRef.current.disable();
       } else {
-        engineRef.current.setMeterTrack(newSlots.map(s => s.beats));
+        engineRef.current.setMeterTrack(newSlots.map(eighthCount));
         setPlayingSlot(0);
         setCurrentBeat(-1);
       }
@@ -255,7 +248,7 @@ function MultiMeterPage({
   }, [handleTogglePlay, setBpm]);
 
   const activeBeats = (playingSlot >= 0 && playingSlot < slots.length)
-    ? slots[playingSlot].beats
+    ? eighthCount(slots[playingSlot])
     : 4;
 
   const slotGrid = (
@@ -345,23 +338,6 @@ function MultiMeterPage({
             }`}
           >
             {t(`soundTypes.${key}`)}
-          </button>
-        ))}
-      </div>
-
-      {/* Subdivision selector */}
-      <div className="flex gap-2 flex-wrap justify-center">
-        {SUBDIVISIONS.filter(({ key }) => key !== 'rest').map(({ key }) => (
-          <button
-            key={key}
-            onClick={() => setSubdivision(key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              subdivision === key
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
-            }`}
-          >
-            <SubdivisionIcon type={key} />
           </button>
         ))}
       </div>

@@ -252,17 +252,6 @@ function App() {
       return 'click';
     }
   });
-  const [multiMeterSubdivision, setMultiMeterSubdivision] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_multimeter_subdivision');
-      const validSubdivisions = ['quarter', 'eighth', 'triplet', 'sixteenth',
-                                  'eighthTwoSixteenths', 'twoSixteenthsEighth',
-                                  'sixteenthEighthSixteenth', 'quintuplet', 'sextuplet', 'offbeatSixteenths'];
-      return saved && validSubdivisions.includes(saved) ? saved : 'quarter';
-    } catch {
-      return 'quarter';
-    }
-  });
   const [multiMeterSlots, setMultiMeterSlots] = useState(() => {
     try {
       const saved = localStorage.getItem('drummate_multimeter_slots');
@@ -300,9 +289,6 @@ function App() {
   useEffect(() => {
     localStorage.setItem('drummate_multimeter_sound_type', multiMeterSoundType);
   }, [multiMeterSoundType]);
-  useEffect(() => {
-    localStorage.setItem('drummate_multimeter_subdivision', multiMeterSubdivision);
-  }, [multiMeterSubdivision]);
   useEffect(() => {
     localStorage.setItem('drummate_multimeter_slots', JSON.stringify(multiMeterSlots));
   }, [multiMeterSlots]);
@@ -1576,8 +1562,6 @@ function App() {
                   setIsPlaying={setMetronomeIsPlaying}
                   soundType={multiMeterSoundType}
                   setSoundType={setMultiMeterSoundType}
-                  subdivision={multiMeterSubdivision}
-                  setSubdivision={setMultiMeterSubdivision}
                   slots={multiMeterSlots}
                   setSlots={setMultiMeterSlots}
                   playingSlot={multiMeterPlayingSlot}
