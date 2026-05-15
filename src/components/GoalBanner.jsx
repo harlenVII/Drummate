@@ -24,7 +24,7 @@ function readGoal() {
   }
 }
 
-function GoalBanner() {
+function GoalBanner({ refreshKey = 0 }) {
   const { t } = useLanguage();
   const [goal] = useState(readGoal);
   const [practicedSeconds, setPracticedSeconds] = useState(0);
@@ -38,7 +38,7 @@ function GoalBanner() {
       setPracticedSeconds(logs.reduce((sum, l) => sum + l.duration, 0));
     })();
     return () => { cancelled = true; };
-  }, [goal]);
+  }, [goal, refreshKey]);
 
   if (!goal) return null;
 

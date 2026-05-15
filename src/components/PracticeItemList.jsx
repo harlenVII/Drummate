@@ -105,6 +105,7 @@ function PracticeItemList({
   onMergeItem,
   focusedItemId,
   onFocusChange,
+  goalRefreshKey,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
@@ -606,7 +607,7 @@ function PracticeItemList({
 
   return (
     <div className="flex flex-col gap-3">
-      <GoalBanner />
+      <GoalBanner refreshKey={goalRefreshKey} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">

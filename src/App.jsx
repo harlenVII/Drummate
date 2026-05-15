@@ -273,6 +273,7 @@ function App() {
 
   const [notesRefreshKey, setNotesRefreshKey] = useState(0);
   const bumpNotesRefresh = useCallback(() => setNotesRefreshKey(k => k + 1), []);
+  const [goalRefreshKey, setGoalRefreshKey] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -288,6 +289,7 @@ function App() {
     }
     setTotals(totalsMap);
     setNotesRefreshKey(k => k + 1);
+    setGoalRefreshKey(k => k + 1);
   }, []);
 
   useEffect(() => {
@@ -1415,6 +1417,7 @@ function App() {
               onReorder={handleReorder}
               focusedItemId={focusedPracticeItemId}
               onFocusChange={setFocusedPracticeItemId}
+              goalRefreshKey={goalRefreshKey}
             />
           )}
 
