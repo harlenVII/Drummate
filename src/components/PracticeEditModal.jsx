@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SUBDIVISIONS } from '../constants/subdivisions';
+import SubdivisionIcon from './SubdivisionIcon';
 
 const TIME_SIGNATURES = [
   { beats: 2, noteValue: 4 },
@@ -145,18 +146,25 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
             </div>
           </div>
 
-          <label className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-600">{t('practiceMode.subdivision')}</span>
-            <select
-              value={form.subdivision}
-              onChange={(e) => setField('subdivision', e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2"
-            >
+            <div className="flex gap-2 flex-wrap">
               {SUBDIVISIONS.filter((s) => s.pattern !== null).map((s) => (
-                <option key={s.key} value={s.key}>{s.key}</option>
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setField('subdivision', s.key)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    form.subdivision === s.key
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  <SubdivisionIcon type={s.key} />
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
 
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-gray-600">{t('practiceMode.sound')}</span>
