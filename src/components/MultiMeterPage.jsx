@@ -162,6 +162,8 @@ function MultiMeterPage({
       noSleepRef.current.disable();
     } else {
       if (slots.length === 0) return;
+      setEditing(false);
+      setSelectedSlotIndex(null);
       const sub = SUBDIVISIONS.find((s) => s.key === subdivision);
       engineRef.current.setSequence(null);
       engineRef.current.setSubdivision(sub ? sub.pattern : [0]);
@@ -206,6 +208,8 @@ function MultiMeterPage({
         noSleepRef.current.disable();
       } else {
         engineRef.current.setMeterTrack(newSlots.map(s => s.beats));
+        setPlayingSlot(0);
+        setCurrentBeat(-1);
       }
     }
   }, [slots, setSlots, isPlaying, engineRef, setIsPlaying, setPlayingSlot, setCurrentBeat,
@@ -241,7 +245,7 @@ function MultiMeterPage({
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return;
       if (e.code === 'Space') { e.preventDefault(); handleTogglePlay(); }
       else if (e.code === 'ArrowLeft') { e.preventDefault(); setBpm(prev => Math.max(30, prev - 1)); }
       else if (e.code === 'ArrowRight') { e.preventDefault(); setBpm(prev => Math.min(300, prev + 1)); }
