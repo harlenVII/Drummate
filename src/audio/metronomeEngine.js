@@ -599,6 +599,19 @@ export class MetronomeEngine {
         }, delay);
       }
 
+      // Meter track mode: at bar boundary (currentBeat just wrapped to 0),
+      // advance to the next slot's beatsPerMeasure and fire onMeterSlot callback.
+      if (this.currentBeat === 0 && this.meterTrack && this.meterTrack.length > 0) {
+        this.meterTrackIndex = (this.meterTrackIndex + 1) % this.meterTrack.length;
+        this.beatsPerMeasure = this.meterTrack[this.meterTrackIndex];
+        if (!this.audioCtx) return;
+        const slotIdx = this.meterTrackIndex;
+        const delay = Math.max(0, (this.nextNoteTime - this.audioCtx.currentTime) * 1000);
+        setTimeout(() => {
+          this.onMeterSlot?.(slotIdx);
+        }, delay);
+      }
+
     } else {
       const prevOffset = Math.abs(pattern[this.subdivisionIndex - 1]);
       const nextOffset = Math.abs(pattern[this.subdivisionIndex]);
