@@ -85,6 +85,7 @@ const translations = {
       metronome: 'Metronome',
       sequencer: 'Sequencer',
       practice: 'Practice',
+      multiMeter: 'Multi-Meter',
     },
     practiceMode: {
       empty: 'No practices yet. Tap "+" to create one.',
@@ -116,6 +117,10 @@ const translations = {
         positiveIncrement: 'Increment must be at least 1',
         positiveBars: 'Bars per step must be at least 1',
       },
+    },
+    multiMeter: {
+      emptyState: 'Tap a time signature below to add bars',
+      tapToAdd: 'Tap to add a bar',
     },
     rest: 'Rest',
     soundTypes: {
@@ -378,6 +383,7 @@ const translations = {
       metronome: '节拍器',
       sequencer: '复杂节奏',
       practice: '练习',
+      multiMeter: '多拍号',
     },
     practiceMode: {
       empty: '还没有练习。点击"+"创建一个。',
@@ -409,6 +415,10 @@ const translations = {
         positiveIncrement: '增量至少为 1',
         positiveBars: '每段小节数至少为 1',
       },
+    },
+    multiMeter: {
+      emptyState: '点击下方拍号以添加小节',
+      tapToAdd: '点击添加小节',
     },
     rest: '休止',
     soundTypes: {
