@@ -16,10 +16,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 const MAX_SLOTS = 16;
 const SOUND_TYPES = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
 
-// Each bar plays one click per eighth note. BPM is interpreted as quarter notes
-// per minute (musical convention), so the engine receives bpm*2 to tick at the
-// eighth-note rate. Slot bar length in eighths = beats * 8 / noteValue.
-const eighthCount = (slot) => slot.beats * 8 / slot.noteValue;
+// Base note value: quarter when every slot is /4, eighth otherwise. The engine
+// receives bpm * baseDivisor and a per-slot click count expressed in that base
+// unit. BPM stays the user-facing quarter-note value.
+//   all /4   → divisor 1, clicks = beats          (e.g. 2/4 → 2 clicks)
+//   mixed    → divisor 2, clicks = beats*8/noteValue (e.g. 2/4 → 4, 3/8 → 3)
+//   all /8   → divisor 2, clicks = beats          (e.g. 3/8 → 3 clicks)
+function getBase(slots) {
+  const useEighth = slots.some(s => s.noteValue === 8);
+  const divisor = useEighth ? 2 : 1;
+  const clicks = (slot) => useEighth ? (slot.beats * 8 / slot.noteValue) : slot.beats;
+  return { divisor, clicks };
+}
 
 const METER_OPTIONS = [
   { beats: 2, noteValue: 4 },
@@ -138,9 +146,11 @@ function MultiMeterPage({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
+  const base = getBase(slots);
+
   useEffect(() => {
-    if (engineRef.current) engineRef.current.setBpm(bpm * 2);
-  }, [engineRef, bpm]);
+    if (engineRef.current) engineRef.current.setBpm(bpm * base.divisor);
+  }, [engineRef, bpm, base.divisor]);
 
   useEffect(() => {
     if (engineRef.current) engineRef.current.setSoundType(soundType);
@@ -161,8 +171,8 @@ function MultiMeterPage({
       engineRef.current.setSequence(null);
       engineRef.current.setSubdivision([0]);
       engineRef.current.setSoundType(soundType);
-      engineRef.current.setBpm(bpm * 2);
-      engineRef.current.setMeterTrack(slots.map(eighthCount));
+      engineRef.current.setBpm(bpm * base.divisor);
+      engineRef.current.setMeterTrack(slots.map(base.clicks));
       noSleepRef.current.enable();
       await engineRef.current.start();
       setIsPlaying(true);
@@ -200,13 +210,15 @@ function MultiMeterPage({
         setCurrentBeat(-1);
         noSleepRef.current.disable();
       } else {
-        engineRef.current.setMeterTrack(newSlots.map(eighthCount));
+        const nextBase = getBase(newSlots);
+        engineRef.current.setBpm(bpm * nextBase.divisor);
+        engineRef.current.setMeterTrack(newSlots.map(nextBase.clicks));
         setPlayingSlot(0);
         setCurrentBeat(-1);
       }
     }
   }, [slots, setSlots, isPlaying, engineRef, setIsPlaying, setPlayingSlot, setCurrentBeat,
-      noSleepRef, selectedSlotIndex]);
+      noSleepRef, selectedSlotIndex, bpm]);
 
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
@@ -248,7 +260,7 @@ function MultiMeterPage({
   }, [handleTogglePlay, setBpm]);
 
   const activeBeats = (playingSlot >= 0 && playingSlot < slots.length)
-    ? eighthCount(slots[playingSlot])
+    ? base.clicks(slots[playingSlot])
     : 4;
 
   const slotGrid = (
