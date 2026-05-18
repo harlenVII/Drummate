@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { getTodayString } from '../utils/dateHelpers';
 import { SUBDIVISIONS } from '../constants/subdivisions';
-import { legacyDateToLoggedAt, formatInTimezone, noonInHomeTz } from '../utils/tzDateHelpers.js';
+import { legacyDateToLoggedAt, formatInTimezone, noonInHomeTz, getDateRangeUtc } from '../utils/tzDateHelpers.js';
 import { getTimezone } from './timezoneService.js';
 
 export const db = new Dexie('DrummateDB');
@@ -290,12 +290,22 @@ export const addAdjustmentLog = async (itemId, duration, dateStr) => {
 };
 
 export const getTodaysLogs = async () => {
-  const today = getTodayString();
-  return await db.practiceLogs.where('date').equals(today).toArray();
+  const tz = getTimezone();
+  const today = formatInTimezone(Date.now(), tz);
+  const { startMs, endMsExclusive } = getDateRangeUtc(today, tz);
+  return await db.practiceLogs
+    .where('loggedAt')
+    .between(startMs, endMsExclusive, true, false)
+    .toArray();
 };
 
 export const getLogsByDate = async (dateString) => {
-  return await db.practiceLogs.where('date').equals(dateString).toArray();
+  const tz = getTimezone();
+  const { startMs, endMsExclusive } = getDateRangeUtc(dateString, tz);
+  return await db.practiceLogs
+    .where('loggedAt')
+    .between(startMs, endMsExclusive, true, false)
+    .toArray();
 };
 
 export const getAllLogs = async () => {
@@ -303,9 +313,12 @@ export const getAllLogs = async () => {
 };
 
 export const getLogsByDateRange = async (startDate, endDate) => {
+  const tz = getTimezone();
+  const startMs = getDateRangeUtc(startDate, tz).startMs;
+  const endMsExclusive = getDateRangeUtc(endDate, tz).endMsExclusive;
   return await db.practiceLogs
-    .where('date')
-    .between(startDate, endDate, true, true)
+    .where('loggedAt')
+    .between(startMs, endMsExclusive, true, false)
     .toArray();
 };
 
