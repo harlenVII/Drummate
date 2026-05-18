@@ -119,12 +119,12 @@ function SettingsPanel({
           </div>
 
           {/* Timezone */}
-          <div className="flex items-center justify-between py-3">
+          <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-gray-700">{t('timezone')}</span>
             <select
               value={currentTz}
               onChange={handleTimezoneChange}
-              className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+              className="border border-gray-300 rounded px-2 py-1 text-sm bg-white max-w-[60%]"
             >
               {timezones.map(tz => (
                 <option key={tz} value={tz}>{tz}</option>
