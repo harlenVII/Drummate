@@ -1723,6 +1723,8 @@ function App() {
         wakeWordError={wakeWordError}
         listeningState={listeningState}
         voiceTranscript={voiceTranscript}
+        userId={user?.id}
+        onTimezoneChange={loadData}
       />
 
       {handsFreeMode && (

@@ -1,4 +1,7 @@
+import { useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getTimezone, setTimezone } from '../services/timezoneService';
+import firebaseBackend from '../services/backends/firebaseBackend';
 
 function SettingsPanel({
   isOpen,
@@ -22,9 +25,30 @@ function SettingsPanel({
   wakeWordError,
   listeningState,
   voiceTranscript,
+  userId,
+  onTimezoneChange,
 }) {
   const { t } = useLanguage();
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
+
+  const timezones = useMemo(() => {
+    if (typeof Intl.supportedValuesOf === 'function') {
+      try { return Intl.supportedValuesOf('timeZone'); } catch {}
+    }
+    return ['America/Los_Angeles', 'America/New_York', 'UTC', 'Europe/London', 'Asia/Tokyo'];
+  }, []);
+
+  const currentTz = getTimezone();
+
+  const handleTimezoneChange = async (e) => {
+    const newTz = e.target.value;
+    try {
+      await setTimezone(newTz, firebaseBackend, userId);
+      if (onTimezoneChange) onTimezoneChange();
+    } catch (err) {
+      console.error('Failed to set timezone', err);
+    }
+  };
   const kokoroLangUnsupported = language === 'zh';
   const kokoroDisabled = !aiCoachEnabled && !handsFreeMode || kokoroLangUnsupported;
   const kokoroEffective = kokoroEnabled && !kokoroLangUnsupported;
@@ -92,6 +116,20 @@ function SettingsPanel({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Timezone */}
+          <div className="flex items-center justify-between py-3">
+            <span className="text-sm font-medium text-gray-700">{t('timezone')}</span>
+            <select
+              value={currentTz}
+              onChange={handleTimezoneChange}
+              className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+            >
+              {timezones.map(tz => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
           </div>
 
           {/* Time Unit */}
