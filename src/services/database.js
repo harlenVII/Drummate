@@ -289,37 +289,52 @@ export const addAdjustmentLog = async (itemId, duration, dateStr) => {
   });
 };
 
+// The stored `date` field on each log is a denormalized cache frozen at write time.
+// On read, re-derive it from loggedAt in the current timezone so that switching
+// timezones immediately re-buckets logs in weekly/monthly/yearly/stats views.
+function withTzDate(logs) {
+  const tz = getTimezone();
+  return logs.map(log =>
+    typeof log.loggedAt === 'number'
+      ? { ...log, date: formatInTimezone(log.loggedAt, tz) }
+      : log
+  );
+}
+
 export const getTodaysLogs = async () => {
   const tz = getTimezone();
   const today = formatInTimezone(Date.now(), tz);
   const { startMs, endMsExclusive } = getDateRangeUtc(today, tz);
-  return await db.practiceLogs
+  const rows = await db.practiceLogs
     .where('loggedAt')
     .between(startMs, endMsExclusive, true, false)
     .toArray();
+  return withTzDate(rows);
 };
 
 export const getLogsByDate = async (dateString) => {
   const tz = getTimezone();
   const { startMs, endMsExclusive } = getDateRangeUtc(dateString, tz);
-  return await db.practiceLogs
+  const rows = await db.practiceLogs
     .where('loggedAt')
     .between(startMs, endMsExclusive, true, false)
     .toArray();
+  return withTzDate(rows);
 };
 
 export const getAllLogs = async () => {
-  return await db.practiceLogs.toArray();
+  return withTzDate(await db.practiceLogs.toArray());
 };
 
 export const getLogsByDateRange = async (startDate, endDate) => {
   const tz = getTimezone();
   const startMs = getDateRangeUtc(startDate, tz).startMs;
   const endMsExclusive = getDateRangeUtc(endDate, tz).endMsExclusive;
-  return await db.practiceLogs
+  const rows = await db.practiceLogs
     .where('loggedAt')
     .between(startMs, endMsExclusive, true, false)
     .toArray();
+  return withTzDate(rows);
 };
 
 // --- UID lookups (used by sync layer) ---
