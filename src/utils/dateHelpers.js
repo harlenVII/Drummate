@@ -15,13 +15,23 @@ export function getTodayString() {
   return formatInTimezone(Date.now(), getTimezone());
 }
 
+// Calendar helpers below operate purely on YYYY-MM-DD strings using Date.UTC
+// for arithmetic. They must NOT touch device-local time or the configured TZ —
+// that mismatch (e.g. device PT, configured HK) breaks day-by-day navigation.
+function ymdFromUtcMs(utcMs) {
+  const dt = new Date(utcMs);
+  const y = dt.getUTCFullYear();
+  const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(dt.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * Shifts a "YYYY-MM-DD" string by `days` (positive = forward, negative = back).
  */
 export function shiftDate(dateString, days) {
-  const date = new Date(dateString + 'T12:00:00'); // noon to avoid DST edge cases
-  date.setDate(date.getDate() + days);
-  return toDateString(date);
+  const [y, m, d] = dateString.split('-').map(Number);
+  return ymdFromUtcMs(Date.UTC(y, m - 1, d + days));
 }
 
 /**
@@ -35,8 +45,9 @@ export function formatDateLabel(dateString, t) {
   const yesterday = shiftDate(today, -1);
   if (dateString === yesterday) return t ? t('yesterday') : 'Yesterday';
 
-  const date = new Date(dateString + 'T12:00:00');
-  return date.toLocaleDateString(undefined, {
+  const [y, m, d] = dateString.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString(undefined, {
+    timeZone: 'UTC',
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -48,11 +59,10 @@ export function formatDateLabel(dateString, t) {
  * Returns the Monday of the week containing dateString (week starts Monday).
  */
 export function getWeekStart(dateString) {
-  const date = new Date(dateString + 'T12:00:00');
-  const day = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
-  return toDateString(date);
+  const [y, m, d] = dateString.split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0=Sun..6=Sat
+  const diff = dow === 0 ? -6 : 1 - dow;
+  return shiftDate(dateString, diff);
 }
 
 /**
@@ -74,10 +84,8 @@ export function getMonthStart(dateString) {
  * Returns the last day of the month containing dateString.
  */
 export function getMonthEnd(dateString) {
-  const date = new Date(dateString.slice(0, 7) + '-01T12:00:00');
-  date.setMonth(date.getMonth() + 1);
-  date.setDate(0);
-  return toDateString(date);
+  const [y, m] = dateString.split('-').map(Number);
+  return ymdFromUtcMs(Date.UTC(y, m, 0)); // day 0 of next month = last day of this month
 }
 
 /**
