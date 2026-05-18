@@ -6,7 +6,7 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import {
-  collection, query, where, getDocs, setDoc, updateDoc, deleteDoc,
+  collection, query, where, getDocs, getDoc, setDoc, updateDoc, deleteDoc,
   onSnapshot, serverTimestamp, doc,
 } from 'firebase/firestore';
 import { getFirebaseApp } from '../firebase';
@@ -368,6 +368,17 @@ const firebaseBackend = {
         throw err;
       }
     }
+  },
+
+  async getUserSettings(userId) {
+    const ref = doc(getFirebaseApp().db, 'users', userId);
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : {};
+  },
+
+  async setUserSetting(userId, key, value) {
+    const ref = doc(getFirebaseApp().db, 'users', userId);
+    await setDoc(ref, { [key]: value }, { merge: true });
   },
 
   async mergeItems(sourceUid, targetUid, targetName, userId) {
