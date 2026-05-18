@@ -11,10 +11,17 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseApp } from '../firebase';
 import { db } from '../database';
+import { legacyDateToLoggedAt } from '../../utils/tzDateHelpers.js';
 
 function normalizeUser(fbUser) {
   if (!fbUser) return null;
   return { id: fbUser.uid, email: fbUser.email, name: fbUser.displayName || null };
+}
+
+function resolveLoggedAt(remote) {
+  if (typeof remote.logged_at === 'number') return remote.logged_at;
+  if (remote.date) return legacyDateToLoggedAt(remote.date);
+  return Date.now();
 }
 
 // --- Helpers ---
@@ -145,6 +152,7 @@ const firebaseBackend = {
         item_name: item.name,
         date: localLog.date,
         duration: localLog.duration,
+        logged_at: localLog.loggedAt ?? legacyDateToLoggedAt(localLog.date),
         created: serverTimestamp(),
       }, { merge: true });
     } catch (err) {
@@ -530,6 +538,7 @@ const firebaseBackend = {
         date: data.date,
         duration: data.duration,
         uid: data.uid,
+        loggedAt: resolveLoggedAt(data),
       });
     }
 
@@ -830,6 +839,7 @@ const firebaseBackend = {
             date: data.date,
             duration: data.duration,
             uid: data.uid,
+            loggedAt: resolveLoggedAt(data),
           });
           onDataChanged();
         } else if (change.type === 'modified') {
@@ -845,6 +855,7 @@ const firebaseBackend = {
             await db.practiceLogs.update(existing.id, {
               itemUid: localItem.uid,
               itemId: localItem.id,
+              loggedAt: resolveLoggedAt(data),
             });
             onDataChanged();
           }
