@@ -1,18 +1,18 @@
+import { formatInTimezone } from './tzDateHelpers.js';
+import { getTimezone } from '../services/timezoneService.js';
+
 /**
- * Returns "YYYY-MM-DD" for a Date object, in local time.
+ * Returns "YYYY-MM-DD" for a Date object, in the user's configured timezone.
  */
 export function toDateString(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return formatInTimezone(date.getTime(), getTimezone());
 }
 
 /**
- * Returns today's date string.
+ * Returns today's date string in the user's configured timezone.
  */
 export function getTodayString() {
-  return toDateString(new Date());
+  return formatInTimezone(Date.now(), getTimezone());
 }
 
 /**
