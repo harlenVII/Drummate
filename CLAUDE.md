@@ -73,7 +73,7 @@ All state lives in `App.jsx` and is passed down as props. No external state mana
 
 ### Database Layer (database.js)
 
-Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: **10**.
+Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version: **13**.
 
 **Tables:**
 - `practiceItems` — Schema: `'++id, &uid, name, sortOrder, archived, trashed, category'`
@@ -84,7 +84,9 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
   - `trashed`: boolean, soft-delete with `trashedAt` ISO timestamp (auto-purged after 30 days)
   - `category`: `'fundamentals'` | `'songs'` — which section the item appears in. Orthogonal to `archived`.
   - `syncedOnce` (stored, not indexed): `true` once this item has reached the cloud (via push) or arrived from the cloud (via pull/subscribe). `pullAll` deletes any item with `syncedOnce: true` whose uid is missing from the latest remote set — this is how offline deletes propagate.
-- `practiceLogs` — Schema: `'++id, itemId, itemUid, date, duration, uid'`
+- `practiceLogs` — Schema: `'++id, itemId, itemUid, date, duration, uid, loggedAt'`
+  - `loggedAt`: UTC epoch ms. Source of truth for date grouping. Timer-stop logs stamp `Date.now()`; adjustment logs (from Daily report Edit) stamp noon in the configured home TZ on the edited date; legacy rows were backfilled by the v13 migration to noon `America/Los_Angeles` on their stored `date`.
+  - `date`: denormalized `YYYY-MM-DD` cache derived from `loggedAt + currentTimezone`. Kept for Firestore wire-format backward compat; not used for queries.
   - `itemUid`: parent item's uid; the cross-device link.
   - `itemId`: local Dexie pk for this device only; do not use across devices.
   - `uid`: UUID for the log itself; cross-device dedup key.
@@ -103,7 +105,7 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
 - Ordering: `updateItemOrder(orderedIds)` — batch updates sortOrder in a transaction
 - Archive/Trash: `archiveItem(id, bool)`, `trashItem(id)`, `restoreItem(id)`, `purgeExpiredTrash(daysOld=30)`
 - Merge: `mergeItem(sourceId, targetId)` — reassigns all logs **and notes** from source to target, hard-deletes the source item. Returns `{ sourceUid, targetUid, targetName }`.
-- Logs: `addLog`, `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`, `getAllLogs`
+- Logs: `addLog(itemId, duration, opts={})` (real-time, stamps `loggedAt=Date.now()`), `addAdjustmentLog(itemId, duration, dateStr)` (calendar-attributed, stamps `loggedAt=noonInHomeTz(dateStr)`), `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`, `getAllLogs`
 - Notes: `addNote(itemUid, body, date?)`, `getAllNotes()`, `getNotesByItem(itemUid)`, `updateNote(id, body)`, `trashNote(id)`, `restoreNote(id)`
 
 All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs **and notes** (wrapped in a single Dexie transaction). `purgeExpiredTrash` returns `{ expiredItems, expiredNotes }` — callers must handle both. Practice item names must be unique (case-insensitive check in UI).
@@ -117,6 +119,12 @@ Fourth tab (after Report). Two subpages: **By Date** (chronological feed, `Notes
 - Notes attached to a trashed practice item are hidden from **both** By Date and By Item. By Item filters via `activeItems = items.filter(i => !i.trashed)`; By Date filters via `itemNameByUid` (only non-trashed items populate the map) and skips notes whose `itemUid` has no entry. Hard-deleting an item cascades to its notes.
 - Firestore path: `users/{userId}/notes/{noteUid}`. Soft-deletes (`trashed: true`) are pushed as upserts, not hard-deletes, so other devices can still restore within the 30-day window.
 - `mergeItem` reassigns notes' `itemUid` in the same transaction as logs. `subscribeToChanges` handles cross-device merge by remapping `itemUid` on `modified` events (same as logs).
+
+### Timezone Setting
+
+A single account-synced home timezone determines how all dates are computed. Stored on `users/{uid}.timezone` in Firestore, mirrored to `localStorage['drummate_timezone']`. The current value lives in a module-level variable in [src/services/timezoneService.js](src/services/timezoneService.js); `getTimezone()` is a synchronous getter consumed by [src/utils/tzDateHelpers.js](src/utils/tzDateHelpers.js) and `dateHelpers.toDateString`. `initTimezone(backend, userId)` is called from `App.jsx` once auth resolves and reconciles localStorage against Firestore; the default for the first user is `America/Los_Angeles`.
+
+All log-grouping reads (`getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange`) use `loggedAt` range queries derived from the current timezone — switching the setting at runtime makes every report re-bucket without touching stored data. A full IANA timezone dropdown is exposed in `SettingsPanel.jsx` via `Intl.supportedValuesOf('timeZone')`.
 
 ### Report Tab
 
@@ -167,9 +175,15 @@ All shortcuts are blocked when focus is in an `<input>` or `<textarea>`.
 
 ### dateHelpers.js
 
-All date functions operate on `YYYY-MM-DD` strings using noon time (`T12:00:00`) to avoid DST edge cases.
+Date helpers that operate on `YYYY-MM-DD` strings. `toDateString(date)` and `getTodayString()` delegate to `formatInTimezone(epochMs, getTimezone())` from `tzDateHelpers.js` so they respect the user's configured home timezone. The remaining helpers (`shiftDate`, `getWeekStart/End`, `getMonthStart/End`, `getYearStart/End`, `formatDateLabel`, `getDaysInRange`) operate on already-resolved date strings and are timezone-agnostic.
 
 Key exports: `getTodayString()`, `toDateString(date)`, `shiftDate(dateStr, days)`, `formatDateLabel(dateStr, t)`, `getWeekStart/End(dateStr)`, `getMonthStart/End(dateStr)`, `getYearStart/End(dateStr)`, `getDaysInRange(start, end)`
+
+### tzDateHelpers.js
+
+Pure TZ-aware date math using `Intl.DateTimeFormat`. No React, no external deps.
+
+Key exports: `formatInTimezone(epochMs, tz)` → `YYYY-MM-DD`, `getDateRangeUtc(dateStr, tz)` → `{ startMs, endMsExclusive }`, `noonInHomeTz(dateStr, tz)` → epoch ms, `legacyDateToLoggedAt(dateStr)` → epoch ms (always anchored to noon `America/Los_Angeles`).
 
 ### formatTime.js
 
