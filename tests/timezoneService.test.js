@@ -38,4 +38,39 @@ describe('timezoneService', () => {
     await expect(m.setTimezone('Not/A_Real_Zone')).rejects.toThrow();
     expect(m.getTimezone()).toBe(before);
   });
+
+  describe('initTimezone', () => {
+    it('adopts a valid remote timezone', async () => {
+      const m = await import('../src/services/timezoneService.js');
+      const backend = {
+        getUserSettings: vi.fn().mockResolvedValue({ timezone: 'Europe/Paris' }),
+        setUserSetting: vi.fn().mockResolvedValue(undefined),
+      };
+      await m.initTimezone(backend, 'user123');
+      expect(m.getTimezone()).toBe('Europe/Paris');
+      expect(backend.setUserSetting).not.toHaveBeenCalled();
+    });
+
+    it('backfills the default when remote has no timezone', async () => {
+      const m = await import('../src/services/timezoneService.js');
+      const backend = {
+        getUserSettings: vi.fn().mockResolvedValue({}),
+        setUserSetting: vi.fn().mockResolvedValue(undefined),
+      };
+      await m.initTimezone(backend, 'user123');
+      expect(m.getTimezone()).toBe('America/Los_Angeles');
+      expect(backend.setUserSetting).toHaveBeenCalledWith('user123', 'timezone', 'America/Los_Angeles');
+    });
+
+    it('keeps cached value when backend throws', async () => {
+      localStorage.setItem('drummate_timezone', 'Asia/Tokyo');
+      const m = await import('../src/services/timezoneService.js');
+      const backend = {
+        getUserSettings: vi.fn().mockRejectedValue(new Error('network')),
+        setUserSetting: vi.fn(),
+      };
+      await m.initTimezone(backend, 'user123');
+      expect(m.getTimezone()).toBe('Asia/Tokyo');
+    });
+  });
 });
