@@ -38,6 +38,7 @@ import {
   restoreItem,
   purgeExpiredTrash,
   addLog,
+  addAdjustmentLog,
   getTodaysLogs,
   getLogsByDate,
   getLogsByDateRange,
@@ -48,6 +49,7 @@ import {
   deletePractice as dbDeletePractice,
   updatePracticeOrder,
 } from './services/database';
+import { initTimezone } from './services/timezoneService';
 import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
 
 function App() {
@@ -395,6 +397,7 @@ function App() {
         // Order matters: pull first so we adopt cloud truth (renames, deletes
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
+        await initTimezone(firebaseBackend, user.id);
         await firebaseBackend.pullAll(user.id);
         await firebaseBackend.pullAllNotes(user.id);
         await firebaseBackend.pullAllPractices(user.id);
@@ -453,9 +456,14 @@ function App() {
     if (pending) {
       localStorage.removeItem('drummate_pending_log');
       try {
-        const { itemId, duration, date } = JSON.parse(pending);
+        const parsed = JSON.parse(pending);
+        const { itemId, duration } = parsed;
+        // Older format used `date`; convert to loggedAt for backward compat.
+        const loggedAt = typeof parsed.loggedAt === 'number'
+          ? parsed.loggedAt
+          : (parsed.date ? Date.parse(parsed.date + 'T12:00:00') : Date.now());
         if (itemId != null && duration > 0) {
-          addLog(itemId, duration, date).then(() => loadData());
+          addLog(itemId, duration, { loggedAt }).then(() => loadData());
         }
       } catch {
         // ignore malformed data
@@ -475,7 +483,7 @@ function App() {
           // Synchronous localStorage write survives iOS page kill
           localStorage.setItem(
             'drummate_pending_log',
-            JSON.stringify({ itemId, duration: elapsed, date: getTodayString() }),
+            JSON.stringify({ itemId, duration: elapsed, loggedAt: Date.now() }),
           );
         }
       }
@@ -833,7 +841,7 @@ function App() {
   );
 
   const handleManualTimeAdjust = useCallback(async (itemId, deltaSeconds, date) => {
-    const logId = await addLog(itemId, deltaSeconds, date);
+    const logId = await addAdjustmentLog(itemId, deltaSeconds, date);
     await Promise.all([
       loadReportData(date),
       loadWeekData(weekStart),
