@@ -1,7 +1,8 @@
 import Dexie from 'dexie';
 import { getTodayString } from '../utils/dateHelpers';
 import { SUBDIVISIONS } from '../constants/subdivisions';
-import { legacyDateToLoggedAt } from '../utils/tzDateHelpers.js';
+import { legacyDateToLoggedAt, formatInTimezone, noonInHomeTz } from '../utils/tzDateHelpers.js';
+import { getTimezone } from './timezoneService.js';
 
 export const db = new Dexie('DrummateDB');
 
@@ -268,12 +269,24 @@ export const mergeItem = async (sourceId, targetId) => {
 
 // --- Practice Logs ---
 
-export const addLog = async (itemId, duration, date) => {
-  if (!date) date = getTodayString();
+export const addLog = async (itemId, duration, opts = {}) => {
+  const loggedAt = typeof opts.loggedAt === 'number' ? opts.loggedAt : Date.now();
+  const date = formatInTimezone(loggedAt, getTimezone());
   const uid = crypto.randomUUID();
   const item = await db.practiceItems.get(itemId);
   const itemUid = item?.uid || null;
-  return await db.practiceLogs.add({ itemId, itemUid, date, duration, uid });
+  return await db.practiceLogs.add({ itemId, itemUid, date, duration, uid, loggedAt });
+};
+
+export const addAdjustmentLog = async (itemId, duration, dateStr) => {
+  const tz = getTimezone();
+  const loggedAt = noonInHomeTz(dateStr, tz);
+  const uid = crypto.randomUUID();
+  const item = await db.practiceItems.get(itemId);
+  const itemUid = item?.uid || null;
+  return await db.practiceLogs.add({
+    itemId, itemUid, date: dateStr, duration, uid, loggedAt,
+  });
 };
 
 export const getTodaysLogs = async () => {
