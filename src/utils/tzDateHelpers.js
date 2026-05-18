@@ -1,6 +1,23 @@
+// Original app data was logged by users in the Pacific timezone; legacy
+// rows are anchored here when migrating to UTC instants.
 const LEGACY_BACKFILL_TZ = 'America/Los_Angeles';
 
 const cachedFormatters = new Map();
+const cachedOffsetFormatters = new Map();
+
+function getOffsetFormatter(tz) {
+  let f = cachedOffsetFormatters.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    });
+    cachedOffsetFormatters.set(tz, f);
+  }
+  return f;
+}
 
 function getYmdFormatter(tz) {
   let f = cachedFormatters.get(tz);
@@ -23,22 +40,27 @@ export function formatInTimezone(epochMs, tz) {
 // Returns the UTC offset (ms) for a given UTC instant when viewed in `tz`.
 // Positive when tz is east of UTC (e.g. JST = +9h => +9*3600*1000).
 function getTzOffsetMs(epochMs, tz) {
-  const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false,
-  });
+  const dtf = getOffsetFormatter(tz);
   const parts = dtf.formatToParts(new Date(epochMs));
   const get = (type) => Number(parts.find(p => p.type === type).value);
   let hour = get('hour');
+  // V8/WebKit advance the day rather than returning 24; this guard is
+  // defensive for engines that return 24 without rolling the date.
   if (hour === 24) hour = 0;
   const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), hour, get('minute'), get('second'));
   return asUtc - epochMs;
 }
 
-// Converts "YYYY-MM-DD HH:mm:ss in tz" to the matching UTC epoch ms.
-// Two-pass offset resolution handles DST transitions correctly.
+/**
+ * Convert a local wall-clock time in `tz` to a UTC epoch ms.
+ *
+ * Uses a two-pass offset probe: this is correct for any local time that
+ * unambiguously exists in `tz`. Callers MUST NOT pass a local time inside
+ * a spring-forward DST gap (e.g. 02:30 on a spring-forward Sunday in PT) —
+ * the algorithm will return a nonsensical instant for those inputs. All
+ * current callers use midnight (00:00) or noon (12:00), which are safe
+ * in every timezone.
+ */
 function tzLocalToUtcMs(year, month, day, hour, minute, second, tz) {
   // First guess: pretend the local time is UTC, then subtract the offset at that instant.
   const guess = Date.UTC(year, month - 1, day, hour, minute, second);

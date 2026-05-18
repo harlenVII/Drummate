@@ -54,6 +54,24 @@ describe('getDateRangeUtc', () => {
     expect(r.startMs).toBe(Date.UTC(2026, 4, 14, 15, 0, 0));
     expect(r.endMsExclusive).toBe(Date.UTC(2026, 4, 15, 15, 0, 0));
   });
+
+  it('spans 23 hours on a PT spring-forward day', () => {
+    // 2026-03-08 PT: midnight PST = 2026-03-08 08:00 UTC,
+    // next midnight PDT = 2026-03-09 07:00 UTC (the day is 23 hours long).
+    const r = getDateRangeUtc('2026-03-08', 'America/Los_Angeles');
+    expect(r.startMs).toBe(Date.UTC(2026, 2, 8, 8, 0, 0));
+    expect(r.endMsExclusive).toBe(Date.UTC(2026, 2, 9, 7, 0, 0));
+    expect(r.endMsExclusive - r.startMs).toBe(23 * 3600 * 1000);
+  });
+
+  it('spans 25 hours on a PT fall-back day', () => {
+    // 2026-11-01 PT: midnight PDT = 2026-11-01 07:00 UTC,
+    // next midnight PST = 2026-11-02 08:00 UTC (the day is 25 hours long).
+    const r = getDateRangeUtc('2026-11-01', 'America/Los_Angeles');
+    expect(r.startMs).toBe(Date.UTC(2026, 10, 1, 7, 0, 0));
+    expect(r.endMsExclusive).toBe(Date.UTC(2026, 10, 2, 8, 0, 0));
+    expect(r.endMsExclusive - r.startMs).toBe(25 * 3600 * 1000);
+  });
 });
 
 describe('noonInHomeTz', () => {
