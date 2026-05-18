@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import { getTodayString } from '../utils/dateHelpers';
 import { SUBDIVISIONS } from '../constants/subdivisions';
+import { legacyDateToLoggedAt } from '../utils/tzDateHelpers.js';
 
 export const db = new Dexie('DrummateDB');
 
@@ -127,6 +128,23 @@ db.version(12).stores({
   notes: '++id, &uid, itemUid, date, trashed',
   metronomePractices: '++id, &uid, sortOrder',
   syncQueue: '++id, action, collection, localId',
+});
+
+// v13 adds loggedAt (UTC epoch ms) to practiceLogs as the source of truth for
+// date grouping. Legacy rows are backfilled to noon America/Los_Angeles on
+// their stored date. The `date` field stays as a denormalized read-cache.
+db.version(13).stores({
+  practiceItems: '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs:  '++id, itemId, itemUid, date, duration, uid, loggedAt',
+  notes:         '++id, &uid, itemUid, date, trashed',
+  metronomePractices: '++id, &uid, sortOrder',
+  syncQueue:     '++id, action, collection, localId',
+}).upgrade(tx => {
+  return tx.table('practiceLogs').toCollection().modify(log => {
+    if (typeof log.loggedAt !== 'number' && log.date) {
+      log.loggedAt = legacyDateToLoggedAt(log.date);
+    }
+  });
 });
 
 // --- Practice Items ---
