@@ -330,6 +330,14 @@ function App() {
     _setOfflineMode(!!value);
   }, []);
 
+  const [goOnlineToast, setGoOnlineToast] = useState(false);
+
+  useEffect(() => {
+    if (!goOnlineToast) return;
+    const timer = setTimeout(() => setGoOnlineToast(false), 3500);
+    return () => clearTimeout(timer);
+  }, [goOnlineToast]);
+
   const loadData = useCallback(async () => {
     const [allItems, logs, practices] = await Promise.all([getItems(), getTodaysLogs(), getPractices()]);
     setItems(allItems);
@@ -1471,6 +1479,12 @@ function App() {
   }, [setOfflineMode]);
 
   const handleGoOnline = useCallback(() => {
+    if (!navigator.onLine) {
+      // Network still down — stay in offline mode and let the user know.
+      setGoOnlineToast(true);
+      setSettingsOpen(false);
+      return;
+    }
     setOfflineMode(false);
     setSettingsOpen(false);
     setSyncTrigger((n) => n + 1);
@@ -1800,6 +1814,16 @@ function App() {
         isOpen={pendingModalOpen}
         onClose={() => setPendingModalOpen(false)}
       />
+
+      {goOnlineToast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg max-w-xs text-center"
+          role="status"
+          aria-live="polite"
+        >
+          {t('offline.stillOffline')}
+        </div>
+      )}
 
       {handsFreeMode && (
         <FloatingVoiceIndicator

@@ -165,6 +165,7 @@ const translations = {
       settingsRow: 'Offline mode',
       settingsPendingRow: 'Pending changes: {count}',
       settingsHint: 'No network sync this session. Edits queue until you go online.',
+      stillOffline: 'Still offline — staying in offline mode.',
       action: {
         createItem: 'Created practice item: {name}',
         createLog: 'Logged {duration} min on {name} ({date})',
@@ -505,6 +506,7 @@ const translations = {
       settingsRow: '离线模式',
       settingsPendingRow: '待同步更改：{count}',
       settingsHint: '本次会话不进行网络同步。所有编辑将在上线时同步。',
+      stillOffline: '仍处于离线状态 — 保持离线模式。',
       action: {
         createItem: '创建练习项目：{name}',
         createLog: '在 {name} 上记录 {duration} 分钟（{date}）',
