@@ -407,6 +407,17 @@ function App() {
     const init = async () => {
       setIsSyncing(true);
       try {
+        // Initial-load auto-enter offline: if the device is plainly offline
+        // when sync starts, flip into offline mode so the banner shows and
+        // we skip every Firestore call. We do NOT re-check navigator.onLine
+        // during the session — that's the user's job via the banner's "Go
+        // online" link or the settings toggle.
+        if (!navigator.onLine) {
+          setOfflineMode(true);
+          await loadData();
+          if (!cancelled) setIsSyncing(false);
+          return;
+        }
         // Order matters: pull first so we adopt cloud truth (renames, deletes
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
