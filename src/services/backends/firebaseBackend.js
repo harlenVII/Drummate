@@ -12,6 +12,7 @@ import {
 import { getFirebaseApp } from '../firebase';
 import { db } from '../database';
 import { legacyDateToLoggedAt } from '../../utils/tzDateHelpers.js';
+import { getOfflineMode } from '../offlineService';
 
 function normalizeUser(fbUser) {
   if (!fbUser) return null;
@@ -115,6 +116,14 @@ const firebaseBackend = {
       console.error('pushItem: missing uid', localItem);
       return;
     }
+    if (getOfflineMode()) {
+      await queueSync('create_item', {
+        uid: localItem.uid,
+        name: localItem.name,
+        displayName: localItem.name,
+      });
+      return;
+    }
     try {
       const data = {
         uid: localItem.uid,
@@ -142,6 +151,17 @@ const firebaseBackend = {
   },
 
   async pushLog(localLog, userId) {
+    if (getOfflineMode()) {
+      const item = await db.practiceItems.get(localLog.itemId);
+      await queueSync('create_log', {
+        itemUid: localLog.itemUid || item?.uid,
+        itemName: item?.name,
+        date: localLog.date,
+        duration: localLog.duration,
+        uid: localLog.uid,
+      });
+      return;
+    }
     try {
       const item = await db.practiceItems.get(localLog.itemId);
       if (!item) return;
@@ -183,6 +203,15 @@ const firebaseBackend = {
       console.error('pushNote: missing itemUid', localNote);
       return;
     }
+    if (getOfflineMode()) {
+      const item = await db.practiceItems.where('uid').equals(localNote.itemUid).first();
+      await queueSync('push_note', {
+        uid: localNote.uid,
+        itemName: item?.name,
+        date: localNote.date,
+      });
+      return;
+    }
     try {
       await setDoc(doc(notesRef(userId), localNote.uid), {
         uid: localNote.uid,
@@ -208,6 +237,10 @@ const firebaseBackend = {
   },
 
   async deleteNoteRemote(noteUid, userId) {
+    if (getOfflineMode()) {
+      await queueSync('delete_note', { uid: noteUid });
+      return;
+    }
     try {
       await deleteDoc(doc(notesRef(userId), noteUid));
     } catch (err) {
@@ -222,6 +255,13 @@ const firebaseBackend = {
   async pushPractice(localPractice, userId) {
     if (!localPractice.uid) {
       console.error('pushPractice: missing uid', localPractice);
+      return;
+    }
+    if (getOfflineMode()) {
+      await queueSync('push_practice', {
+        uid: localPractice.uid,
+        name: localPractice.name,
+      });
       return;
     }
     try {
@@ -254,6 +294,14 @@ const firebaseBackend = {
   },
 
   async pushDeletePractice(uid, userId) {
+    if (getOfflineMode()) {
+      const local = await db.metronomePractices.where('uid').equals(uid).first();
+      await queueSync('delete_practice', {
+        uid,
+        name: local?.name,
+      });
+      return;
+    }
     try {
       await deleteDoc(doc(practicesRef(userId), uid));
     } catch (err) {
@@ -266,6 +314,12 @@ const firebaseBackend = {
   },
 
   async pushPracticeReorder(practices, userId) {
+    if (getOfflineMode()) {
+      await queueSync('reorder_practices', {
+        practices: practices.map(({ uid, sortOrder }) => ({ uid, sortOrder })),
+      });
+      return;
+    }
     try {
       for (const p of practices) {
         await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
@@ -282,6 +336,14 @@ const firebaseBackend = {
   },
 
   async pushDeleteItem(uid, userId) {
+    if (getOfflineMode()) {
+      const local = await db.practiceItems.where('uid').equals(uid).first();
+      await queueSync('delete_item', {
+        uid,
+        displayName: local?.name,
+      });
+      return;
+    }
     try {
       const logQ = query(logsRef(userId), where('item_uid', '==', uid));
       const logSnap = await getDocs(logQ);
@@ -304,6 +366,15 @@ const firebaseBackend = {
   },
 
   async pushRenameItem(uid, newName, userId) {
+    if (getOfflineMode()) {
+      const local = await db.practiceItems.where('uid').equals(uid).first();
+      await queueSync('rename_item', {
+        uid,
+        newName,
+        previousName: local?.name,
+      });
+      return;
+    }
     try {
       await setDoc(doc(itemsRef(userId), uid), { name: newName }, { merge: true });
 
@@ -323,6 +394,12 @@ const firebaseBackend = {
   },
 
   async pushReorder(items, userId) {
+    if (getOfflineMode()) {
+      await queueSync('reorder', {
+        items: items.map(({ uid, sortOrder, category }) => ({ uid, sortOrder, category })),
+      });
+      return;
+    }
     try {
       for (const item of items) {
         const updates = { sort_order: item.sortOrder };
@@ -343,6 +420,15 @@ const firebaseBackend = {
   },
 
   async pushArchiveItem(uid, archived, userId) {
+    if (getOfflineMode()) {
+      const local = await db.practiceItems.where('uid').equals(uid).first();
+      await queueSync('archive_item', {
+        uid,
+        archived,
+        displayName: local?.name,
+      });
+      return;
+    }
     try {
       await updateDoc(doc(itemsRef(userId), uid), { archived: !!archived });
     } catch (err) {
@@ -355,6 +441,16 @@ const firebaseBackend = {
   },
 
   async pushTrashItem(uid, trashed, trashedAt, userId) {
+    if (getOfflineMode()) {
+      const local = await db.practiceItems.where('uid').equals(uid).first();
+      await queueSync('trash_item', {
+        uid,
+        trashed,
+        trashedAt,
+        displayName: local?.name,
+      });
+      return;
+    }
     try {
       await updateDoc(doc(itemsRef(userId), uid), {
         trashed: !!trashed,
@@ -370,6 +466,15 @@ const firebaseBackend = {
   },
 
   async pushSetCategory(uid, category, userId) {
+    if (getOfflineMode()) {
+      const local = await db.practiceItems.where('uid').equals(uid).first();
+      await queueSync('set_category', {
+        uid,
+        category,
+        displayName: local?.name,
+      });
+      return;
+    }
     try {
       await updateDoc(doc(itemsRef(userId), uid), { category });
     } catch (err) {
@@ -394,6 +499,16 @@ const firebaseBackend = {
 
   async mergeItems(sourceUid, targetUid, targetName, userId) {
     if (sourceUid === targetUid) return;
+    if (getOfflineMode()) {
+      const sourceLocal = await db.practiceItems.where('uid').equals(sourceUid).first();
+      await queueSync('merge_items', {
+        sourceUid,
+        targetUid,
+        targetName,
+        previousName: sourceLocal?.name,
+      });
+      return;
+    }
     try {
       const logQ = query(logsRef(userId), where('item_uid', '==', sourceUid));
       const logSnap = await getDocs(logQ);
