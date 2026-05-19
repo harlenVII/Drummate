@@ -837,44 +837,45 @@ const firebaseBackend = {
     // queue's freshly-applied cloud state with this device's pullAllNotes-
     // overwritten local state.
     const notes = await db.notes.toArray();
-    for (const note of notes) {
-      if (getOfflineMode()) return;
-      if (!note.uid || !note.itemUid) continue;
-      if (note.syncedOnce) continue;
-      await firebaseBackend.pushNote(note, userId);
-    }
+    await Promise.all(
+      notes
+        .filter((n) => n.uid && n.itemUid && !n.syncedOnce)
+        .map((n) => firebaseBackend.pushNote(n, userId)),
+    );
   },
 
   async pushAllLocalPractices(userId) {
     if (getOfflineMode()) return;
     const practices = await db.metronomePractices.toArray();
-    for (const p of practices) {
-      if (getOfflineMode()) return;
-      if (!p.uid) continue;
-      if (p.syncedOnce) continue;
-      await firebaseBackend.pushPractice(p, userId);
-    }
+    await Promise.all(
+      practices
+        .filter((p) => p.uid && !p.syncedOnce)
+        .map((p) => firebaseBackend.pushPractice(p, userId)),
+    );
   },
 
   async pushAllLocal(userId) {
     if (getOfflineMode()) return;
+    // Items must finish first — logs and notes reference itemUid and would
+    // be orphaned in the cloud if a parent item hasn't been pushed yet.
     const items = await db.practiceItems.toArray();
-    for (const item of items) {
-      if (getOfflineMode()) return;
-      if (!item.uid) continue;
-      if (item.syncedOnce) continue;
-      await firebaseBackend.pushItem(item, userId);
-    }
+    await Promise.all(
+      items
+        .filter((i) => i.uid && !i.syncedOnce)
+        .map((i) => firebaseBackend.pushItem(i, userId)),
+    );
+
+    if (getOfflineMode()) return;
     // Logs don't have a syncedOnce flag (they're append-only and the
     // pull-then-push race doesn't apply to them — pullAll never overwrites
-    // log fields). Push them all defensively.
+    // log fields). Push them all defensively, but in parallel so the
+    // network round-trips fan out instead of stacking up.
     const logs = await db.practiceLogs.toArray();
-    for (const log of logs) {
-      if (getOfflineMode()) return;
-      await firebaseBackend.pushLog(log, userId);
-    }
-    await firebaseBackend.pushAllLocalNotes(userId);
-    await firebaseBackend.pushAllLocalPractices(userId);
+    await Promise.all([
+      Promise.all(logs.map((log) => firebaseBackend.pushLog(log, userId))),
+      firebaseBackend.pushAllLocalNotes(userId),
+      firebaseBackend.pushAllLocalPractices(userId),
+    ]);
   },
 
   async flushSyncQueue(userId) {

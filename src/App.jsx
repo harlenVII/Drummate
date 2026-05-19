@@ -431,9 +431,15 @@ function App() {
         if (getOfflineMode()) {
           return;
         }
-        await firebaseBackend.pullAll(user.id);
-        await firebaseBackend.pullAllNotes(user.id);
-        await firebaseBackend.pullAllPractices(user.id);
+        // Three pulls run in parallel — disjoint Dexie tables and disjoint
+        // Firestore collections. The UI is still gated by isSyncing, so any
+        // brief intermediate inconsistency (e.g. a note arriving before its
+        // parent item from a cross-device merge) is not visible to the user.
+        await Promise.all([
+          firebaseBackend.pullAll(user.id),
+          firebaseBackend.pullAllNotes(user.id),
+          firebaseBackend.pullAllPractices(user.id),
+        ]);
         // flushSyncQueue replays queued offline edits to cloud AND restores
         // local Dexie to match payload, so loadData below reads the final
         // post-merge state. Keep the sync overlay up until this is done —
