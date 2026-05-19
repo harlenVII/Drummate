@@ -421,6 +421,12 @@ const firebaseBackend = {
   // Sync — pull
   async pullAll(userId) {
     const itemsSnap = await getDocs(itemsRef(userId));
+    if (itemsSnap.metadata.fromCache) {
+      // Server unreachable — snapshot is from the offline cache.
+      // Skip reconciliation; deleting locally-synced items based on a
+      // cached/empty snapshot is the data-loss bug we're guarding against.
+      return;
+    }
     const remoteUids = new Set();
 
     for (const docSnap of itemsSnap.docs) {
@@ -508,6 +514,9 @@ const firebaseBackend = {
     // moved to a different parent (via merge on another device) get remapped
     // locally before their old parent gets deleted.
     const logsSnap = await getDocs(logsRef(userId));
+    if (logsSnap.metadata.fromCache) {
+      return;
+    }
     for (const docSnap of logsSnap.docs) {
       const data = docSnap.data();
       if (!data.uid) continue;
@@ -564,6 +573,9 @@ const firebaseBackend = {
 
   async pullAllNotes(userId) {
     const snap = await getDocs(notesRef(userId));
+    if (snap.metadata.fromCache) {
+      return;
+    }
     const remoteUids = new Set();
 
     for (const docSnap of snap.docs) {
@@ -614,6 +626,9 @@ const firebaseBackend = {
 
   async pullAllPractices(userId) {
     const snap = await getDocs(practicesRef(userId));
+    if (snap.metadata.fromCache) {
+      return;
+    }
     const remoteUids = new Set();
 
     for (const docSnap of snap.docs) {
