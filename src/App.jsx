@@ -22,6 +22,9 @@ import EncouragementButton from './components/EncouragementButton';
 import EncouragementModal from './components/EncouragementModal';
 import EditTimeModal from './components/EditTimeModal';
 import NotesPage from './components/NotesPage';
+import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from './services/offlineService';
+import OfflineBanner from './components/OfflineBanner';
+import PendingChangesModal from './components/PendingChangesModal';
 import { createSttService } from './services/sttService';
 import { parseIntent, findBestItemMatch } from './services/intentParser';
 import { speak, getLang, cancelSpeech } from './services/voiceFeedback';
@@ -318,6 +321,14 @@ function App() {
   const bumpNotesRefresh = useCallback(() => setNotesRefreshKey(k => k + 1), []);
   const [goalRefreshKey, setGoalRefreshKey] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [offlineMode, _setOfflineMode] = useState(false);
+  const [syncTrigger, setSyncTrigger] = useState(0);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+
+  const setOfflineMode = useCallback((value) => {
+    setOfflineServiceMode(value);
+    _setOfflineMode(!!value);
+  }, []);
 
   const loadData = useCallback(async () => {
     const [allItems, logs, practices] = await Promise.all([getItems(), getTodaysLogs(), getPractices()]);
@@ -399,6 +410,11 @@ function App() {
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await initTimezone(firebaseBackend, user.id);
+        if (getOfflineMode()) {
+          await loadData();
+          if (!cancelled) setIsSyncing(false);
+          return;
+        }
         await firebaseBackend.pullAll(user.id);
         await firebaseBackend.pullAllNotes(user.id);
         await firebaseBackend.pullAllPractices(user.id);
@@ -411,7 +427,7 @@ function App() {
         if (!cancelled) setIsSyncing(false);
       }
       // Subscribe to real-time changes only after initial sync completes
-      if (!cancelled) {
+      if (!cancelled && !getOfflineMode()) {
         unsubscribe = firebaseBackend.subscribeToChanges(loadData);
       }
     };
@@ -421,7 +437,7 @@ function App() {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
-  }, [user, authReady, loadData]);
+  }, [user, authReady, loadData, syncTrigger]);
 
   // Initialize metronome engine once
   useEffect(() => {
@@ -1424,12 +1440,29 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage]);
 
+  const handleEnterOfflineMode = useCallback(() => {
+    setOfflineMode(true);
+    setIsSyncing(false);
+  }, [setOfflineMode]);
+
+  const handleGoOnline = useCallback(() => {
+    setOfflineMode(false);
+    setSettingsOpen(false);
+    setSyncTrigger((n) => n + 1);
+  }, [setOfflineMode]);
+
   if (!user) {
     return <AuthScreen />;
   }
 
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
+      {offlineMode && (
+        <OfflineBanner
+          onShowPending={() => setPendingModalOpen(true)}
+          onGoOnline={handleGoOnline}
+        />
+      )}
       {isSyncing && (
         <div
           className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-gray-100/80 backdrop-blur-sm"
@@ -1438,6 +1471,12 @@ function App() {
         >
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-700 font-medium">{t('auth.syncing')}</p>
+          <button
+            onClick={handleEnterOfflineMode}
+            className="mt-2 px-4 py-2 text-sm font-medium text-amber-700 bg-white border border-amber-300 rounded-lg hover:bg-amber-50"
+          >
+            {t('auth.enterOfflineMode')}
+          </button>
         </div>
       )}
       <div className="flex-1 overflow-y-auto">
@@ -1726,6 +1765,15 @@ function App() {
         voiceTranscript={voiceTranscript}
         userId={user?.id}
         onTimezoneChange={loadData}
+        offlineMode={offlineMode}
+        onEnterOfflineMode={() => setOfflineMode(true)}
+        onGoOnline={handleGoOnline}
+        onShowPending={() => setPendingModalOpen(true)}
+      />
+
+      <PendingChangesModal
+        isOpen={pendingModalOpen}
+        onClose={() => setPendingModalOpen(false)}
       />
 
       {handsFreeMode && (
