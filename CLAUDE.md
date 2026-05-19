@@ -126,6 +126,26 @@ A single account-synced home timezone determines how all dates are computed. Sto
 
 All log-grouping reads (`getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange`) use `loggedAt` range queries derived from the current timezone — switching the setting at runtime makes every report re-bucket without touching stored data. A full IANA timezone dropdown is exposed in `SettingsPanel.jsx` via `Intl.supportedValuesOf('timeZone')`.
 
+### Offline Mode
+
+Explicit, session-scoped offline mode. The app never auto-detects network changes mid-session — it only auto-enters offline mode on initial load if `navigator.onLine` is false. Users control transitions via UI.
+
+- **`src/services/offlineService.js`** — module-level boolean (`getOfflineMode()` / `setOfflineMode()`). In-memory only; page refresh resets to `false`. Mirrors the pattern of `timezoneService.js`. Non-React backend code reads this synchronously.
+- **`App.jsx` state** — `offlineMode` (React state) + `subscriptionRef` (ref to the Firestore listener so it can be torn down from outside the init effect). `setOfflineMode` is a wrapped setter that mirrors into `offlineService` synchronously.
+- **`OfflineBanner.jsx`** — top-of-shell amber banner shown whenever `offlineMode === true`. Subscribes to `db.syncQueue.count()` via `Dexie.liveQuery` for the live pending count; tappable label opens `PendingChangesModal`; "Go online" link triggers `handleGoOnline`.
+- **`PendingChangesModal.jsx`** — read-only list of every `syncQueue` entry, oldest first, rendered via `formatPendingAction(entry, t)` from [src/utils/pendingActionFormatter.js](src/utils/pendingActionFormatter.js). Subscribes via `Dexie.liveQuery` so newly-enqueued actions appear live. Backdrop click and Escape dismiss.
+- **`SettingsPanel.jsx`** — "Offline mode" toggle row plus a "Pending changes: N" sub-row that opens the modal. Both call the same App.jsx handlers as the banner.
+
+**State transitions:**
+- *Initial load with `!navigator.onLine`* → `init()` sets `offlineMode = true` synchronously, skips all Firestore calls, banner mounts.
+- *"Enter offline mode" button on sync overlay* → tears down `subscriptionRef.current` if active (sync-overlay path arrives before subscription is registered; settings-toggle path may arrive with an active subscription, so the teardown must happen here), sets `offlineMode = true`, dismisses overlay.
+- *"Go online" (banner / settings)* → if `!navigator.onLine`, shows a 3.5s toast (`offline.stillOffline`) and stays in offline mode. Otherwise sets `offlineMode = false`, closes settings, bumps `syncTrigger` to re-fire the init effect.
+- *Page refresh* → always resets to online attempt; offline state never persists.
+
+**Push short-circuit:** every Firestore-mutating method in `firebaseBackend.js` checks `getOfflineMode()` at the top; if true, enqueues an enriched payload to `syncQueue` and returns without touching the network. Payloads carry `displayName` / `previousName` / `itemName` / full state hints so the modal formatter can render readable summaries and `flushSyncQueue` can replay without re-reading local Dexie (see gotcha about pull-then-push race below).
+
+**Spec/plan:** [docs/superpowers/specs/2026-05-18-offline-mode-design.md](docs/superpowers/specs/2026-05-18-offline-mode-design.md), [docs/superpowers/plans/2026-05-18-offline-mode.md](docs/superpowers/plans/2026-05-18-offline-mode.md).
+
 ### Report Tab
 
 Five subpages in `reportSubpage`: `daily`, `weekly`, `monthly`, `yearly`, `stats`.
@@ -232,13 +252,18 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 10. **Backend interface compliance** — new sync operations must be added to `firebaseBackend.js`
 11. **Firebase SDK** — `firebaseBackend.js` is imported statically; it is always bundled
 12. **Database migrations** — Dexie version must be incremented when adding/changing indexed fields; provide `.upgrade()` to populate defaults on existing records
-13. **Sync init order is `pullAll → pullAllNotes → flushSyncQueue → pushAllLocal`** — pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. Notes pull last among the pulls so item truth is in place first (notes reference `itemUid`).
+13. **Sync init order is `[pullAll, pullAllNotes, pullAllPractices] (parallel) → flushSyncQueue → pushAllLocal → loadData → setIsSyncing(false) → subscribeToChanges`** — see [App.jsx](src/App.jsx) `init()`. Pulling first lets the device adopt remote-truth (renames, deletes) before pushing local state. The three pulls run in parallel because they touch disjoint Dexie tables and disjoint Firestore collections; intermediate cross-table inconsistency is invisible since the UI is gated by `isSyncing`. The `loadData` and `setIsSyncing(false)` are in a `finally` block so the UI updates and unblocks even on partial failure. `subscribeToChanges` registers AFTER `loadData` so its initial snapshot doesn't surface stale-state flicker.
 14. **`pullAll` pulls logs BEFORE reconciling item deletions** — the log-pull loop runs first and remaps existing logs' `itemUid`/`itemId` if `item_uid` changed remotely (e.g. from a cross-device merge). Item-deletion reconciliation runs after. If you change this order, cross-device merges will cause silent log data loss.
 15. **`subscribeToChanges` log `modified` events must remap parent** — the live Firestore listener handles `modified` on logs by updating local `itemUid`/`itemId` if `item_uid` changed. This mirrors the `pullAll` remap logic and prevents data loss when a merge on another device arrives via real-time subscription.
 16. **`category` is orthogonal to `archived`** — `category` (`'fundamentals'` | `'songs'`) controls which active section an item appears in; `archived` controls whether it's in the active sections or the collapsed Archived section. Both fields are always persisted. Tolerant pull rule: treat absent `category` on remote as "no change" (`if (remote.category !== undefined && ...)`) to avoid clobbering on old clients.
 17. **`notesRefreshKey` lives in App.jsx, not NotesPage** — `loadData` bumps it on every call (including remote sync events from `subscribeToChanges`). Local note mutations call `bumpNotesRefresh` (the setter) passed as `onNotesRefresh` prop. This ensures the Notes tab re-fetches both after local writes and after remote sync arrives.
 18. **`purgeExpiredTrash` returns `{ expiredItems, expiredNotes }`** — the App.jsx caller destructures both arrays and calls `pushDeleteItem` for items and `deleteNoteRemote` for notes to propagate hard-deletes to Firestore.
 19. **Note soft-delete is a push, not a hard-delete** — `trashNote` sets `trashed: true` locally, then `pushNote` upserts the full note (including `trashed: true`) to Firestore. `deleteNoteRemote` is only called by `purgeExpiredTrash` (after 30 days) and by the `deleteItem` cascade.
+20. **`pullAll` / `pullAllNotes` / `pullAllPractices` bail when `snap.metadata.fromCache` is true** — the Firestore Web SDK (initialized as plain `getFirestore(app)`, no persistence) resolves `getDocs` with an empty cached snapshot when offline. Without this guard, the deletion-reconciliation loops at the end of each pull function would treat every locally-synced row as "deleted on another device" and hard-delete them all from Dexie. Never remove these guards; they're the difference between offline-safe and data-loss.
+21. **`pushAllLocal` / `pushAllLocalNotes` / `pushAllLocalPractices` filter to `syncedOnce: false`** — synced rows have their edits replayed by `flushSyncQueue` from queue payloads. Re-pushing them in `pushAllLocal` would write this device's pull-overwritten state back to cloud, undoing `flushSyncQueue`'s work (the "pull-then-push race"). Logs have no `syncedOnce` flag and are pushed unconditionally — `pullAll` never overwrites log fields so the race doesn't apply.
+22. **`flushSyncQueue` writes BOTH cloud AND local Dexie for field-update actions** — `reorder`, `rename_item`, `archive_item`, `trash_item`, `set_category`, `push_note`, `push_practice`, `reorder_practices`. After pushing to cloud, the handler re-asserts the payload values in local Dexie. This restores the offline intent that the earlier `pullAll` just overwrote, so `loadData` (in `init`'s `finally`) reads the final post-merge state with no flicker.
+23. **`subscribeToChanges` items/notes/practices listeners handle `'added'` and `'modified'` with the same reconciliation logic** — the Firestore initial snapshot after listener registration reports every doc as `change.type === 'added'`, including docs we just updated via `flushSyncQueue`. Without unified handling, cloud-side updates that happened before subscription registers would never propagate to local Dexie until refresh. The logs listener doesn't need this unification (no field updates flow through that path).
+24. **Offline-mode push payloads are enriched with the full mutable state** — `push_note` carries `body`, `trashed`, `trashedAt`, `itemUid`, `createdAt`. `push_practice` carries every BPM/time-signature/etc field. `flushSyncQueue`'s handlers push directly from the payload via `setDoc`, NOT by re-reading local Dexie (which would already be pull-overwritten). Legacy minimal payloads (from the catch-block fallback when `navigator.onLine` is true but Firestore actually fails) fall back to re-reading local — see the dual-path handlers in `flushSyncQueue`.
 
 ## File Naming
 
@@ -262,3 +287,7 @@ After changes:
 - [ ] Mobile responsive (if UI changes)
 - [ ] Notes: create/edit/delete a note → both By Date and By Item reflect changes immediately
 - [ ] Notes: remote sync (another device or Firestore write) refreshes Notes tab without switching tabs
+- [ ] Offline refresh: DevTools → Network → Offline, reload — app loads with local data intact, amber banner shows automatically, no items wiped from Dexie
+- [ ] Offline edits: create item / add log / rename / reorder / edit note while offline — pending count in banner ticks up, modal lists each action in human-readable form
+- [ ] Go online round-trip: re-enable network, tap "Go online" — sync overlay persists until queue drains, items appear in their post-offline state (no flicker, no revert)
+- [ ] Go online while still offline: tap "Go online" — 3.5s toast appears, banner stays, no overlay flash
