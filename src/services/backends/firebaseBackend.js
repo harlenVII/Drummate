@@ -805,29 +805,36 @@ const firebaseBackend = {
   },
 
   async pushAllLocalNotes(userId) {
+    if (getOfflineMode()) return;
     const notes = await db.notes.toArray();
     for (const note of notes) {
+      if (getOfflineMode()) return;
       if (!note.uid || !note.itemUid) continue;
       await firebaseBackend.pushNote(note, userId);
     }
   },
 
   async pushAllLocalPractices(userId) {
+    if (getOfflineMode()) return;
     const practices = await db.metronomePractices.toArray();
     for (const p of practices) {
+      if (getOfflineMode()) return;
       if (!p.uid) continue;
       await firebaseBackend.pushPractice(p, userId);
     }
   },
 
   async pushAllLocal(userId) {
+    if (getOfflineMode()) return;
     const items = await db.practiceItems.toArray();
     for (const item of items) {
+      if (getOfflineMode()) return;
       if (!item.uid) continue;
       await firebaseBackend.pushItem(item, userId);
     }
     const logs = await db.practiceLogs.toArray();
     for (const log of logs) {
+      if (getOfflineMode()) return;
       await firebaseBackend.pushLog(log, userId);
     }
     await firebaseBackend.pushAllLocalNotes(userId);
