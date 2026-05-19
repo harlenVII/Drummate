@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
+import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTimezone, setTimezone } from '../services/timezoneService';
 import firebaseBackend from '../services/backends/firebaseBackend';
+import { db } from '../services/database';
 
 // Curated 24-city list: one common city per UTC offset (plus Kolkata at +5:30
 // for India's population). Offsets shown are standard time; actual offset
@@ -56,6 +59,10 @@ function SettingsPanel({
   voiceTranscript,
   userId,
   onTimezoneChange,
+  offlineMode,
+  onEnterOfflineMode,
+  onGoOnline,
+  onShowPending,
 }) {
   const { t } = useLanguage();
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
@@ -75,6 +82,17 @@ function SettingsPanel({
   const kokoroLangUnsupported = language === 'zh';
   const kokoroDisabled = !aiCoachEnabled && !handsFreeMode || kokoroLangUnsupported;
   const kokoroEffective = kokoroEnabled && !kokoroLangUnsupported;
+
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const sub = liveQuery(() => db.syncQueue.count()).subscribe({
+      next: (count) => setPendingCount(count),
+      error: (err) => console.error('SettingsPanel pendingCount liveQuery error:', err),
+    });
+    return () => sub.unsubscribe();
+  }, [isOpen]);
 
   return (
     <>
@@ -325,6 +343,45 @@ function SettingsPanel({
               </>
             )}
           </div>
+        </div>
+
+        {/* Offline mode */}
+        <div className="px-5 py-4 border-t border-gray-200 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-800">
+              {t('offline.settingsRow')}
+            </span>
+            <button
+              onClick={() => {
+                if (offlineMode) {
+                  onGoOnline();
+                } else {
+                  onEnterOfflineMode();
+                  onClose();
+                }
+              }}
+              role="switch"
+              aria-checked={offlineMode}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                offlineMode ? 'bg-amber-500' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                  offlineMode ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-gray-500">{t('offline.settingsHint')}</p>
+          {offlineMode && (
+            <button
+              onClick={onShowPending}
+              className="text-left text-sm text-blue-600 hover:underline"
+            >
+              {t('offline.settingsPendingRow', { count: pendingCount })}
+            </button>
+          )}
         </div>
 
         {/* Sign out at bottom */}
