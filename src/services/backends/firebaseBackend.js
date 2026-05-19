@@ -515,6 +515,8 @@ const firebaseBackend = {
     // locally before their old parent gets deleted.
     const logsSnap = await getDocs(logsRef(userId));
     if (logsSnap.metadata.fromCache) {
+      // Cached/offline snapshot — bail before the deletion-reconciliation
+      // loop below (same rationale as the itemsSnap guard above).
       return;
     }
     for (const docSnap of logsSnap.docs) {
@@ -574,6 +576,7 @@ const firebaseBackend = {
   async pullAllNotes(userId) {
     const snap = await getDocs(notesRef(userId));
     if (snap.metadata.fromCache) {
+      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
       return;
     }
     const remoteUids = new Set();
@@ -627,6 +630,7 @@ const firebaseBackend = {
   async pullAllPractices(userId) {
     const snap = await getDocs(practicesRef(userId));
     if (snap.metadata.fromCache) {
+      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
       return;
     }
     const remoteUids = new Set();
