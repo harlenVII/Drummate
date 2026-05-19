@@ -1015,7 +1015,12 @@ const firebaseBackend = {
         // Skip legacy docs in the live stream — pullAll handles their migration.
         if (!data.uid) continue;
 
-        if (change.type === 'added') {
+        // 'added' and 'modified' share reconciliation. The initial snapshot
+        // after subscribeToChanges registers reports every doc as 'added' —
+        // including docs we just updated via flushSyncQueue. Without the
+        // shared path, our queued reorder/rename/etc would not propagate
+        // back to local Dexie until the user refreshes.
+        if (change.type === 'added' || change.type === 'modified') {
           const existing = await db.practiceItems.where('uid').equals(data.uid).first();
           if (!existing) {
             const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
@@ -1031,25 +1036,23 @@ const firebaseBackend = {
               syncedOnce: true,
             });
             onDataChanged();
-          }
-        } else if (change.type === 'modified') {
-          const local = await db.practiceItems.where('uid').equals(data.uid).first();
-          if (!local) continue;
-          const updates = {};
-          if (data.name != null && local.name !== data.name) updates.name = data.name;
-          if (data.sort_order != null && local.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
-          if (data.archived != null && local.archived !== data.archived) updates.archived = data.archived;
-          if (data.trashed != null && local.trashed !== data.trashed) {
-            updates.trashed = data.trashed;
-            updates.trashedAt = data.trashed_at || null;
-          }
-          if (data.category !== undefined && local.category !== data.category) {
-            updates.category = data.category;
-          }
-          if (!local.syncedOnce) updates.syncedOnce = true;
-          if (Object.keys(updates).length > 0) {
-            await db.practiceItems.update(local.id, updates);
-            onDataChanged();
+          } else {
+            const updates = {};
+            if (data.name != null && existing.name !== data.name) updates.name = data.name;
+            if (data.sort_order != null && existing.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
+            if (data.archived != null && existing.archived !== data.archived) updates.archived = data.archived;
+            if (data.trashed != null && existing.trashed !== data.trashed) {
+              updates.trashed = data.trashed;
+              updates.trashedAt = data.trashed_at || null;
+            }
+            if (data.category !== undefined && existing.category !== data.category) {
+              updates.category = data.category;
+            }
+            if (!existing.syncedOnce) updates.syncedOnce = true;
+            if (Object.keys(updates).length > 0) {
+              await db.practiceItems.update(existing.id, updates);
+              onDataChanged();
+            }
           }
         } else if (change.type === 'removed') {
           const existing = await db.practiceItems.where('uid').equals(data.uid).first();
@@ -1123,36 +1126,37 @@ const firebaseBackend = {
         const data = change.doc.data();
         if (!data.uid) continue;
 
-        if (change.type === 'added') {
+        // See items handler — combined to reconcile fields on initial
+        // snapshot too, so queued push_note replays propagate.
+        if (change.type === 'added' || change.type === 'modified') {
           const existing = await db.notes.where('uid').equals(data.uid).first();
-          if (existing) continue;
-          await db.notes.add({
-            uid: data.uid,
-            itemUid: data.item_uid,
-            date: data.date,
-            body: data.body ?? '',
-            trashed: !!data.trashed,
-            trashedAt: data.trashed_at || null,
-            createdAt: data.created_at || '',
-            syncedOnce: true,
-          });
-          onDataChanged();
-        } else if (change.type === 'modified') {
-          const existing = await db.notes.where('uid').equals(data.uid).first();
-          if (!existing) continue;
-          const updates = {};
-          // Remap itemUid if it changed (cross-device merge — mirrors logs gotcha #15).
-          if (data.item_uid && existing.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
-          if (data.date != null && existing.date !== data.date) updates.date = data.date;
-          if (data.body != null && existing.body !== data.body) updates.body = data.body;
-          if (data.trashed != null && existing.trashed !== !!data.trashed) {
-            updates.trashed = !!data.trashed;
-            updates.trashedAt = data.trashed_at || null;
-          }
-          if (!existing.syncedOnce) updates.syncedOnce = true;
-          if (Object.keys(updates).length > 0) {
-            await db.notes.update(existing.id, updates);
+          if (!existing) {
+            await db.notes.add({
+              uid: data.uid,
+              itemUid: data.item_uid,
+              date: data.date,
+              body: data.body ?? '',
+              trashed: !!data.trashed,
+              trashedAt: data.trashed_at || null,
+              createdAt: data.created_at || '',
+              syncedOnce: true,
+            });
             onDataChanged();
+          } else {
+            const updates = {};
+            // Remap itemUid if it changed (cross-device merge — mirrors logs gotcha #15).
+            if (data.item_uid && existing.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
+            if (data.date != null && existing.date !== data.date) updates.date = data.date;
+            if (data.body != null && existing.body !== data.body) updates.body = data.body;
+            if (data.trashed != null && existing.trashed !== !!data.trashed) {
+              updates.trashed = !!data.trashed;
+              updates.trashedAt = data.trashed_at || null;
+            }
+            if (!existing.syncedOnce) updates.syncedOnce = true;
+            if (Object.keys(updates).length > 0) {
+              await db.notes.update(existing.id, updates);
+              onDataChanged();
+            }
           }
         } else if (change.type === 'removed') {
           const existing = await db.notes.where('uid').equals(data.uid).first();
@@ -1188,28 +1192,29 @@ const firebaseBackend = {
           syncedOnce: true,
         });
 
-        if (change.type === 'added') {
-          const existing = await db.metronomePractices.where('uid').equals(data.uid).first();
-          if (existing) continue;
-          await db.metronomePractices.add(buildFields());
-          onDataChanged();
-        } else if (change.type === 'modified') {
+        // See items handler — combined to reconcile fields on initial
+        // snapshot too, so queued push_practice replays propagate.
+        if (change.type === 'added' || change.type === 'modified') {
           const local = await db.metronomePractices.where('uid').equals(data.uid).first();
-          if (!local) continue;
-          const fields = buildFields();
-          const updates = {};
-          for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
-                           'subdivision', 'soundType', 'sortOrder', 'createdAt', 'updatedAt']) {
-            if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-          }
-          if (local.timeSignature?.beats !== fields.timeSignature.beats ||
-              local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
-            updates.timeSignature = fields.timeSignature;
-          }
-          if (!local.syncedOnce) updates.syncedOnce = true;
-          if (Object.keys(updates).length > 0) {
-            await db.metronomePractices.update(local.id, updates);
+          if (!local) {
+            await db.metronomePractices.add(buildFields());
             onDataChanged();
+          } else {
+            const fields = buildFields();
+            const updates = {};
+            for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
+                             'subdivision', 'soundType', 'sortOrder', 'createdAt', 'updatedAt']) {
+              if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
+            }
+            if (local.timeSignature?.beats !== fields.timeSignature.beats ||
+                local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
+              updates.timeSignature = fields.timeSignature;
+            }
+            if (!local.syncedOnce) updates.syncedOnce = true;
+            if (Object.keys(updates).length > 0) {
+              await db.metronomePractices.update(local.id, updates);
+              onDataChanged();
+            }
           }
         } else if (change.type === 'removed') {
           const existing = await db.metronomePractices.where('uid').equals(data.uid).first();
