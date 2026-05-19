@@ -424,7 +424,7 @@ const firebaseBackend = {
       const local = await db.practiceItems.where('uid').equals(uid).first();
       await queueSync('archive_item', {
         uid,
-        archived,
+        archived: !!archived,
         displayName: local?.name,
       });
       return;
@@ -445,8 +445,8 @@ const firebaseBackend = {
       const local = await db.practiceItems.where('uid').equals(uid).first();
       await queueSync('trash_item', {
         uid,
-        trashed,
-        trashedAt,
+        trashed: !!trashed,
+        trashedAt: trashedAt || '',
         displayName: local?.name,
       });
       return;
