@@ -326,6 +326,24 @@ export const getAllLogs = async () => {
   return withTzDate(await db.practiceLogs.toArray());
 };
 
+// Re-stamp a set of logs to a different calendar date. Used by the
+// "Merge today's practice to yesterday" action — preserves per-item
+// breakdown by reattributing each existing log rather than aggregating.
+export const reattributeLogsToDate = async (logIds, newDateStr) => {
+  const tz = getTimezone();
+  const loggedAt = noonInHomeTz(newDateStr, tz);
+  return await db.transaction('rw', db.practiceLogs, async () => {
+    const updated = [];
+    for (const id of logIds) {
+      const log = await db.practiceLogs.get(id);
+      if (!log) continue;
+      await db.practiceLogs.update(id, { loggedAt, date: newDateStr });
+      updated.push({ ...log, loggedAt, date: newDateStr });
+    }
+    return updated;
+  });
+};
+
 export const getLogsByDateRange = async (startDate, endDate) => {
   const tz = getTimezone();
   const startMs = getDateRangeUtc(startDate, tz).startMs;

@@ -42,6 +42,7 @@ import {
   purgeExpiredTrash,
   addLog,
   addAdjustmentLog,
+  reattributeLogsToDate,
   getTodaysLogs,
   getLogsByDate,
   getLogsByDateRange,
@@ -911,6 +912,25 @@ function App() {
     setEditTimeModal({ itemId, itemName, currentSeconds });
   }, []);
 
+  const handleMergeToYesterday = useCallback(async () => {
+    if (!reportLogs || reportLogs.length === 0) return;
+    const yesterday = shiftDate(reportDate, -1);
+    const logIds = reportLogs.map(l => l.id);
+    const updated = await reattributeLogsToDate(logIds, yesterday);
+    await Promise.all([
+      loadReportData(reportDate),
+      loadWeekData(weekStart),
+      loadMonthData(monthStart),
+      loadYearData(yearStart),
+      loadData(),
+    ]);
+    if (user) {
+      await Promise.all(
+        updated.map(log => firebaseBackend.pushLog(log, user.id).catch(console.error))
+      );
+    }
+  }, [reportLogs, reportDate, loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user]);
+
   const handleAddTime = useCallback((itemId) => {
     const item = items.find(i => i.id === itemId);
     if (item) {
@@ -1719,6 +1739,7 @@ function App() {
                   onDateChange={handleReportDateChange}
                   onEditTime={handleEditTime}
                   onAddTime={handleAddTime}
+                  onMergeToYesterday={handleMergeToYesterday}
                   timeUnit={timeUnit}
                 />
               )}

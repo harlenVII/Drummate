@@ -3,12 +3,14 @@ import { formatTime, formatMinutes, formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 
-function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, timeUnit }) {
+function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit }) {
   const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showItemPicker, setShowItemPicker] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [showMergeConfirm, setShowMergeConfirm] = useState(false);
+  const [merging, setMerging] = useState(false);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -207,6 +209,16 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         </button>
       )}
 
+      {/* Merge today's practice to yesterday (edit mode + today + has logs) */}
+      {editMode && isToday && grandTotal > 0 && (
+        <button
+          onClick={() => setShowMergeConfirm(true)}
+          className="w-full px-4 py-3 border border-amber-300 rounded-lg text-amber-700 font-medium bg-amber-50 hover:bg-amber-100 transition-colors"
+        >
+          {t('mergeToYesterday')}
+        </button>
+      )}
+
       {/* Generate Report button */}
       {grandTotal > 0 && (
         <button
@@ -303,6 +315,49 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
             >
               {t('cancel')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Merge-to-yesterday confirm modal */}
+      {showMergeConfirm && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+          onClick={() => !merging && setShowMergeConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-gray-800">{t('mergeToYesterday')}</h2>
+            <p className="text-sm text-gray-600">
+              {t('confirmMergeToYesterday')}
+            </p>
+            <div className="flex gap-2">
+              <button
+                disabled={merging}
+                onClick={() => setShowMergeConfirm(false)}
+                className="flex-1 px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                disabled={merging}
+                onClick={async () => {
+                  setMerging(true);
+                  try {
+                    await onMergeToYesterday();
+                    setShowMergeConfirm(false);
+                    setEditMode(false);
+                  } finally {
+                    setMerging(false);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors disabled:opacity-50"
+              >
+                {merging ? '…' : t('confirm')}
+              </button>
+            </div>
           </div>
         </div>
       )}
