@@ -166,6 +166,23 @@ function SixteenthEighthSixteenth() {
   );
 }
 
+// Dotted eighth + sixteenth: single beam across both, double beam stub on first (dot after first note)
+function DottedEighth() {
+  return (
+    <svg viewBox="0 0 32 32" className="w-8 h-8" fill="none">
+      <Beam x1={9.5} x2={25.5} y={6} />
+      {/* Partial right-side beam on the first note to indicate dotted-eighth duration */}
+      <Beam x1={18} x2={25.5} y={10} />
+      <Stem x={9.5} bottom={24} top={6} />
+      <Stem x={25.5} bottom={24} top={6} />
+      <Notehead cx={7} cy={24} />
+      {/* Augmentation dot after first notehead */}
+      <circle cx={13} cy={23} r={1.5} fill="currentColor" />
+      <Notehead cx={23} cy={24} />
+    </svg>
+  );
+}
+
 // Offbeat sixteenths: eighth-rest + eighth note, sixteenth-rest + sixteenth note (with connecting beam)
 function OffbeatSixteenths() {
   return (
@@ -219,6 +236,7 @@ const ICONS = {
   eighthTwoSixteenths: EighthTwoSixteenths,
   twoSixteenthsEighth: TwoSixteenthsEighth,
   sixteenthEighthSixteenth: SixteenthEighthSixteenth,
+  dottedEighth: DottedEighth,
   offbeatSixteenths: OffbeatSixteenths,
   rest: Rest,
 };

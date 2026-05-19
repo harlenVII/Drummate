@@ -128,7 +128,8 @@ function App() {
       const saved = localStorage.getItem('drummate_metronome_subdivision');
       const validSubdivisions = ['quarter', 'eighth', 'triplet', 'sixteenth',
                                   'eighthTwoSixteenths', 'twoSixteenthsEighth',
-                                  'sixteenthEighthSixteenth', 'quintuplet', 'sextuplet', 'offbeatSixteenths'];
+                                  'sixteenthEighthSixteenth', 'dottedEighth',
+                                  'quintuplet', 'sextuplet', 'offbeatSixteenths'];
       return saved && validSubdivisions.includes(saved) ? saved : 'quarter';
     } catch {
       return 'quarter';
