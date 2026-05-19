@@ -105,7 +105,7 @@ Dexie.js wrapper around IndexedDB. Database name: `DrummateDB`, current version:
 - Ordering: `updateItemOrder(orderedIds)` — batch updates sortOrder in a transaction
 - Archive/Trash: `archiveItem(id, bool)`, `trashItem(id)`, `restoreItem(id)`, `purgeExpiredTrash(daysOld=30)`
 - Merge: `mergeItem(sourceId, targetId)` — reassigns all logs **and notes** from source to target, hard-deletes the source item. Returns `{ sourceUid, targetUid, targetName }`.
-- Logs: `addLog(itemId, duration, opts={})` (real-time, stamps `loggedAt=Date.now()`), `addAdjustmentLog(itemId, duration, dateStr)` (calendar-attributed, stamps `loggedAt=noonInHomeTz(dateStr)`), `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`, `getAllLogs`
+- Logs: `addLog(itemId, duration, opts={})` (real-time, stamps `loggedAt=Date.now()`), `addAdjustmentLog(itemId, duration, dateStr)` (calendar-attributed, stamps `loggedAt=noonInHomeTz(dateStr)`), `getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange(startDate, endDate)`, `getAllLogs`, `reattributeLogsToDate(logIds, newDateStr)` (re-stamps existing logs' `loggedAt` to noon-in-home-TZ of `newDateStr` and updates `date`; returns the updated log objects for caller to push via `pushLog`)
 - Notes: `addNote(itemUid, body, date?)`, `getAllNotes()`, `getNotesByItem(itemUid)`, `updateNote(id, body)`, `trashNote(id)`, `restoreNote(id)`
 
 All operations are async/await. Date strings always use `YYYY-MM-DD` format. Deleting a practice item cascade-deletes all its logs **and notes** (wrapped in a single Dexie transaction). `purgeExpiredTrash` returns `{ expiredItems, expiredNotes }` — callers must handle both. Practice item names must be unique (case-insensitive check in UI).
@@ -131,6 +131,7 @@ All log-grouping reads (`getTodaysLogs`, `getLogsByDate`, `getLogsByDateRange`) 
 Five subpages in `reportSubpage`: `daily`, `weekly`, `monthly`, `yearly`, `stats`.
 
 - `DailyReport` / `WeeklyReport` / `MonthlyReport` / `YearlyReport` — scoped to their time window; receive a date/week/month/year start prop from App
+- `DailyReport` edit mode (when `isToday && grandTotal > 0`) exposes a **Merge today's practice to yesterday** button — for late-night sessions past midnight that should still count toward yesterday. Calls `onMergeToYesterday` → `handleMergeToYesterday` in App.jsx, which uses `reattributeLogsToDate` to re-stamp every log in `reportLogs` to noon yesterday in the home TZ. Preserves per-item breakdown (no aggregation); if yesterday already has logs for the same items they simply sum together in the report view. Updated logs are pushed to Firestore via `pushLog` (upsert by `uid`). Confirms before applying.
 - `StatsReport` — all-time aggregated stats (total time, total days, streaks, best month, top item). Calls `getAllLogs()` then filters to active (non-trashed) items before computing. Includes a "Generate Report" button that opens `ReportGeneratorModal`. Also renders `GoalCard` at the bottom.
 - `ReportGeneratorModal` — generates a copyable plain-text summary for a user-selected date range. Uses `getLogsByDateRange` and respects `timeUnit`.
 
