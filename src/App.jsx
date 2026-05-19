@@ -397,10 +397,11 @@ function App() {
     };
   }, [loadData]);
 
+  const subscriptionRef = useRef(null);
+
   useEffect(() => {
     if (!user || !authReady) return;
 
-    let unsubscribe = null;
     let cancelled = false;
 
     const init = async () => {
@@ -426,16 +427,21 @@ function App() {
         console.error('Sync init failed:', err);
         if (!cancelled) setIsSyncing(false);
       }
-      // Subscribe to real-time changes only after initial sync completes
+      // Subscribe to real-time changes only after initial sync completes.
+      // Stored in a ref so handleEnterOfflineMode can tear it down without
+      // re-running the effect.
       if (!cancelled && !getOfflineMode()) {
-        unsubscribe = firebaseBackend.subscribeToChanges(loadData);
+        subscriptionRef.current = firebaseBackend.subscribeToChanges(loadData);
       }
     };
     init();
 
     return () => {
       cancelled = true;
-      if (unsubscribe) unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current();
+        subscriptionRef.current = null;
+      }
     };
   }, [user, authReady, loadData, syncTrigger]);
 
@@ -1441,6 +1447,14 @@ function App() {
   }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage]);
 
   const handleEnterOfflineMode = useCallback(() => {
+    // Tear down the live Firestore listener so it can't overwrite local
+    // Dexie state while the user thinks they're isolated. The sync-overlay
+    // path arrives here before the subscription is ever started; the
+    // settings-toggle path arrives with an active subscription.
+    if (subscriptionRef.current) {
+      subscriptionRef.current();
+      subscriptionRef.current = null;
+    }
     setOfflineMode(true);
     setIsSyncing(false);
   }, [setOfflineMode]);
@@ -1766,7 +1780,7 @@ function App() {
         userId={user?.id}
         onTimezoneChange={loadData}
         offlineMode={offlineMode}
-        onEnterOfflineMode={() => setOfflineMode(true)}
+        onEnterOfflineMode={handleEnterOfflineMode}
         onGoOnline={handleGoOnline}
         onShowPending={() => setPendingModalOpen(true)}
       />
