@@ -207,8 +207,13 @@ const firebaseBackend = {
       const item = await db.practiceItems.where('uid').equals(localNote.itemUid).first();
       await queueSync('push_note', {
         uid: localNote.uid,
+        itemUid: localNote.itemUid,
         itemName: item?.name,
         date: localNote.date,
+        body: localNote.body ?? '',
+        trashed: !!localNote.trashed,
+        trashedAt: localNote.trashedAt || '',
+        createdAt: localNote.createdAt || '',
       });
       return;
     }
@@ -229,7 +234,15 @@ const firebaseBackend = {
       }
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('push_note', { uid: localNote.uid });
+        await queueSync('push_note', {
+          uid: localNote.uid,
+          itemUid: localNote.itemUid,
+          date: localNote.date,
+          body: localNote.body ?? '',
+          trashed: !!localNote.trashed,
+          trashedAt: localNote.trashedAt || '',
+          createdAt: localNote.createdAt || '',
+        });
       } else {
         throw err;
       }
@@ -257,11 +270,23 @@ const firebaseBackend = {
       console.error('pushPractice: missing uid', localPractice);
       return;
     }
+    const enrichedPracticePayload = () => ({
+      uid: localPractice.uid,
+      name: localPractice.name,
+      startBpm: localPractice.startBpm,
+      endBpm: localPractice.endBpm,
+      bpmIncrement: localPractice.bpmIncrement,
+      barsPerStep: localPractice.barsPerStep,
+      timeSignatureBeats: localPractice.timeSignature?.beats,
+      timeSignatureNoteValue: localPractice.timeSignature?.noteValue,
+      subdivision: localPractice.subdivision,
+      soundType: localPractice.soundType,
+      sortOrder: localPractice.sortOrder ?? 0,
+      createdAt: localPractice.createdAt || '',
+      updatedAt: localPractice.updatedAt || '',
+    });
     if (getOfflineMode()) {
-      await queueSync('push_practice', {
-        uid: localPractice.uid,
-        name: localPractice.name,
-      });
+      await queueSync('push_practice', enrichedPracticePayload());
       return;
     }
     try {
@@ -286,7 +311,7 @@ const firebaseBackend = {
       }
     } catch (err) {
       if (!navigator.onLine) {
-        await queueSync('push_practice', { uid: localPractice.uid });
+        await queueSync('push_practice', enrichedPracticePayload());
       } else {
         throw err;
       }
@@ -806,10 +831,16 @@ const firebaseBackend = {
 
   async pushAllLocalNotes(userId) {
     if (getOfflineMode()) return;
+    // Only push notes that have never reached the cloud. Already-synced
+    // notes that were edited offline are handled by their queued push_note
+    // entries via flushSyncQueue; re-pushing them here would overwrite the
+    // queue's freshly-applied cloud state with this device's pullAllNotes-
+    // overwritten local state.
     const notes = await db.notes.toArray();
     for (const note of notes) {
       if (getOfflineMode()) return;
       if (!note.uid || !note.itemUid) continue;
+      if (note.syncedOnce) continue;
       await firebaseBackend.pushNote(note, userId);
     }
   },
@@ -820,6 +851,7 @@ const firebaseBackend = {
     for (const p of practices) {
       if (getOfflineMode()) return;
       if (!p.uid) continue;
+      if (p.syncedOnce) continue;
       await firebaseBackend.pushPractice(p, userId);
     }
   },
@@ -830,8 +862,12 @@ const firebaseBackend = {
     for (const item of items) {
       if (getOfflineMode()) return;
       if (!item.uid) continue;
+      if (item.syncedOnce) continue;
       await firebaseBackend.pushItem(item, userId);
     }
+    // Logs don't have a syncedOnce flag (they're append-only and the
+    // pull-then-push race doesn't apply to them — pullAll never overwrites
+    // log fields). Push them all defensively.
     const logs = await db.practiceLogs.toArray();
     for (const log of logs) {
       if (getOfflineMode()) return;
@@ -875,13 +911,82 @@ const firebaseBackend = {
             userId,
           );
         } else if (entry.action === 'push_note') {
-          const local = await db.notes.where('uid').equals(entry.payload.uid).first();
-          if (local) await firebaseBackend.pushNote(local, userId);
+          // Push from payload (not from local Dexie), because pullAllNotes
+          // earlier in init may have overwritten the offline edit back to
+          // cloud's prior state. The payload carries the user's actual
+          // intent; we replay that intent to cloud AND re-assert it locally.
+          const p = entry.payload;
+          if (p.uid && p.itemUid !== undefined && p.body !== undefined) {
+            await setDoc(doc(notesRef(userId), p.uid), {
+              uid: p.uid,
+              item_uid: p.itemUid,
+              date: p.date,
+              body: p.body ?? '',
+              trashed: !!p.trashed,
+              trashed_at: p.trashedAt || '',
+              created_at: p.createdAt || '',
+              updated_at: serverTimestamp(),
+            }, { merge: true });
+            const localNote = await db.notes.where('uid').equals(p.uid).first();
+            if (localNote) {
+              await db.notes.update(localNote.id, {
+                body: p.body ?? '',
+                trashed: !!p.trashed,
+                trashedAt: p.trashedAt || null,
+                itemUid: p.itemUid ?? localNote.itemUid,
+                syncedOnce: true,
+              });
+            }
+          } else {
+            // Legacy minimal payload — fall back to re-reading local.
+            const local = await db.notes.where('uid').equals(p.uid).first();
+            if (local) await firebaseBackend.pushNote(local, userId);
+          }
         } else if (entry.action === 'delete_note') {
           await firebaseBackend.deleteNoteRemote(entry.payload.uid, userId);
         } else if (entry.action === 'push_practice') {
-          const local = await db.metronomePractices.where('uid').equals(entry.payload.uid).first();
-          if (local) await firebaseBackend.pushPractice(local, userId);
+          // Same payload-driven approach as push_note. pullAllPractices
+          // may have overwritten the offline edit; payload carries intent.
+          const p = entry.payload;
+          if (p.uid && p.startBpm !== undefined) {
+            await setDoc(doc(practicesRef(userId), p.uid), {
+              uid: p.uid,
+              name: p.name,
+              start_bpm: p.startBpm,
+              end_bpm: p.endBpm,
+              bpm_increment: p.bpmIncrement,
+              bars_per_step: p.barsPerStep,
+              time_signature_beats: p.timeSignatureBeats,
+              time_signature_note_value: p.timeSignatureNoteValue,
+              subdivision: p.subdivision,
+              sound_type: p.soundType,
+              sort_order: p.sortOrder ?? 0,
+              created_at: p.createdAt || '',
+              updated_at: p.updatedAt || '',
+            }, { merge: true });
+            const localPractice = await db.metronomePractices.where('uid').equals(p.uid).first();
+            if (localPractice) {
+              await db.metronomePractices.update(localPractice.id, {
+                name: p.name,
+                startBpm: p.startBpm,
+                endBpm: p.endBpm,
+                bpmIncrement: p.bpmIncrement,
+                barsPerStep: p.barsPerStep,
+                timeSignature: {
+                  beats: p.timeSignatureBeats,
+                  noteValue: p.timeSignatureNoteValue,
+                },
+                subdivision: p.subdivision,
+                soundType: p.soundType,
+                sortOrder: p.sortOrder ?? 0,
+                syncedOnce: true,
+              });
+            }
+          } else {
+            // Legacy minimal payload — fall back to re-reading local.
+            const local = await db.metronomePractices.where('uid').equals(p.uid).first();
+            if (local) await firebaseBackend.pushPractice(local, userId);
+          }
         } else if (entry.action === 'delete_practice') {
           await firebaseBackend.pushDeletePractice(entry.payload.uid, userId);
         } else if (entry.action === 'reorder_practices') {
