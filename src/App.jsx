@@ -422,8 +422,6 @@ function App() {
         // online" link or the settings toggle.
         if (!navigator.onLine) {
           setOfflineMode(true);
-          await loadData();
-          if (!cancelled) setIsSyncing(false);
           return;
         }
         // Order matters: pull first so we adopt cloud truth (renames, deletes
@@ -431,24 +429,30 @@ function App() {
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await initTimezone(firebaseBackend, user.id);
         if (getOfflineMode()) {
-          await loadData();
-          if (!cancelled) setIsSyncing(false);
           return;
         }
         await firebaseBackend.pullAll(user.id);
         await firebaseBackend.pullAllNotes(user.id);
         await firebaseBackend.pullAllPractices(user.id);
-        await loadData();
-        if (!cancelled) setIsSyncing(false);
+        // flushSyncQueue replays queued offline edits to cloud AND restores
+        // local Dexie to match payload, so loadData below reads the final
+        // post-merge state. Keep the sync overlay up until this is done —
+        // otherwise the UI flickers between pull-overwritten old state and
+        // queue-applied new state.
         await firebaseBackend.flushSyncQueue(user.id);
         await firebaseBackend.pushAllLocal(user.id);
       } catch (err) {
         console.error('Sync init failed:', err);
+      } finally {
+        // loadData is the single source of truth for UI state. Run it
+        // whether sync succeeded, failed, or short-circuited (offline).
+        await loadData();
         if (!cancelled) setIsSyncing(false);
       }
-      // Subscribe to real-time changes only after initial sync completes.
-      // Stored in a ref so handleEnterOfflineMode can tear it down without
-      // re-running the effect.
+      // Subscribe AFTER local state is reconciled — its initial snapshot
+      // will see local == cloud and won't trigger a flicker. Stored in a
+      // ref so handleEnterOfflineMode can tear it down without re-running
+      // the effect.
       if (!cancelled && !getOfflineMode()) {
         subscriptionRef.current = firebaseBackend.subscribeToChanges(loadData);
       }

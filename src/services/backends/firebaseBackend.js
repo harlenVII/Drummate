@@ -891,18 +891,45 @@ const firebaseBackend = {
           await firebaseBackend.pushDeleteItem(entry.payload.uid, userId);
         } else if (entry.action === 'rename_item') {
           await firebaseBackend.pushRenameItem(entry.payload.uid, entry.payload.newName, userId);
+          // Restore local — pullAll may have reverted the offline rename.
+          const local = await db.practiceItems.where('uid').equals(entry.payload.uid).first();
+          if (local && local.name !== entry.payload.newName) {
+            await db.practiceItems.update(local.id, { name: entry.payload.newName });
+          }
         } else if (entry.action === 'reorder') {
           for (const item of entry.payload.items) {
             const updates = { sort_order: item.sortOrder };
             if (item.category != null) updates.category = item.category;
             await updateDoc(doc(itemsRef(userId), item.uid), updates);
+            const local = await db.practiceItems.where('uid').equals(item.uid).first();
+            if (local) {
+              const localUpdates = { sortOrder: item.sortOrder };
+              if (item.category != null) localUpdates.category = item.category;
+              await db.practiceItems.update(local.id, localUpdates);
+            }
           }
         } else if (entry.action === 'archive_item') {
           await firebaseBackend.pushArchiveItem(entry.payload.uid, entry.payload.archived, userId);
+          const local = await db.practiceItems.where('uid').equals(entry.payload.uid).first();
+          if (local && local.archived !== !!entry.payload.archived) {
+            await db.practiceItems.update(local.id, { archived: !!entry.payload.archived });
+          }
         } else if (entry.action === 'trash_item') {
           await firebaseBackend.pushTrashItem(entry.payload.uid, entry.payload.trashed, entry.payload.trashedAt, userId);
+          const local = await db.practiceItems.where('uid').equals(entry.payload.uid).first();
+          if (local) {
+            const updates = {};
+            if (local.trashed !== !!entry.payload.trashed) updates.trashed = !!entry.payload.trashed;
+            const trashedAt = entry.payload.trashedAt || null;
+            if (local.trashedAt !== trashedAt) updates.trashedAt = trashedAt;
+            if (Object.keys(updates).length > 0) await db.practiceItems.update(local.id, updates);
+          }
         } else if (entry.action === 'set_category') {
           await firebaseBackend.pushSetCategory(entry.payload.uid, entry.payload.category, userId);
+          const local = await db.practiceItems.where('uid').equals(entry.payload.uid).first();
+          if (local && local.category !== entry.payload.category) {
+            await db.practiceItems.update(local.id, { category: entry.payload.category });
+          }
         } else if (entry.action === 'merge_items') {
           await firebaseBackend.mergeItems(
             entry.payload.sourceUid,
@@ -992,6 +1019,10 @@ const firebaseBackend = {
         } else if (entry.action === 'reorder_practices') {
           for (const p of entry.payload.practices) {
             await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
+            const local = await db.metronomePractices.where('uid').equals(p.uid).first();
+            if (local && local.sortOrder !== p.sortOrder) {
+              await db.metronomePractices.update(local.id, { sortOrder: p.sortOrder });
+            }
           }
         }
         await db.syncQueue.delete(entry.id);
