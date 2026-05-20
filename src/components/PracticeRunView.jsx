@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SUBDIVISIONS } from '../constants/subdivisions';
 
@@ -44,6 +44,14 @@ export default function PracticeRunView({
   // called for completion.
   const stoppedRef = useRef(complete);
 
+  const [isCountingIn, setIsCountingIn] = useState(false);
+  const [countInBarsLeft, setCountInBarsLeft] = useState(2);
+  const isCountingInRef = useRef(false);
+  const countInBarsLeftRef = useRef(2);
+  // True once the first count-in has fired; stays true for the component lifetime
+  // so that resume-after-pause never re-triggers the count-in.
+  const hasBegunRef = useRef(false);
+
   // Keep refs in sync with lifted state.
   useEffect(() => { stepIndexRef.current = stepIndex; }, [stepIndex]);
   useEffect(() => { barIndexRef.current = barIndex; }, [barIndex]);
@@ -88,6 +96,17 @@ export default function PracticeRunView({
       const isBarBoundary = beat === 0 && prevBeatRef.current !== 0;
       prevBeatRef.current = beat;
       if (!isBarBoundary) return;
+
+      // Count-in: decrement and wait for it to finish before tracking practice bars.
+      if (isCountingInRef.current) {
+        const barsLeft = countInBarsLeftRef.current - 1;
+        countInBarsLeftRef.current = barsLeft;
+        setCountInBarsLeft(barsLeft);
+        if (barsLeft > 0) return;
+        isCountingInRef.current = false;
+        setIsCountingIn(false);
+        return;
+      }
 
       const nextBarIndex = barIndexRef.current + 1;
       if (nextBarIndex < practice.barsPerStep) {
@@ -159,6 +178,15 @@ export default function PracticeRunView({
       engine.setBpm(steps[stepIndexRef.current]);
     }
 
+    // Trigger 2-bar count-in on fresh start or restart; skip on resume after pause.
+    if (!hasBegunRef.current || complete) {
+      hasBegunRef.current = true;
+      isCountingInRef.current = true;
+      countInBarsLeftRef.current = 2;
+      setIsCountingIn(true);
+      setCountInBarsLeft(2);
+    }
+
     sawFirstBeatRef.current = false;
     prevBeatRef.current = -1;
 
@@ -175,6 +203,17 @@ export default function PracticeRunView({
       const isBarBoundary = beat === 0 && prevBeatRef.current !== 0;
       prevBeatRef.current = beat;
       if (!isBarBoundary) return;
+
+      // Count-in: decrement and wait for it to finish before tracking practice bars.
+      if (isCountingInRef.current) {
+        const barsLeft = countInBarsLeftRef.current - 1;
+        countInBarsLeftRef.current = barsLeft;
+        setCountInBarsLeft(barsLeft);
+        if (barsLeft > 0) return;
+        isCountingInRef.current = false;
+        setIsCountingIn(false);
+        return;
+      }
 
       const nextBarIndex = barIndexRef.current + 1;
       if (nextBarIndex < practice.barsPerStep) {
@@ -250,22 +289,35 @@ export default function PracticeRunView({
 
       <div className="text-6xl font-bold text-gray-900 tabular-nums">{currentBpm}</div>
 
-      <div className="text-sm text-gray-600 flex flex-col items-center gap-1">
-        <div>{t('practiceMode.stepProgress', { current: stepIndex + 1, total: totalSteps })}</div>
-        <div>{t('practiceMode.barProgress', { current: Math.min(barIndex + 1, practice.barsPerStep), total: practice.barsPerStep })}</div>
-      </div>
+      {isCountingIn ? (
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-sm font-medium text-gray-500 uppercase tracking-widest">
+            {t('practiceMode.getReady')}
+          </div>
+          <div className="text-7xl font-bold text-blue-600 tabular-nums">
+            {countInBarsLeft}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="text-sm text-gray-600 flex flex-col items-center gap-1">
+            <div>{t('practiceMode.stepProgress', { current: stepIndex + 1, total: totalSteps })}</div>
+            <div>{t('practiceMode.barProgress', { current: Math.min(barIndex + 1, practice.barsPerStep), total: practice.barsPerStep })}</div>
+          </div>
 
-      <div className="w-full max-w-sm flex flex-col gap-1">
-        <div className="flex justify-end">
-          <span className="text-sm font-semibold text-blue-600">{Math.round(progressPct)}%</span>
-        </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-600 transition-all duration-300"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
+          <div className="w-full max-w-sm flex flex-col gap-1">
+            <div className="flex justify-end">
+              <span className="text-sm font-semibold text-blue-600">{Math.round(progressPct)}%</span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-600 transition-all duration-300"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {complete ? (
         <div className="flex flex-col items-center gap-3">
