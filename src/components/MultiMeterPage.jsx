@@ -333,7 +333,7 @@ function MultiMeterPage({
                 const slot = slots.find(s => s.id === activeDragId);
                 if (!slot) return null;
                 return (
-                  <div className="relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-400 bg-blue-50 shadow-lg cursor-grabbing">
+                  <div className="relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-gray-200 bg-white shadow-lg cursor-grabbing">
                     <span className="text-sm font-semibold text-blue-700">{slot.beats}/{slot.noteValue}</span>
                   </div>
                 );

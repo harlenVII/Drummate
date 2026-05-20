@@ -311,7 +311,7 @@ function SequencerPage({
                 const slot = slots.find(s => s.id === activeDragId);
                 if (!slot) return null;
                 return (
-                  <div className="relative flex flex-col items-center justify-center p-2 rounded-xl border-2 border-blue-400 bg-blue-50 shadow-lg cursor-grabbing">
+                  <div className="relative flex flex-col items-center justify-center p-2 rounded-xl border-2 border-gray-200 bg-white shadow-lg cursor-grabbing">
                     <SubdivisionIcon type={slot.subdivision} />
                   </div>
                 );
