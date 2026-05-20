@@ -564,7 +564,13 @@ const firebaseBackend = {
 
   // Sync — pull
   async pullAll(userId) {
-    const itemsSnap = await getDocs(itemsRef(userId));
+    // Fire both network requests in parallel — they're independent. The
+    // loops still run sequentially (items first, then logs) because the
+    // logs loop looks up parent items in the just-updated Dexie state.
+    const [itemsSnap, logsSnap] = await Promise.all([
+      getDocs(itemsRef(userId)),
+      getDocs(logsRef(userId)),
+    ]);
     if (itemsSnap.metadata.fromCache) {
       // Server unreachable — snapshot is from the offline cache.
       // Skip reconciliation; deleting locally-synced items based on a
@@ -654,10 +660,10 @@ const firebaseBackend = {
       remoteUids.add(data.uid);
     }
 
-    // Pull logs BEFORE reconciling item deletions, so logs whose `item_uid`
+    // Process logs BEFORE reconciling item deletions, so logs whose `item_uid`
     // moved to a different parent (via merge on another device) get remapped
-    // locally before their old parent gets deleted.
-    const logsSnap = await getDocs(logsRef(userId));
+    // locally before their old parent gets deleted. The logsSnap network call
+    // was fired in parallel with the items network call at the top of pullAll.
     if (logsSnap.metadata.fromCache) {
       // Cached/offline snapshot — bail before the deletion-reconciliation
       // loop below (same rationale as the itemsSnap guard above).

@@ -425,22 +425,25 @@ function App() {
           setOfflineMode(true);
           return;
         }
+        // initTimezone runs in parallel with the three pulls. The module-level
+        // currentTz is already initialized from localStorage at module load
+        // (see timezoneService.js), so getTimezone() returns a valid cached
+        // value before initTimezone's Firestore reconciliation finishes. None
+        // of the pulls read or write timezone — logs store loggedAt epoch ms;
+        // tz is only used for UI bucketing afterwards.
+        //
         // Order matters: pull first so we adopt cloud truth (renames, deletes
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
-        await initTimezone(firebaseBackend, user.id);
-        if (getOfflineMode()) {
-          return;
-        }
-        // Three pulls run in parallel — disjoint Dexie tables and disjoint
-        // Firestore collections. The UI is still gated by isSyncing, so any
-        // brief intermediate inconsistency (e.g. a note arriving before its
-        // parent item from a cross-device merge) is not visible to the user.
         await Promise.all([
+          initTimezone(firebaseBackend, user.id),
           firebaseBackend.pullAll(user.id),
           firebaseBackend.pullAllNotes(user.id),
           firebaseBackend.pullAllPractices(user.id),
         ]);
+        if (getOfflineMode()) {
+          return;
+        }
         // flushSyncQueue replays queued offline edits to cloud AND restores
         // local Dexie to match payload, so loadData below reads the final
         // post-merge state. Keep the sync overlay up until this is done —
