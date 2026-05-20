@@ -173,13 +173,14 @@ export default function PracticeRunView({
       setComplete(false);
       stoppedRef.current = false;
       engine.setBpm(steps[0]);
+      hasBegunRef.current = false;
     } else {
       // Resume / start: re-assert this step's BPM in case it was changed.
       engine.setBpm(steps[stepIndexRef.current]);
     }
 
     // Trigger 2-bar count-in on fresh start or restart; skip on resume after pause.
-    if (!hasBegunRef.current || complete) {
+    if (!hasBegunRef.current) {
       hasBegunRef.current = true;
       isCountingInRef.current = true;
       countInBarsLeftRef.current = 2;
