@@ -178,6 +178,10 @@ const firebaseBackend = {
         logged_at: localLog.loggedAt ?? legacyDateToLoggedAt(localLog.date),
         created: serverTimestamp(),
       }, { merge: true });
+
+      if (localLog.id != null && !localLog.syncedOnce) {
+        await db.practiceLogs.update(localLog.id, { syncedOnce: true });
+      }
     } catch (err) {
       if (!navigator.onLine) {
         const item = await db.practiceItems.get(localLog.itemId);
@@ -677,11 +681,14 @@ const firebaseBackend = {
       const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
       if (existing) {
         // Remap if remote moved this log under a different parent (cross-device merge).
+        const updates = {};
         if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
-          await db.practiceLogs.update(existing.id, {
-            itemUid: localItem.uid,
-            itemId: localItem.id,
-          });
+          updates.itemUid = localItem.uid;
+          updates.itemId = localItem.id;
+        }
+        if (!existing.syncedOnce) updates.syncedOnce = true;
+        if (Object.keys(updates).length > 0) {
+          await db.practiceLogs.update(existing.id, updates);
         }
         continue;
       }
@@ -693,6 +700,7 @@ const firebaseBackend = {
         duration: data.duration,
         uid: data.uid,
         loggedAt: resolveLoggedAt(data),
+        syncedOnce: true,
       });
     }
 
@@ -866,13 +874,14 @@ const firebaseBackend = {
     );
 
     if (getOfflineMode()) return;
-    // Logs don't have a syncedOnce flag (they're append-only and the
-    // pull-then-push race doesn't apply to them — pullAll never overwrites
-    // log fields). Push them all defensively, but in parallel so the
-    // network round-trips fan out instead of stacking up.
+    // Only push logs that have never reached the cloud. Already-synced logs
+    // are append-only and immutable on cloud after push, so re-pushing them
+    // every refresh is pure waste (the dominant cost for users with many
+    // logs). syncedOnce flips to true inside pushLog on success and by
+    // pullAll / subscribeToChanges when adopting a remote log locally.
     const logs = await db.practiceLogs.toArray();
     await Promise.all([
-      Promise.all(logs.map((log) => firebaseBackend.pushLog(log, userId))),
+      Promise.all(logs.filter((l) => !l.syncedOnce).map((log) => firebaseBackend.pushLog(log, userId))),
       firebaseBackend.pushAllLocalNotes(userId),
       firebaseBackend.pushAllLocalPractices(userId),
     ]);
@@ -1106,7 +1115,15 @@ const firebaseBackend = {
 
         if (change.type === 'added') {
           const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
-          if (existing) continue;
+          if (existing) {
+            // Initial snapshot replays every doc as 'added' — patch the
+            // syncedOnce flag on local rows that pre-date the v14 migration
+            // path so they aren't re-pushed.
+            if (!existing.syncedOnce) {
+              await db.practiceLogs.update(existing.id, { syncedOnce: true });
+            }
+            continue;
+          }
 
           let localItem = null;
           if (data.item_uid) {
@@ -1124,6 +1141,7 @@ const firebaseBackend = {
             duration: data.duration,
             uid: data.uid,
             loggedAt: resolveLoggedAt(data),
+            syncedOnce: true,
           });
           onDataChanged();
         } else if (change.type === 'modified') {

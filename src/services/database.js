@@ -148,6 +148,21 @@ db.version(13).stores({
   });
 });
 
+// v14 adds non-indexed `syncedOnce` to practiceLogs so pushAllLocal can skip
+// already-synced logs (mirrors the items/notes/practices pattern). Existing
+// rows are backfilled to true because they're already in the cloud.
+db.version(14).stores({
+  practiceItems: '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs:  '++id, itemId, itemUid, date, duration, uid, loggedAt',
+  notes:         '++id, &uid, itemUid, date, trashed',
+  metronomePractices: '++id, &uid, sortOrder',
+  syncQueue:     '++id, action, collection, localId',
+}).upgrade(tx => {
+  return tx.table('practiceLogs').toCollection().modify(log => {
+    if (log.syncedOnce == null) log.syncedOnce = true;
+  });
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -275,7 +290,9 @@ export const addLog = async (itemId, duration, opts = {}) => {
   const uid = crypto.randomUUID();
   const item = await db.practiceItems.get(itemId);
   const itemUid = item?.uid || null;
-  return await db.practiceLogs.add({ itemId, itemUid, date, duration, uid, loggedAt });
+  return await db.practiceLogs.add({
+    itemId, itemUid, date, duration, uid, loggedAt, syncedOnce: false,
+  });
 };
 
 export const addAdjustmentLog = async (itemId, duration, dateStr) => {
@@ -285,7 +302,7 @@ export const addAdjustmentLog = async (itemId, duration, dateStr) => {
   const item = await db.practiceItems.get(itemId);
   const itemUid = item?.uid || null;
   return await db.practiceLogs.add({
-    itemId, itemUid, date: dateStr, duration, uid, loggedAt,
+    itemId, itemUid, date: dateStr, duration, uid, loggedAt, syncedOnce: false,
   });
 };
 
