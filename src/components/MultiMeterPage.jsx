@@ -280,7 +280,7 @@ function MultiMeterPage({
 
   const activeBeats = (playingSlot >= 0 && playingSlot < slots.length)
     ? base.clicks(slots[playingSlot])
-    : 4;
+    : slots.length > 0 ? base.clicks(slots[0]) : 4;
 
   const slotGrid = (
     <div className="grid grid-cols-4 gap-2">
