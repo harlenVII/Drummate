@@ -144,6 +144,7 @@ export default function PracticePage({
       } else if (e.code === 'Space') {
         e.preventDefault();
         if (focusedIndex !== null) {
+          setFocusedIndex(null);
           onStartPractice(practices[focusedIndex].uid);
         }
       }
