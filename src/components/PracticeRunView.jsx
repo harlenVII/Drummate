@@ -242,11 +242,16 @@ export default function PracticeRunView({
         <div>{t('practiceMode.barProgress', { current: Math.min(barIndex + 1, practice.barsPerStep), total: practice.barsPerStep })}</div>
       </div>
 
-      <div className="w-full max-w-sm h-2 bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-blue-600 transition-all duration-300"
-          style={{ width: `${progressPct}%` }}
-        />
+      <div className="w-full max-w-sm flex flex-col gap-1">
+        <div className="flex justify-end">
+          <span className="text-sm font-semibold text-blue-600">{Math.round(progressPct)}%</span>
+        </div>
+        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-600 transition-all duration-300"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </div>
 
       {complete ? (
