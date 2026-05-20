@@ -1000,15 +1000,16 @@ function App() {
         setMultiMeterPlayingSlot(-1);
         noSleepRef.current.disable();
       }
+      // Always restore the App-level beat callback — practice mode overrides it
+      // and may null it on end/pause, leaving the indicators dead if not re-wired.
+      if (metronomeEngineRef.current) {
+        metronomeEngineRef.current.onBeat = ({ beat, subdivisionIndex }) => {
+          if (subdivisionIndex === 0) setMetronomeCurrentBeat(beat);
+        };
+      }
       if (runningPracticeUid) {
         if (metronomeEngineRef.current?.isPlaying) {
           metronomeEngineRef.current.stop();
-        }
-        if (metronomeEngineRef.current) {
-          // Re-wire the App-level beat callback (practice mode overrides it)
-          metronomeEngineRef.current.onBeat = ({ beat, subdivisionIndex }) => {
-            if (subdivisionIndex === 0) setMetronomeCurrentBeat(beat);
-          };
         }
         noSleepRef.current?.disable?.();
         setRunningPracticeUid(null);
