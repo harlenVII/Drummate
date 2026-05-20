@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -38,7 +38,7 @@ function formatPracticeTime(sec) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function PracticeRow({ practice, onStart, onEdit }) {
+function PracticeRow({ practice, isFocused, onStart, onEdit }) {
   const { t } = useLanguage();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: practice.id });
@@ -51,7 +51,9 @@ function PracticeRow({ practice, onStart, onEdit }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-3"
+      className={`bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-3 ${
+        isFocused ? 'ring-2 ring-blue-400' : ''
+      }`}
     >
       <button
         {...attributes}
@@ -116,12 +118,39 @@ export default function PracticePage({
 }) {
   const { t } = useLanguage();
   const [modalState, setModalState] = useState(null); // null | { mode: 'create' } | { mode: 'edit', practice }
+  const [focusedIndex, setFocusedIndex] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (modalState !== null || practices.length === 0) return;
+
+      if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex((prev) =>
+          prev === null ? 0 : (prev + 1) % practices.length
+        );
+      } else if (e.code === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex((prev) =>
+          prev === null ? practices.length - 1 : (prev - 1 + practices.length) % practices.length
+        );
+      } else if (e.code === 'Space') {
+        e.preventDefault();
+        if (focusedIndex !== null) {
+          onStartPractice(practices[focusedIndex].uid);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalState, practices, focusedIndex, onStartPractice]);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
@@ -176,12 +205,13 @@ export default function PracticePage({
               strategy={verticalListSortingStrategy}
             >
               <div className="flex flex-col gap-2">
-                {practices.map((p) => (
+                {practices.map((p, idx) => (
                   <PracticeRow
                     key={p.id}
                     practice={p}
-                    onStart={() => onStartPractice(p.uid)}
-                    onEdit={() => setModalState({ mode: 'edit', practice: p })}
+                    isFocused={focusedIndex === idx}
+                    onStart={() => { setFocusedIndex(null); onStartPractice(p.uid); }}
+                    onEdit={() => { setFocusedIndex(null); setModalState({ mode: 'edit', practice: p }); }}
                   />
                 ))}
               </div>
@@ -190,7 +220,7 @@ export default function PracticePage({
         )}
 
         <button
-          onClick={() => setModalState({ mode: 'create' })}
+          onClick={() => { setFocusedIndex(null); setModalState({ mode: 'create' }); }}
           className="self-end px-4 py-2 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700"
         >
           + {t('practiceMode.addPractice')}
