@@ -20,6 +20,24 @@ import { useLanguage } from '../contexts/LanguageContext';
 import PracticeEditModal from './PracticeEditModal';
 import PracticeRunView from './PracticeRunView';
 
+function computePracticeSeconds(practice) {
+  const steps = [];
+  for (let bpm = practice.startBpm; bpm < practice.endBpm; bpm += practice.bpmIncrement) {
+    steps.push(bpm);
+  }
+  steps.push(practice.endBpm);
+  return steps.reduce((acc, bpm) => {
+    return acc + (practice.timeSignature.beats * 60 / bpm) * practice.barsPerStep;
+  }, 0);
+}
+
+function formatPracticeTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  if (s === 60) return `${m + 1}:00`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 function PracticeRow({ practice, onStart, onEdit }) {
   const { t } = useLanguage();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -54,6 +72,10 @@ function PracticeRow({ practice, onStart, onEdit }) {
             beats: practice.timeSignature.beats,
             noteValue: practice.timeSignature.noteValue,
           })}
+          {' '}
+          <span className="text-gray-400">
+            ({formatPracticeTime(computePracticeSeconds(practice))})
+          </span>
         </div>
       </div>
       <button
