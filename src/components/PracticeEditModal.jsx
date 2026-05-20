@@ -27,9 +27,16 @@ const DEFAULTS = {
 export default function PracticeEditModal({ practice, onSave, onDelete, onCancel }) {
   const { t } = useLanguage();
   const isEdit = !!practice;
-  const [form, setForm] = useState(() =>
-    practice ? { ...practice } : { ...DEFAULTS }
-  );
+  const [form, setForm] = useState(() => {
+    const base = practice ? { ...practice } : { ...DEFAULTS };
+    return {
+      ...base,
+      startBpm: String(base.startBpm),
+      endBpm: String(base.endBpm),
+      bpmIncrement: String(base.bpmIncrement),
+      barsPerStep: String(base.barsPerStep),
+    };
+  });
   const [error, setError] = useState(null);
   const firstInputRef = useRef(null);
 
@@ -47,15 +54,20 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
 
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const setNum = (k) => (e) => {
-    const v = parseInt(e.target.value, 10);
-    setField(k, Number.isFinite(v) ? v : 0);
+    const raw = e.target.value;
+    if (raw === '') { setField(k, ''); return; }
+    setField(k, raw.replace(/^0+(\d)/, '$1'));
   };
 
   const validate = () => {
+    const startBpm = parseInt(form.startBpm, 10);
+    const endBpm = parseInt(form.endBpm, 10);
+    const bpmIncrement = parseInt(form.bpmIncrement, 10);
+    const barsPerStep = parseInt(form.barsPerStep, 10);
     if (!form.name.trim()) return t('practiceMode.validation.nameRequired');
-    if (form.endBpm < form.startBpm) return t('practiceMode.validation.endBeforeStart');
-    if (form.bpmIncrement < 1) return t('practiceMode.validation.positiveIncrement');
-    if (form.barsPerStep < 1) return t('practiceMode.validation.positiveBars');
+    if (endBpm < startBpm) return t('practiceMode.validation.endBeforeStart');
+    if (bpmIncrement < 1) return t('practiceMode.validation.positiveIncrement');
+    if (barsPerStep < 1) return t('practiceMode.validation.positiveBars');
     return null;
   };
 
@@ -65,8 +77,10 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
     onSave({
       ...form,
       name: form.name.trim(),
-      startBpm: Math.max(30, Math.min(300, form.startBpm)),
-      endBpm: Math.max(30, Math.min(300, form.endBpm)),
+      startBpm: Math.max(30, Math.min(300, parseInt(form.startBpm, 10))),
+      endBpm: Math.max(30, Math.min(300, parseInt(form.endBpm, 10))),
+      bpmIncrement: parseInt(form.bpmIncrement, 10),
+      barsPerStep: parseInt(form.barsPerStep, 10),
     });
   };
 
