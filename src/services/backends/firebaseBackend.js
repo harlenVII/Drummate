@@ -663,37 +663,49 @@ const firebaseBackend = {
       // loop below (same rationale as the itemsSnap guard above).
       return;
     }
+
+    // Bulk-load local items + logs into maps so the per-remote-log lookups
+    // become in-memory O(1) instead of N separate IndexedDB transactions.
+    // The items loop above may have just added/updated rows, so re-read
+    // here rather than capturing earlier.
+    const localItemsArr = await db.practiceItems.toArray();
+    const itemsByUid = new Map();
+    const itemsByName = new Map();
+    for (const i of localItemsArr) {
+      if (i.uid) itemsByUid.set(i.uid, i);
+      if (i.name) itemsByName.set(i.name, i);
+    }
+    const logsByUid = new Map();
+    for (const l of await db.practiceLogs.toArray()) {
+      if (l.uid) logsByUid.set(l.uid, l);
+    }
+
+    const logsToAdd = [];
+    const logsToUpdate = []; // { id, fields }
+
     for (const docSnap of logsSnap.docs) {
       const data = docSnap.data();
       if (!data.uid) continue;
 
       // Resolve the parent item locally — prefer item_uid, fall back to item_name
       // for any legacy log whose item_uid hasn't been backfilled yet.
-      let localItem = null;
-      if (data.item_uid) {
-        localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
-      }
-      if (!localItem && data.item_name) {
-        localItem = await db.practiceItems.where('name').equals(data.item_name).first();
-      }
+      let localItem = data.item_uid ? itemsByUid.get(data.item_uid) : null;
+      if (!localItem && data.item_name) localItem = itemsByName.get(data.item_name);
       if (!localItem) continue;
 
-      const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
+      const existing = logsByUid.get(data.uid);
       if (existing) {
-        // Remap if remote moved this log under a different parent (cross-device merge).
-        const updates = {};
+        const fields = {};
         if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
-          updates.itemUid = localItem.uid;
-          updates.itemId = localItem.id;
+          fields.itemUid = localItem.uid;
+          fields.itemId = localItem.id;
         }
-        if (!existing.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.practiceLogs.update(existing.id, updates);
-        }
+        if (!existing.syncedOnce) fields.syncedOnce = true;
+        if (Object.keys(fields).length > 0) logsToUpdate.push({ id: existing.id, fields });
         continue;
       }
 
-      await db.practiceLogs.add({
+      logsToAdd.push({
         itemId: localItem.id,
         itemUid: localItem.uid,
         date: data.date,
@@ -701,6 +713,15 @@ const firebaseBackend = {
         uid: data.uid,
         loggedAt: resolveLoggedAt(data),
         syncedOnce: true,
+      });
+    }
+
+    if (logsToAdd.length > 0 || logsToUpdate.length > 0) {
+      await db.transaction('rw', db.practiceLogs, async () => {
+        if (logsToAdd.length > 0) await db.practiceLogs.bulkAdd(logsToAdd);
+        for (const { id, fields } of logsToUpdate) {
+          await db.practiceLogs.update(id, fields);
+        }
       });
     }
 
