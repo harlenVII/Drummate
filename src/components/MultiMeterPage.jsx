@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   DndContext,
+  DragOverlay,
   closestCenter,
   PointerSensor,
   TouchSensor,
@@ -76,12 +77,13 @@ function DragHandle({ listeners, attributes }) {
 }
 
 function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot, onDelete, onSelect }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: slot.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slot.id });
   const isCurrentlyPlaying = isPlaying && index === playingSlot;
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
@@ -151,6 +153,7 @@ function MultiMeterPage({
   const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState(null);
+  const [activeDragId, setActiveDragId] = useState(null);
 
   const nextIdRef = useRef(null);
   if (nextIdRef.current === null) {
@@ -315,10 +318,27 @@ function MultiMeterPage({
             </div>
           ) : null
         ) : editing ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={({ active }) => setActiveDragId(active.id)}
+            onDragEnd={(event) => { setActiveDragId(null); handleDragEnd(event); }}
+            onDragCancel={() => setActiveDragId(null)}
+          >
             <SortableContext items={slots.map(s => s.id)} strategy={rectSortingStrategy}>
               {slotGrid}
             </SortableContext>
+            <DragOverlay>
+              {activeDragId != null ? (() => {
+                const slot = slots.find(s => s.id === activeDragId);
+                if (!slot) return null;
+                return (
+                  <div className="relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-blue-400 bg-blue-50 shadow-lg cursor-grabbing">
+                    <span className="text-sm font-semibold text-blue-700">{slot.beats}/{slot.noteValue}</span>
+                  </div>
+                );
+              })() : null}
+            </DragOverlay>
           </DndContext>
         ) : (
           slotGrid

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import BpmDial from './BpmDial';
@@ -26,12 +26,13 @@ function DragHandle({ listeners, attributes }) {
 }
 
 function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot, onDelete, onSelect }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: slot.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slot.id });
   const isCurrentlyPlaying = isPlaying && index === playingSlot;
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
@@ -105,6 +106,7 @@ function SequencerPage({
   const [editing, setEditing] = useState(false);
   const [selectedSlotIndex, setSelectedSlotIndex] = useState(null);
   const [insertMode, setInsertMode] = useState('after');
+  const [activeDragId, setActiveDragId] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -297,11 +299,24 @@ function SequencerPage({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+            onDragStart={({ active }) => setActiveDragId(active.id)}
+            onDragEnd={(event) => { setActiveDragId(null); handleDragEnd(event); }}
+            onDragCancel={() => setActiveDragId(null)}
           >
             <SortableContext items={slots.map(s => s.id)} strategy={rectSortingStrategy}>
               {slotGrid}
             </SortableContext>
+            <DragOverlay>
+              {activeDragId != null ? (() => {
+                const slot = slots.find(s => s.id === activeDragId);
+                if (!slot) return null;
+                return (
+                  <div className="relative flex flex-col items-center justify-center p-2 rounded-xl border-2 border-blue-400 bg-blue-50 shadow-lg cursor-grabbing">
+                    <SubdivisionIcon type={slot.subdivision} />
+                  </div>
+                );
+              })() : null}
+            </DragOverlay>
           </DndContext>
         ) : (
           slotGrid
