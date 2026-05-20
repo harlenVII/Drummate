@@ -21,7 +21,7 @@
 
 ---
 
-## Task 1: Percentage label on the progress bar
+## Task 1: Percentage label on the progress bar [model: haiku]
 
 **Files:**
 - Modify: `src/components/PracticeRunView.jsx:244-250`
@@ -76,7 +76,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 
 ---
 
-## Task 2: Space hotkey in the run view
+## Task 2: Space hotkey in the run view [model: haiku]
 
 **Files:**
 - Modify: `src/components/PracticeRunView.jsx` (add one `useEffect` after the cleanup effect at line ~219)
@@ -117,7 +117,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 
 ---
 
-## Task 3: Total practice time in listing — helpers + tests
+## Task 3: Total practice time in listing — helpers + tests [model: haiku]
 
 **Files:**
 - Create: `tests/practicePage.test.js`
@@ -294,7 +294,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 
 ---
 
-## Task 4: Up/Down/Space hotkeys in the listing view
+## Task 4: Up/Down/Space hotkeys in the listing view [model: haiku]
 
 **Files:**
 - Modify: `src/components/PracticePage.jsx`
@@ -433,7 +433,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 
 ---
 
-## Task 5: 2-bar count-in
+## Task 5: 2-bar count-in [model: sonnet]
 
 **Files:**
 - Modify: `src/components/PracticeRunView.jsx`
@@ -730,7 +730,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 
 ---
 
-## Task 6: Final build verification
+## Task 6: Final build verification [model: haiku]
 
 - [ ] **Step 1: Run full test suite**
 
