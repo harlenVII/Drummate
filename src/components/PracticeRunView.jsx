@@ -227,6 +227,19 @@ export default function PracticeRunView({
     };
   }, [engineRef]);
 
+  // Space bar: toggle play/pause while practice is active
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.code === 'Space' && !complete) {
+        e.preventDefault();
+        handleTogglePlay();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleTogglePlay, complete]);
+
   const currentBpm = complete ? steps[steps.length - 1] : steps[stepIndex];
   const barsCompletedTotal = stepIndex * practice.barsPerStep + barIndex;
   const progressPct = Math.min(100, (barsCompletedTotal / totalBars) * 100);
