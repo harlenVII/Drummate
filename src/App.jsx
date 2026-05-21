@@ -1441,6 +1441,9 @@ function App() {
       else if (e.code === 'KeyH') setTimeUnit('hours');
       else if (e.code === 'KeyE') { if (languageRef.current !== 'en') toggleLanguage(); }
       else if (e.code === 'KeyC') { if (languageRef.current !== 'zh') toggleLanguage(); }
+      else if (e.code === 'KeyS') {
+        if (activeItemIdRef.current != null) saveAndStop();
+      }
       else if (e.key === 'Tab') {
         if (activeTabRef.current === 'metronome') {
           e.preventDefault();
@@ -1498,7 +1501,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage]);
+  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage, saveAndStop]);
 
   const handleEnterOfflineMode = useCallback(() => {
     // Tear down the live Firestore listener so it can't overwrite local
