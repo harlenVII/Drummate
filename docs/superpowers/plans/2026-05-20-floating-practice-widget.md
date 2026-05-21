@@ -25,6 +25,8 @@ No test files. The project has Vitest but no React component test environment (n
 
 ## Task 1: Add i18n key for the stop button aria-label
 
+**Model:** `claude-haiku-4-5-20251001` — single-line edits, fully specified.
+
 **Files:**
 - Modify: [src/contexts/LanguageContext.jsx](src/contexts/LanguageContext.jsx)
 
@@ -61,6 +63,8 @@ git commit -m "feat(i18n): add stopPractice key for floating widget"
 ---
 
 ## Task 2: Create the FloatingPracticeWidget component
+
+**Model:** `claude-haiku-4-5-20251001` — full component code is written verbatim in the plan; copy-paste-and-save task.
 
 **Files:**
 - Create: [src/components/FloatingPracticeWidget.jsx](src/components/FloatingPracticeWidget.jsx)
@@ -138,6 +142,8 @@ git commit -m "feat(practice): add FloatingPracticeWidget component"
 
 ## Task 3: Wire the widget into App.jsx
 
+**Model:** `claude-haiku-4-5-20251001` — two mechanical edits to App.jsx with exact insertion points and full code shown.
+
 **Files:**
 - Modify: [src/App.jsx](src/App.jsx)
 
@@ -199,6 +205,8 @@ git commit -m "feat(practice): render FloatingPracticeWidget on non-practice tab
 
 ## Task 4: Add the `s` global hotkey
 
+**Model:** `claude-haiku-4-5-20251001` — one branch added to an existing handler, plus a dep-array entry. Fully specified.
+
 **Files:**
 - Modify: [src/App.jsx](src/App.jsx)
 
@@ -256,6 +264,8 @@ git commit -m "feat(practice): add 's' global hotkey to stop active timer"
 ---
 
 ## Task 5: Update CLAUDE.md documentation
+
+**Model:** `claude-haiku-4-5-20251001` — doc edits, fully specified.
 
 **Files:**
 - Modify: [CLAUDE.md](CLAUDE.md)
