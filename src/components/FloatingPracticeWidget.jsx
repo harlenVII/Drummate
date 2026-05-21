@@ -2,9 +2,20 @@ import { useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatTime } from '../utils/formatTime';
 
+const POS_KEY = 'drummate_widget_pos';
+
+function readSavedPos() {
+  try {
+    const saved = localStorage.getItem(POS_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
 function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
   const { t } = useLanguage();
-  const [pos, setPos] = useState(null); // null = default top-right anchor
+  const [pos, setPos] = useState(readSavedPos); // null = centered CSS default
   const dragRef = useRef(null);
   const wasDragged = useRef(false);
 
@@ -36,10 +47,12 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
       wasDragged.current = true;
     }
     if (wasDragged.current) {
-      setPos({
+      const newPos = {
         x: e.clientX - dragRef.current.offsetX,
         y: e.clientY - dragRef.current.offsetY,
-      });
+      };
+      setPos(newPos);
+      try { localStorage.setItem(POS_KEY, JSON.stringify(newPos)); } catch {}
     }
   };
 
@@ -63,7 +76,7 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       style={pos ? { left: pos.x, top: pos.y } : undefined}
-      className={`fixed ${pos ? '' : 'top-4 right-4'} z-50 flex items-center gap-3 pl-4 pr-2 py-2 rounded-full bg-blue-600 text-white shadow-lg max-w-[280px] hover:bg-blue-700 cursor-grab active:cursor-grabbing select-none`}
+      className={`fixed ${pos ? '' : 'top-4 left-1/2 -translate-x-1/2'} z-50 flex items-center gap-3 pl-4 pr-2 py-2 rounded-full bg-blue-600 text-white shadow-lg max-w-[280px] hover:bg-blue-700 cursor-grab active:cursor-grabbing select-none`}
       aria-label={itemName}
     >
       <span className="relative flex h-2.5 w-2.5 shrink-0">
