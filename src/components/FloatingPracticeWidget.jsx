@@ -1,8 +1,12 @@
+import { useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatTime } from '../utils/formatTime';
 
 function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
   const { t } = useLanguage();
+  const [pos, setPos] = useState(null); // null = default top-right anchor
+  const dragRef = useRef(null);
+  const wasDragged = useRef(false);
 
   if (!itemName) return null;
 
@@ -11,11 +15,55 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
     onStop();
   };
 
+  const handlePointerDown = (e) => {
+    if (e.target.closest('[data-stop]')) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = {
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      startX: e.clientX,
+      startY: e.clientY,
+    };
+    wasDragged.current = false;
+  };
+
+  const handlePointerMove = (e) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (!wasDragged.current && dx * dx + dy * dy > 16) {
+      wasDragged.current = true;
+    }
+    if (wasDragged.current) {
+      setPos({
+        x: e.clientX - dragRef.current.offsetX,
+        y: e.clientY - dragRef.current.offsetY,
+      });
+    }
+  };
+
+  const handlePointerUp = () => {
+    dragRef.current = null;
+  };
+
+  const handleClick = () => {
+    if (wasDragged.current) {
+      wasDragged.current = false;
+      return;
+    }
+    onNavigate();
+  };
+
   return (
     <button
       type="button"
-      onClick={onNavigate}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 pl-4 pr-2 py-2 rounded-full bg-blue-600 text-white shadow-lg max-w-[280px] hover:bg-blue-700 active:scale-95 transition-all duration-150"
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      style={pos ? { left: pos.x, top: pos.y } : undefined}
+      className={`fixed ${pos ? '' : 'top-4 right-4'} z-50 flex items-center gap-3 pl-4 pr-2 py-2 rounded-full bg-blue-600 text-white shadow-lg max-w-[280px] hover:bg-blue-700 cursor-grab active:cursor-grabbing select-none`}
       aria-label={itemName}
     >
       <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -27,6 +75,7 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
       <span
         role="button"
         tabIndex={0}
+        data-stop
         onClick={handleStopClick}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
