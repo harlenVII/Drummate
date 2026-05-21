@@ -18,6 +18,7 @@ import firebaseBackend from './services/backends/firebaseBackend';
 import AuthScreen from './components/AuthScreen';
 import { MetronomeEngine } from './audio/metronomeEngine';
 import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
+import FloatingPracticeWidget from './components/FloatingPracticeWidget';
 import EncouragementButton from './components/EncouragementButton';
 import EncouragementModal from './components/EncouragementModal';
 import EditTimeModal from './components/EditTimeModal';
@@ -1864,6 +1865,15 @@ function App() {
         <FloatingVoiceIndicator
           listeningState={listeningState}
           transcript={voiceTranscript}
+        />
+      )}
+
+      {activeItemId != null && activeTab !== 'practice' && (
+        <FloatingPracticeWidget
+          itemName={items.find(i => i.id === activeItemId)?.name ?? ''}
+          elapsedTime={elapsedTime}
+          onStop={saveAndStop}
+          onNavigate={() => handleTabChange('practice')}
         />
       )}
 
