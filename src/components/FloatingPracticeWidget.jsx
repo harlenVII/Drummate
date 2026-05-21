@@ -2,20 +2,9 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatTime } from '../utils/formatTime';
 
-const POS_KEY = 'drummate_widget_pos';
-
-function readSavedPos() {
-  try {
-    const saved = localStorage.getItem(POS_KEY);
-    return saved ? JSON.parse(saved) : null;
-  } catch {
-    return null;
-  }
-}
-
 function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
   const { t } = useLanguage();
-  const [pos, setPos] = useState(readSavedPos);
+  const [pos, setPos] = useState(null);
   const btnRef = useRef(null);
   const dragRef = useRef(null);
   const wasDragged = useRef(false);
@@ -70,7 +59,6 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
         y: e.clientY - dragRef.current.offsetY,
       };
       setPos(newPos);
-      try { localStorage.setItem(POS_KEY, JSON.stringify(newPos)); } catch {}
     }
   };
 
