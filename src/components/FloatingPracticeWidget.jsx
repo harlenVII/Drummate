@@ -2,9 +2,11 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatTime } from '../utils/formatTime';
 
+let sessionPos = null; // survives tab-switch remounts, resets on page refresh
+
 function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
   const { t } = useLanguage();
-  const [pos, setPos] = useState(null);
+  const [pos, setPos] = useState(() => sessionPos);
   const btnRef = useRef(null);
   const dragRef = useRef(null);
   const wasDragged = useRef(false);
@@ -20,10 +22,11 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
 
     const h1Rect = h1.getBoundingClientRect();
     const sBtnRect = settingsBtn.getBoundingClientRect();
-    setPos({
+    sessionPos = {
       x: Math.round((h1Rect.right + sBtnRect.left) / 2 - pill.offsetWidth / 2),
       y: Math.round(h1Rect.top + h1Rect.height / 2 - pill.offsetHeight / 2),
-    });
+    };
+    setPos(sessionPos);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!itemName) return null;
@@ -58,6 +61,7 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
         x: e.clientX - dragRef.current.offsetX,
         y: e.clientY - dragRef.current.offsetY,
       };
+      sessionPos = newPos;
       setPos(newPos);
     }
   };
