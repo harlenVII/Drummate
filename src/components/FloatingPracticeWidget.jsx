@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatTime } from '../utils/formatTime';
 
@@ -15,9 +15,27 @@ function readSavedPos() {
 
 function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
   const { t } = useLanguage();
-  const [pos, setPos] = useState(readSavedPos); // null = centered CSS default
+  const [pos, setPos] = useState(readSavedPos);
+  const btnRef = useRef(null);
   const dragRef = useRef(null);
   const wasDragged = useRef(false);
+
+  // On first mount with no saved position, center the pill in the gap between
+  // the Drummate h1 and the settings avatar button.
+  useLayoutEffect(() => {
+    if (pos !== null) return;
+    const h1 = document.querySelector('h1');
+    const settingsBtn = document.querySelector('[aria-label="Open settings"]');
+    const pill = btnRef.current;
+    if (!h1 || !settingsBtn || !pill) return;
+
+    const h1Rect = h1.getBoundingClientRect();
+    const sBtnRect = settingsBtn.getBoundingClientRect();
+    setPos({
+      x: Math.round((h1Rect.right + sBtnRect.left) / 2 - pill.offsetWidth / 2),
+      y: Math.round(h1Rect.top + h1Rect.height / 2 - pill.offsetHeight / 2),
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!itemName) return null;
 
@@ -70,6 +88,7 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
 
   return (
     <button
+      ref={btnRef}
       type="button"
       onClick={handleClick}
       onPointerDown={handlePointerDown}
