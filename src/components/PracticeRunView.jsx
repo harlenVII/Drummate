@@ -281,8 +281,14 @@ export default function PracticeRunView({
   }, [handleTogglePlay, complete]);
 
   const currentBpm = complete ? steps[steps.length - 1] : steps[stepIndex];
-  const barsCompletedTotal = stepIndex * practice.barsPerStep + barIndex;
-  const progressPct = Math.min(100, (barsCompletedTotal / totalBars) * 100);
+  // Time-based progress: weight each bar by 1/bpm so slower tempos contribute
+  // proportionally more time — progress advances at a steady real-time rate.
+  const stepDurations = steps.map((bpm) => practice.barsPerStep / bpm);
+  const totalTime = stepDurations.reduce((a, b) => a + b, 0);
+  const elapsedTime =
+    stepDurations.slice(0, stepIndex).reduce((a, b) => a + b, 0) +
+    barIndex / steps[stepIndex];
+  const progressPct = Math.min(100, (elapsedTime / totalTime) * 100);
 
   return (
     <div className="flex flex-col gap-6 items-center">
