@@ -24,11 +24,11 @@ function MergeTargetPicker({ sourceItem, items, onCancel, onConfirm }) {
   if (pendingTarget) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-        <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-md w-full p-5">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-3">
             {t('mergeConfirmTitle')}
           </h2>
-          <p className="text-sm text-gray-700 mb-5">
+          <p className="text-sm text-gray-700 dark:text-slate-200 mb-5">
             {t('mergeConfirmBody', {
               source: sourceItem.name,
               target: pendingTarget.name,
@@ -37,7 +37,7 @@ function MergeTargetPicker({ sourceItem, items, onCancel, onConfirm }) {
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setPendingTarget(null)}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
+              className="px-4 py-2 text-gray-600 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
             >
               {t('cancel')}
             </button>
@@ -57,28 +57,28 @@ function MergeTargetPicker({ sourceItem, items, onCancel, onConfirm }) {
     <button
       key={item.id}
       onClick={() => setPendingTarget(item)}
-      className={`text-left w-full px-3 py-2 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors ${
+      className={`text-left w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-blue-50 hover:border-blue-300 transition-colors ${
         item.archived ? 'opacity-60' : ''
       }`}
     >
-      <span className="font-medium text-gray-800">{item.name}</span>
+      <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
       {item.archived && (
-        <span className="ml-2 text-xs text-gray-500">{t('mergeArchivedTag')}</span>
+        <span className="ml-2 text-xs text-gray-500 dark:text-slate-400">{t('mergeArchivedTag')}</span>
       )}
     </button>
   );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full max-h-[80vh] flex flex-col">
-        <div className="p-5 border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] flex flex-col">
+        <div className="p-5 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-800">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100">
               {t('mergePickerTitle')}
             </h2>
             <button
               onClick={onCancel}
-              className="p-1 text-gray-400 hover:text-gray-600"
+              className="p-1 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
               aria-label={t('cancel')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -92,20 +92,20 @@ function MergeTargetPicker({ sourceItem, items, onCancel, onConfirm }) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('mergeSearchPlaceholder')}
             autoFocus
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
           />
         </div>
 
         <div className="overflow-y-auto p-5 flex flex-col gap-4">
           {eligible.length === 0 && (
-            <p className="text-center text-gray-400 italic">{t('mergeEmptyState')}</p>
+            <p className="text-center text-gray-400 dark:text-slate-500 italic">{t('mergeEmptyState')}</p>
           )}
           {eligible.length > 0 && filtered.length === 0 && (
-            <p className="text-center text-gray-400 italic">{t('mergeNoOtherItems')}</p>
+            <p className="text-center text-gray-400 dark:text-slate-500 italic">{t('mergeNoOtherItems')}</p>
           )}
           {fundamentals.length > 0 && (
             <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
                 {t('categories.fundamentals')}
               </h3>
               {fundamentals.map(renderRow)}
@@ -113,7 +113,7 @@ function MergeTargetPicker({ sourceItem, items, onCancel, onConfirm }) {
           )}
           {songs.length > 0 && (
             <div className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <h3 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
                 {t('categories.songs')}
               </h3>
               {songs.map(renderRow)}

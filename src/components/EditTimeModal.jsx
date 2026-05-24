@@ -51,20 +51,20 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-4"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-gray-800">
+        <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">
           {currentSeconds > 0 ? t('editTime') : t('addTime')}
         </h2>
 
-        <div className="text-sm text-gray-500">
-          <div className="font-medium text-gray-800">{itemName}</div>
+        <div className="text-sm text-gray-500 dark:text-slate-400">
+          <div className="font-medium text-gray-800 dark:text-slate-100">{itemName}</div>
           <div>{displayDate}</div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-600 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-slate-200 mb-1">
             {t('durationMinutes')}
           </label>
           <input
@@ -77,12 +77,12 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
             onKeyDown={(e) => {
               if (e.key === 'Enter' && hasChange) handleSave();
             }}
-            className={`w-full px-3 py-2 border rounded-lg text-lg font-mono focus:outline-none focus:ring-2 ${
+            className={`w-full px-3 py-2 border rounded-lg text-lg font-mono focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-100 ${
               !isValid
                 ? 'border-red-300 focus:ring-red-500'
                 : isWarning
                   ? 'border-yellow-300 focus:ring-yellow-500'
-                  : 'border-gray-300 focus:ring-blue-500'
+                  : 'border-gray-300 dark:border-slate-600 focus:ring-blue-500'
             }`}
           />
         </div>
@@ -94,7 +94,7 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
             className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
               hasChange
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed'
             }`}
           >
             {t('save')}
@@ -111,7 +111,7 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
 
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            className="w-full px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
           >
             {t('cancel')}
           </button>

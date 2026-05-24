@@ -51,21 +51,21 @@ function PracticeRow({ practice, isFocused, onStart, onEdit }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-3 ${
+      className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 flex items-center gap-3 ${
         isFocused ? 'ring-2 ring-blue-400' : ''
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="text-gray-400 hover:text-gray-600 cursor-grab touch-none px-1"
+        className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 cursor-grab touch-none px-1"
         aria-label="drag"
       >
         ⋮⋮
       </button>
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-gray-800 truncate">{practice.name}</div>
-        <div className="text-sm text-gray-500 truncate">
+        <div className="font-semibold text-gray-800 dark:text-slate-100 truncate">{practice.name}</div>
+        <div className="text-sm text-gray-500 dark:text-slate-400 truncate">
           {t('practiceMode.summary', {
             start: practice.startBpm,
             end: practice.endBpm,
@@ -75,14 +75,14 @@ function PracticeRow({ practice, isFocused, onStart, onEdit }) {
             noteValue: practice.timeSignature.noteValue,
           })}
           {' '}
-          <span className="text-gray-400">
+          <span className="text-gray-400 dark:text-slate-500">
             ({formatPracticeTime(computePracticeSeconds(practice))})
           </span>
         </div>
       </div>
       <button
         onClick={onEdit}
-        className="px-3 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-100"
+        className="px-3 py-1.5 rounded-md text-sm text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
       >
         {t('edit')}
       </button>
@@ -192,7 +192,7 @@ export default function PracticePage({
     <>
       <div className="flex flex-col gap-3">
         {practices.length === 0 ? (
-          <div className="text-center text-gray-500 py-12">
+          <div className="text-center text-gray-500 dark:text-slate-400 py-12">
             {t('practiceMode.empty')}
           </div>
         ) : (

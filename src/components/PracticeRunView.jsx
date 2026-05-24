@@ -292,13 +292,13 @@ export default function PracticeRunView({
 
   return (
     <div className="flex flex-col gap-6 items-center">
-      <h2 className="text-2xl font-bold text-gray-800 text-center">{practice.name}</h2>
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-slate-100 text-center">{practice.name}</h2>
 
-      <div className="text-6xl font-bold text-gray-900 tabular-nums">{currentBpm}</div>
+      <div className="text-6xl font-bold text-gray-900 dark:text-slate-100 tabular-nums">{currentBpm}</div>
 
       {isCountingIn ? (
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm font-medium text-gray-500 uppercase tracking-widest">
+          <div className="text-sm font-medium text-gray-500 dark:text-slate-400 uppercase tracking-widest">
             {t('practiceMode.getReady')}
           </div>
           <div className="text-7xl font-bold text-blue-600 tabular-nums">
@@ -307,7 +307,7 @@ export default function PracticeRunView({
         </div>
       ) : (
         <>
-          <div className="text-sm text-gray-600 flex flex-col items-center gap-1">
+          <div className="text-sm text-gray-600 dark:text-slate-400 flex flex-col items-center gap-1">
             <div>{t('practiceMode.stepProgress', { current: stepIndex + 1, total: totalSteps })}</div>
             <div>{t('practiceMode.barProgress', { current: Math.min(barIndex + 1, practice.barsPerStep), total: practice.barsPerStep })}</div>
           </div>
@@ -316,7 +316,7 @@ export default function PracticeRunView({
             <div className="flex justify-end">
               <span className="text-sm font-semibold text-blue-600">{Math.round(progressPct)}%</span>
             </div>
-            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-600 transition-all duration-300"
                 style={{ width: `${progressPct}%` }}
@@ -346,7 +346,7 @@ export default function PracticeRunView({
           </button>
           <button
             onClick={handleEnd}
-            className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300"
+            className="px-6 py-2 rounded-lg bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-100 font-medium hover:bg-gray-300 dark:hover:bg-slate-600"
           >
             {t('practiceMode.end')}
           </button>

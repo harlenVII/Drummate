@@ -12,7 +12,7 @@ function DragHandle({ listeners, attributes }) {
     <button
       {...listeners}
       {...attributes}
-      className="p-2 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none"
+      className="p-2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 cursor-grab active:cursor-grabbing touch-none"
       aria-label="Drag to reorder"
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -33,7 +33,7 @@ function SortableItem({ item, children }) {
 
   return (
     <div ref={setNodeRef} style={style}>
-      <div className="bg-white rounded-lg shadow-sm p-4 flex items-center">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center">
         <DragHandle listeners={listeners} attributes={attributes} />
         {children}
       </div>
@@ -44,14 +44,14 @@ function SortableItem({ item, children }) {
 function CategoryToggle({ value, onChange, ariaLabel }) {
   const { t } = useLanguage();
   return (
-    <div role="group" aria-label={ariaLabel || t('selectCategory')} className="inline-flex rounded-md overflow-hidden border border-gray-300">
+    <div role="group" aria-label={ariaLabel || t('selectCategory')} className="inline-flex rounded-md overflow-hidden border border-gray-300 dark:border-slate-600">
       <button
         type="button"
         onClick={() => onChange('fundamentals')}
         title={t('categories.fundamentals')}
         aria-pressed={value === 'fundamentals'}
         className={`px-2 py-1 text-xs font-semibold ${
-          value === 'fundamentals' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+          value === 'fundamentals' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'
         }`}
       >
         {t('categories.fundamentalsShort')}
@@ -61,8 +61,8 @@ function CategoryToggle({ value, onChange, ariaLabel }) {
         onClick={() => onChange('songs')}
         title={t('categories.songs')}
         aria-pressed={value === 'songs'}
-        className={`px-2 py-1 text-xs font-semibold border-l border-gray-300 ${
-          value === 'songs' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+        className={`px-2 py-1 text-xs font-semibold border-l border-gray-300 dark:border-slate-600 ${
+          value === 'songs' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'
         }`}
       >
         {t('categories.songsShort')}
@@ -77,7 +77,7 @@ function EmptyDropZone({ id, label }) {
     <div
       ref={setNodeRef}
       className={`text-sm italic px-3 py-4 rounded-lg border border-dashed transition-colors ${
-        isOver ? 'bg-blue-50 border-blue-400 text-blue-600' : 'bg-white border-gray-300 text-gray-400'
+        isOver ? 'bg-blue-50 border-blue-400 text-blue-600' : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-400 dark:text-slate-500'
       }`}
     >
       {label}
@@ -344,7 +344,7 @@ function PracticeItemList({
           ) : (
             <span
               onClick={() => startRename(item)}
-              className="font-medium text-gray-800 cursor-pointer hover:text-blue-600 transition-colors"
+              className="font-medium text-gray-800 dark:text-slate-100 cursor-pointer hover:text-blue-600 transition-colors"
               title="Click to rename"
             >
               {item.name}
@@ -358,7 +358,7 @@ function PracticeItemList({
             />
             <button
               onClick={() => onArchiveItem(item.id, !item.archived)}
-              className="p-1.5 text-gray-400 hover:text-amber-500 transition-colors"
+              className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-amber-500 transition-colors"
               title={item.archived ? t('unarchive') : t('archive')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -367,7 +367,7 @@ function PracticeItemList({
             </button>
             <button
               onClick={() => setMergeSourceItem(item)}
-              className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
+              className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-500 transition-colors"
               title={t('merge')}
               aria-label={`${t('merge')}: ${item.name}`}
             >
@@ -377,7 +377,7 @@ function PracticeItemList({
             </button>
             <button
               onClick={() => onDeleteItem(item.id)}
-              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+              className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors"
               title="Delete item"
             >
               <svg
@@ -403,7 +403,7 @@ function PracticeItemList({
         {hasArchivedItems && (
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className="self-start px-3 py-1 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+            className="self-start px-3 py-1 text-sm text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
           >
             {showArchived ? t('hideArchived') : `${t('showArchived')} (${archivedItems.length})`}
           </button>
@@ -419,7 +419,7 @@ function PracticeItemList({
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
                 {t('categories.fundamentals')}
               </h3>
               <SortableContext items={editFundamentals.map(i => i.id)} strategy={verticalListSortingStrategy}>
@@ -432,7 +432,7 @@ function PracticeItemList({
             </div>
 
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
                 {t('categories.songs')}
               </h3>
               <SortableContext items={editSongs.map(i => i.id)} strategy={verticalListSortingStrategy}>
@@ -449,9 +449,9 @@ function PracticeItemList({
               const item = displayItems.find(i => i.id === activeDragId);
               if (!item) return null;
               return (
-                <div className="bg-white rounded-lg shadow-sm p-4 flex items-center cursor-grabbing">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center cursor-grabbing">
                   <DragHandle listeners={{}} attributes={{}} />
-                  <span className="ml-2 font-medium text-gray-800">{item.name}</span>
+                  <span className="ml-2 font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
                 </div>
               );
             })() : null}
@@ -466,7 +466,7 @@ function PracticeItemList({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={handleAddKeyDown}
             placeholder={t('newItemPlaceholder')}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
           />
           <button
             onClick={handleAdd}
@@ -500,10 +500,10 @@ function PracticeItemList({
                     ? Math.max(0, 30 - Math.floor((now - new Date(item.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
                     : 0;
                   return (
-                    <div key={item.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center opacity-50">
+                    <div key={item.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center opacity-50">
                       <div className="flex-1 flex items-center justify-between">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-800">{item.name}</span>
+                          <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
                           <span className="text-xs text-red-400">
                             {t('daysLeft', { days: daysLeft })}
                           </span>
@@ -511,7 +511,7 @@ function PracticeItemList({
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => onRestoreItem(item.id)}
-                            className="p-1.5 text-gray-400 hover:text-green-500 transition-colors"
+                            className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-green-500 transition-colors"
                             title={t('restore')}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -524,7 +524,7 @@ function PracticeItemList({
                                 onPermanentDelete(item.id);
                               }
                             }}
-                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                            className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-red-600 transition-colors"
                             title={t('permanentDelete')}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -576,13 +576,13 @@ function PracticeItemList({
       <div
         key={item.id}
         onClick={() => onFocusChange(item.id)}
-        className={`bg-white rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors cursor-pointer ${
-          isActive ? 'ring-2 ring-blue-500' : isFocused ? 'ring-2 ring-gray-300' : ''
+        className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors cursor-pointer ${
+          isActive ? 'ring-2 ring-blue-500' : isFocused ? 'ring-2 ring-gray-300 dark:ring-slate-600' : ''
         }`}
       >
         <div className="flex flex-col">
-          <span className="font-medium text-gray-800">{item.name}</span>
-          <span className="font-mono text-lg text-gray-600">
+          <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
+          <span className="font-mono text-lg text-gray-600 dark:text-slate-400">
             {formatTime(displayTime)}
           </span>
         </div>
@@ -610,22 +610,22 @@ function PracticeItemList({
       <GoalBanner refreshKey={goalRefreshKey} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.fundamentals')}
           </h3>
           {fundamentalsItems.length === 0 && activeItems.length > 0 ? (
-            <p className="text-sm text-gray-400 italic px-1">{t('noFundamentalsYet')}</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500 italic px-1">{t('noFundamentalsYet')}</p>
           ) : (
             fundamentalsItems.map(item => renderRow(item, indexOf(item.id)))
           )}
         </div>
 
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.songs')}
           </h3>
           {songsItems.length === 0 && activeItems.length > 0 ? (
-            <p className="text-sm text-gray-400 italic px-1">{t('noSongsYet')}</p>
+            <p className="text-sm text-gray-400 dark:text-slate-500 italic px-1">{t('noSongsYet')}</p>
           ) : (
             songsItems.map(item => renderRow(item, indexOf(item.id)))
           )}
@@ -636,7 +636,7 @@ function PracticeItemList({
         <div className="mt-2">
           <button
             onClick={() => setShowArchivedNormal(!showArchivedNormal)}
-            className="w-full text-left px-1 py-2 text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2"
+            className="w-full text-left px-1 py-2 text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-2"
             aria-expanded={showArchivedNormal}
           >
             <span className="text-xs" aria-hidden="true">{showArchivedNormal ? '▾' : '▸'}</span>
@@ -649,11 +649,11 @@ function PracticeItemList({
                 return (
                   <div
                     key={item.id}
-                    className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between opacity-50"
+                    className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between opacity-50"
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-800">{item.name}</span>
-                      <span className="font-mono text-lg text-gray-600">
+                      <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
+                      <span className="font-mono text-lg text-gray-600 dark:text-slate-400">
                         {formatTime(savedTotal)}
                       </span>
                     </div>
@@ -666,14 +666,14 @@ function PracticeItemList({
       )}
 
       {activeItems.length === 0 && (
-        <p className="text-center text-gray-400 py-4">
+        <p className="text-center text-gray-400 dark:text-slate-500 py-4">
           {t('addFirstItem')}
         </p>
       )}
 
       <button
         onClick={() => onSetEditing(true)}
-        className="mt-1 px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+        className="mt-1 px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
       >
         {t('edit')}
       </button>

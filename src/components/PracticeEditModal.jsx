@@ -93,55 +93,55 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5 flex flex-col gap-4">
-          <h2 className="text-xl font-bold text-gray-800">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
             {isEdit ? t('practiceMode.editPractice') : t('practiceMode.addPractice')}
           </h2>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-600">{t('practiceMode.name')}</span>
+            <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.name')}</span>
             <input
               ref={firstInputRef}
               type="text"
               value={form.name}
               onChange={(e) => setField('name', e.target.value)}
               placeholder={t('practiceMode.namePlaceholder')}
-              className="border border-gray-300 rounded-lg px-3 py-2"
+              className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
             />
           </label>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-gray-600">{t('practiceMode.startBpm')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.startBpm')}</span>
               <input type="number" min="30" max="300" value={form.startBpm}
                 onChange={setNum('startBpm')}
-                className="border border-gray-300 rounded-lg px-3 py-2" />
+                className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 dark:bg-slate-700 dark:text-slate-100" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-gray-600">{t('practiceMode.endBpm')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.endBpm')}</span>
               <input type="number" min="30" max="300" value={form.endBpm}
                 onChange={setNum('endBpm')}
-                className="border border-gray-300 rounded-lg px-3 py-2" />
+                className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 dark:bg-slate-700 dark:text-slate-100" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-gray-600">{t('practiceMode.bpmIncrement')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.bpmIncrement')}</span>
               <input type="number" min="1" max="50" value={form.bpmIncrement}
                 onChange={setNum('bpmIncrement')}
-                className="border border-gray-300 rounded-lg px-3 py-2" />
+                className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 dark:bg-slate-700 dark:text-slate-100" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-gray-600">{t('practiceMode.barsPerStep')}</span>
+              <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.barsPerStep')}</span>
               <input type="number" min="1" max="64" value={form.barsPerStep}
                 onChange={setNum('barsPerStep')}
-                className="border border-gray-300 rounded-lg px-3 py-2" />
+                className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 dark:bg-slate-700 dark:text-slate-100" />
             </label>
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-600">{t('practiceMode.timeSignature')}</span>
+            <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.timeSignature')}</span>
             <div className="flex gap-2 flex-wrap">
               {TIME_SIGNATURES.map((ts) => (
                 <button
@@ -151,7 +151,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     form.timeSignature.beats === ts.beats && form.timeSignature.noteValue === ts.noteValue
                       ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                      : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
                   }`}
                 >
                   {ts.beats}/{ts.noteValue}
@@ -161,7 +161,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-600">{t('practiceMode.subdivision')}</span>
+            <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.subdivision')}</span>
             <div className="flex gap-2 flex-wrap">
               {SUBDIVISIONS.filter((s) => s.pattern !== null).map((s) => (
                 <button
@@ -172,7 +172,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     form.subdivision === s.key
                       ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                      : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
                   }`}
                 >
                   <SubdivisionIcon type={s.key} />
@@ -182,7 +182,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-600">{t('practiceMode.sound')}</span>
+            <span className="text-sm font-medium text-gray-600 dark:text-slate-200">{t('practiceMode.sound')}</span>
             <div className="flex gap-2 flex-wrap">
               {SOUND_TYPES.map((s) => (
                 <button
@@ -192,7 +192,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     form.soundType === s
                       ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                      : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
                   }`}
                 >
                   {t(`soundTypes.${s}`)}
@@ -217,7 +217,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
             <div className="flex gap-2">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                className="px-4 py-2 rounded-lg text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
               >
                 {t('cancel')}
               </button>

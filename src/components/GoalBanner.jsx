@@ -64,8 +64,8 @@ function GoalBanner({ refreshKey = 0 }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm px-4 py-2.5 flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-xs text-gray-600">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-4 py-2.5 flex flex-col gap-1.5">
+      <div className="flex items-center justify-between text-xs text-gray-600 dark:text-slate-400">
         <span>
           {t('goal.title')}: {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')} ({progressPercent.toFixed(2)}%)
         </span>
@@ -73,7 +73,7 @@ function GoalBanner({ refreshKey = 0 }) {
           {rightText}
         </span>
       </div>
-      <div className="w-full bg-gray-100 rounded-full h-1">
+      <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1">
         <div
           className={`h-1 rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-blue-500'}`}
           style={{ width: `${progressPercent}%` }}
