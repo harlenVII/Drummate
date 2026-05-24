@@ -41,6 +41,8 @@ function SettingsPanel({
   signOut,
   language,
   toggleLanguage,
+  theme,
+  onThemeChange,
   user,
   timeUnit,
   onToggleTimeUnit,
@@ -106,16 +108,16 @@ function SettingsPanel({
 
       {/* Slide panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-xl flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-72 bg-white dark:bg-slate-900 z-50 shadow-xl flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">{t('settings')}</h2>
+        <div className="flex items-center justify-between px-5 py-5 border-b border-gray-200 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{t('settings')}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
             aria-label="Close settings"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,15 +127,15 @@ function SettingsPanel({
         </div>
 
         {/* Profile card */}
-        <div className="px-5 py-5 flex items-center gap-4 border-b border-gray-100">
+        <div className="px-5 py-5 flex items-center gap-4 border-b border-gray-100 dark:border-slate-800">
           <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg font-semibold shrink-0">
             {(user?.name || user?.email || '?')[0].toUpperCase()}
           </div>
           <div className="min-w-0">
             {user?.name && (
-              <p className="text-sm font-semibold text-gray-800 truncate">{user.name}</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">{user.name}</p>
             )}
-            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user?.email}</p>
           </div>
         </div>
 
@@ -141,16 +143,16 @@ function SettingsPanel({
         <div className="flex-1 px-5 py-6 flex flex-col gap-6">
           {/* Language */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">{t('language')}</span>
-            <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('language')}</span>
+            <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
               {['en', 'zh'].map((lang) => (
                 <button
                   key={lang}
                   onClick={() => language !== lang && toggleLanguage()}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     language === lang
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                   }`}
                 >
                   {lang === 'en' ? 'EN' : '中文'}
@@ -159,13 +161,33 @@ function SettingsPanel({
             </div>
           </div>
 
+          {/* Theme */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('theme')}</span>
+            <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
+              {['light', 'dark'].map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => onThemeChange(mode)}
+                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                    theme === mode
+                      ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  {t(mode === 'light' ? 'themeLight' : 'themeDark')}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Timezone */}
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-gray-700">{t('timezone')}</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('timezone')}</span>
             <select
               value={currentTz}
               onChange={handleTimezoneChange}
-              className="border border-gray-300 rounded px-2 py-1 text-sm bg-white max-w-[60%]"
+              className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 dark:text-slate-200 max-w-[60%]"
             >
               {!currentTzInList && (
                 <option value={currentTz}>{currentTz}</option>
@@ -178,16 +200,16 @@ function SettingsPanel({
 
           {/* Time Unit */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">{t('timeUnit')}</span>
-            <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('timeUnit')}</span>
+            <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
               {['minutes', 'hours'].map((unit) => (
                 <button
                   key={unit}
                   onClick={() => timeUnit !== unit && onToggleTimeUnit()}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     timeUnit === unit
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                   }`}
                 >
                   {t(unit)}
@@ -199,11 +221,11 @@ function SettingsPanel({
           {/* AI Coach */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">{t('aiCoach.title')}</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('aiCoach.title')}</span>
               <button
                 onClick={onToggleAiCoach}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  aiCoachEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  aiCoachEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
                 } cursor-pointer`}
                 role="switch"
                 aria-checked={aiCoachEnabled}
@@ -216,19 +238,19 @@ function SettingsPanel({
               </button>
             </div>
             {!aiCoachEnabled && (
-              <p className="text-xs text-gray-400">{t('aiCoach.description')}</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500">{t('aiCoach.description')}</p>
             )}
           </div>
 
           {/* Natural Voice (AI) */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">{t('naturalVoice.title')}</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('naturalVoice.title')}</span>
               <button
                 onClick={onToggleKokoro}
                 disabled={kokoroStatus === 'downloading' || kokoroDisabled}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  kokoroEffective ? 'bg-blue-600' : 'bg-gray-300'
+                  kokoroEffective ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
                 } ${kokoroStatus === 'downloading' || kokoroDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 role="switch"
                 aria-checked={kokoroEffective}
@@ -244,7 +266,7 @@ function SettingsPanel({
             {kokoroStatus === 'downloading' && (
               <div className="flex flex-col gap-1">
                 <p className="text-xs text-blue-500">{t('naturalVoice.downloading')}</p>
-                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-blue-500 rounded-full transition-all duration-300"
                     style={{ width: `${kokoroProgress.percentage}%` }}
@@ -262,17 +284,17 @@ function SettingsPanel({
             )}
 
             {kokoroDisabled && (
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-400 dark:text-slate-500">
                 {kokoroLangUnsupported ? t('naturalVoice.unsupportedLang') : t('naturalVoice.requires')}
               </p>
             )}
 
             {!kokoroDisabled && kokoroStatus === 'idle' && !kokoroEnabled && (
-              <p className="text-xs text-gray-400">{t('naturalVoice.description')}</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500">{t('naturalVoice.description')}</p>
             )}
 
             {!kokoroDisabled && kokoroStatus === 'idle' && !kokoroEnabled && (
-              <p className="text-xs text-gray-400">{t('naturalVoice.size')}</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500">{t('naturalVoice.size')}</p>
             )}
           </div>
 
@@ -280,7 +302,7 @@ function SettingsPanel({
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">{t('handsFree.title')}</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('handsFree.title')}</span>
                 {handsFreeMode && (
                   <span className="relative flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
@@ -292,7 +314,7 @@ function SettingsPanel({
                 onClick={onToggleHandsFree}
                 disabled={wakeWordLoading || !isChrome}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  handsFreeMode ? 'bg-blue-600' : 'bg-gray-300'
+                  handsFreeMode ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
                 } ${wakeWordLoading || !isChrome ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 role="switch"
                 aria-checked={handsFreeMode}
@@ -338,7 +360,7 @@ function SettingsPanel({
                 )}
 
                 {!wakeWordLoading && !wakeWordError && (
-                  <p className="text-xs text-gray-400">{t('handsFree.description')}</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500">{t('handsFree.description')}</p>
                 )}
               </>
             )}
@@ -346,9 +368,9 @@ function SettingsPanel({
         </div>
 
         {/* Offline mode */}
-        <div className="px-5 py-4 border-t border-gray-200 flex flex-col gap-3">
+        <div className="px-5 py-4 border-t border-gray-200 dark:border-slate-700 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-800">
+            <span className="text-sm font-medium text-gray-800 dark:text-slate-100">
               {t('offline.settingsRow')}
             </span>
             <button
@@ -363,7 +385,7 @@ function SettingsPanel({
               role="switch"
               aria-checked={offlineMode}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                offlineMode ? 'bg-amber-500' : 'bg-gray-300'
+                offlineMode ? 'bg-amber-500' : 'bg-gray-300 dark:bg-slate-600'
               }`}
             >
               <span
@@ -373,7 +395,7 @@ function SettingsPanel({
               />
             </button>
           </div>
-          <p className="text-xs text-gray-500">{t('offline.settingsHint')}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">{t('offline.settingsHint')}</p>
           {offlineMode && (
             <button
               onClick={onShowPending}
@@ -385,10 +407,10 @@ function SettingsPanel({
         </div>
 
         {/* Sign out at bottom */}
-        <div className="px-5 py-6 border-t border-gray-200">
+        <div className="px-5 py-6 border-t border-gray-200 dark:border-slate-700">
           <button
             onClick={signOut}
-            className="w-full py-2.5 text-sm font-medium text-red-500 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            className="w-full py-2.5 text-sm font-medium text-red-500 bg-white dark:bg-slate-800 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
           >
             {t('auth.signOut')}
           </button>
