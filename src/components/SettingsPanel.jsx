@@ -162,14 +162,14 @@ function SettingsPanel({
           </div>
 
           {/* Theme */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('theme')}</span>
             <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
               {['light', 'dark'].map((mode) => (
                 <button
                   key={mode}
                   onClick={() => onThemeChange(mode)}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                     theme === mode
                       ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
                       : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
@@ -410,7 +410,7 @@ function SettingsPanel({
         <div className="px-5 py-6 border-t border-gray-200 dark:border-slate-700">
           <button
             onClick={signOut}
-            className="w-full py-2.5 text-sm font-medium text-red-500 bg-white dark:bg-slate-800 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            className="w-full py-2.5 text-sm font-medium text-red-500 bg-white dark:bg-slate-800 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
           >
             {t('auth.signOut')}
           </button>
