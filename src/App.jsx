@@ -24,6 +24,7 @@ import EncouragementModal from './components/EncouragementModal';
 import EditTimeModal from './components/EditTimeModal';
 import NotesPage from './components/NotesPage';
 import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from './services/offlineService';
+import { getTheme, setTheme as setThemeService } from './services/themeService';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import { createSttService } from './services/sttService';
@@ -87,6 +88,7 @@ function App() {
       return 'minutes';
     }
   });
+  const [theme, setThemeState] = useState(getTheme);
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
   const [reportSubpage, setReportSubpage] = useState('daily');
@@ -1429,6 +1431,11 @@ function App() {
   useEffect(() => { monthStartRef.current = monthStart; }, [monthStart]);
   useEffect(() => { yearStartRef.current = yearStart; }, [yearStart]);
 
+  const setTheme = useCallback((next) => {
+    setThemeService(next);
+    setThemeState(next);
+  }, []);
+
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1441,6 +1448,8 @@ function App() {
       else if (e.code === 'KeyH') setTimeUnit('hours');
       else if (e.code === 'KeyE') { if (languageRef.current !== 'en') toggleLanguage(); }
       else if (e.code === 'KeyC') { if (languageRef.current !== 'zh') toggleLanguage(); }
+      else if (e.code === 'KeyL') setTheme('light');
+      else if (e.code === 'KeyD') setTheme('dark');
       else if (e.code === 'KeyS') {
         if (activeItemIdRef.current != null) saveAndStop();
       }
@@ -1501,7 +1510,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage, saveAndStop]);
+  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage, saveAndStop, setTheme]);
 
   const handleEnterOfflineMode = useCallback(() => {
     // Tear down the live Firestore listener so it can't overwrite local
@@ -1847,6 +1856,8 @@ function App() {
         onEnterOfflineMode={handleEnterOfflineMode}
         onGoOnline={handleGoOnline}
         onShowPending={() => setPendingModalOpen(true)}
+        theme={theme}
+        onThemeChange={setTheme}
       />
 
       <PendingChangesModal
