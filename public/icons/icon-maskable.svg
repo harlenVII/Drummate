@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed navy field (no rounded corners — Android masks the shape) -->
+  <rect width="512" height="512" fill="#1a1a2e"/>
+
+  <!-- Artwork scaled to 75% and centered into safe zone -->
+  <g transform="translate(64 64) scale(0.75)">
+    <!-- Background as a visible rounded-square so it still reads as a "tile" inside non-circular masks -->
+    <rect width="512" height="512" rx="112" fill="#1a1a2e"/>
+
+    <!-- Drumstick arms (raised) — left -->
+    <g transform="rotate(-22 130 120)">
+      <rect x="118" y="60" width="24" height="180" rx="12" fill="#F5F1E8"/>
+      <circle cx="130" cy="60" r="18" fill="#F5F1E8"/>
+    </g>
+    <!-- Drumstick arms (raised) — right -->
+    <g transform="rotate(22 382 120)">
+      <rect x="370" y="60" width="24" height="180" rx="12" fill="#F5F1E8"/>
+      <circle cx="382" cy="60" r="18" fill="#F5F1E8"/>
+    </g>
+
+    <!-- Drum body -->
+    <rect x="108" y="180" width="296" height="240" rx="40" fill="#F5F1E8"/>
+
+    <!-- Tuning rod dots -->
+    <g fill="#1a1a2e">
+      <circle cx="150" cy="204" r="8"/><circle cx="210" cy="204" r="8"/>
+      <circle cx="302" cy="204" r="8"/><circle cx="362" cy="204" r="8"/>
+      <circle cx="150" cy="396" r="8"/><circle cx="210" cy="396" r="8"/>
+      <circle cx="302" cy="396" r="8"/><circle cx="362" cy="396" r="8"/>
+    </g>
+
+    <!-- Sunglasses -->
+    <rect x="142" y="270" width="86" height="38" rx="12" fill="#1a1a2e"/>
+    <rect x="284" y="270" width="86" height="38" rx="12" fill="#1a1a2e"/>
+    <line x1="228" y1="288" x2="284" y2="288" stroke="#1a1a2e" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Smirk -->
+    <path d="M 226 348 Q 256 366 286 348" fill="none" stroke="#1a1a2e" stroke-width="10" stroke-linecap="round"/>
+  </g>
+</svg>
