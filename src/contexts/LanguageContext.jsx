@@ -204,6 +204,9 @@ const translations = {
     settings: 'Settings',
     language: 'Language',
     timezone: 'Timezone',
+    theme: 'Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
     handsFree: {
       title: 'Hands-Free Mode',
       description: 'Say "Drummate" to activate',
@@ -550,6 +553,9 @@ const translations = {
     settings: '设置',
     language: '语言',
     timezone: '时区',
+    theme: '主题',
+    themeLight: '浅色',
+    themeDark: '深色',
     handsFree: {
       title: '免提模式',
       description: '说 "Drummate" 来激活',
