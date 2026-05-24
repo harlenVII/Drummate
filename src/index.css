@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Lock viewport — prevent page-level scroll & overscroll bounce */
 html, body {
   margin: 0;
