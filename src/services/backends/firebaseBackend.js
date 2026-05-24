@@ -706,6 +706,11 @@ const firebaseBackend = {
           fields.itemUid = localItem.uid;
           fields.itemId = localItem.id;
         }
+        const remoteLoggedAt = resolveLoggedAt(data);
+        if (remoteLoggedAt != null && existing.loggedAt !== remoteLoggedAt) {
+          fields.loggedAt = remoteLoggedAt;
+          fields.date = data.date;
+        }
         if (!existing.syncedOnce) fields.syncedOnce = true;
         if (Object.keys(fields).length > 0) logsToUpdate.push({ id: existing.id, fields });
         continue;
@@ -1180,12 +1185,18 @@ const firebaseBackend = {
             localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
           }
           if (!localItem) continue;
+          const updates = {};
           if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
-            await db.practiceLogs.update(existing.id, {
-              itemUid: localItem.uid,
-              itemId: localItem.id,
-              loggedAt: resolveLoggedAt(data),
-            });
+            updates.itemUid = localItem.uid;
+            updates.itemId = localItem.id;
+          }
+          const remoteLoggedAt = resolveLoggedAt(data);
+          if (remoteLoggedAt != null && existing.loggedAt !== remoteLoggedAt) {
+            updates.loggedAt = remoteLoggedAt;
+            updates.date = data.date;
+          }
+          if (Object.keys(updates).length > 0) {
+            await db.practiceLogs.update(existing.id, updates);
             onDataChanged();
           }
         } else if (change.type === 'removed') {
