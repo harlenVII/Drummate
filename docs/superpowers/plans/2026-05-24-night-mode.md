@@ -46,7 +46,7 @@ The project has no automated test suite. Each task that touches code ends with `
 
 ---
 
-## Task 1: Create themeService
+## Task 1: Create themeService  [model: haiku]
 
 **Files:**
 - Create: `src/services/themeService.js`
@@ -124,7 +124,7 @@ EOF
 
 ---
 
-## Task 2: Wire the Tailwind dark variant and import the service early
+## Task 2: Wire the Tailwind dark variant and import the service early  [model: haiku]
 
 **Files:**
 - Modify: `src/index.css`
@@ -202,7 +202,7 @@ EOF
 
 ---
 
-## Task 3: Add theme translations
+## Task 3: Add theme translations  [model: haiku]
 
 **Files:**
 - Modify: `src/contexts/LanguageContext.jsx`
@@ -254,7 +254,7 @@ EOF
 
 ---
 
-## Task 4: Add theme state, setter, and keyboard shortcut in App.jsx
+## Task 4: Add theme state, setter, and keyboard shortcut in App.jsx  [model: sonnet]
 
 **Files:**
 - Modify: `src/App.jsx`
@@ -356,7 +356,7 @@ EOF
 
 ---
 
-## Task 5: Add theme toggle row to SettingsPanel and dark-style the panel itself
+## Task 5: Add theme toggle row to SettingsPanel and dark-style the panel itself  [model: sonnet]
 
 **Files:**
 - Modify: `src/components/SettingsPanel.jsx`
@@ -437,7 +437,7 @@ EOF
 
 ---
 
-## Task 6: Dark-style the shell (App root, TabBar, banners, overlays, widgets)
+## Task 6: Dark-style the shell (App root, TabBar, banners, overlays, widgets)  [model: sonnet]
 
 **Files (apply canonical translation table to each):**
 - Modify: `src/App.jsx` — the JSX render block only (root container, sync overlay, anywhere the App component renders background/border/text classes directly)
@@ -491,7 +491,7 @@ EOF
 
 ---
 
-## Task 7: Dark-style the Practice tab
+## Task 7: Dark-style the Practice tab  [model: sonnet]
 
 **Files:**
 - Modify: `src/components/PracticePage.jsx`
@@ -546,7 +546,7 @@ EOF
 
 ---
 
-## Task 8: Dark-style the Metronome tab
+## Task 8: Dark-style the Metronome tab  [model: sonnet]
 
 **Files:**
 - Modify: `src/components/Metronome.jsx`
@@ -594,7 +594,7 @@ EOF
 
 ---
 
-## Task 9: Dark-style the Report tab
+## Task 9: Dark-style the Report tab  [model: sonnet]
 
 **Files:**
 - Modify: `src/components/DailyReport.jsx`
@@ -640,7 +640,7 @@ EOF
 
 ---
 
-## Task 10: Dark-style the Notes tab
+## Task 10: Dark-style the Notes tab  [model: sonnet]
 
 **Files:**
 - Modify: `src/components/NotesPage.jsx`
@@ -684,7 +684,7 @@ EOF
 
 ---
 
-## Task 11: Dark-style remaining modals and screens
+## Task 11: Dark-style remaining modals and screens  [model: sonnet]
 
 **Files:**
 - Modify: `src/components/PendingChangesModal.jsx`
@@ -729,7 +729,7 @@ EOF
 
 ---
 
-## Task 12: Update CLAUDE.md keybindings table
+## Task 12: Update CLAUDE.md keybindings table and final verification sweep  [model: sonnet]
 
 **Files:**
 - Modify: `CLAUDE.md`
