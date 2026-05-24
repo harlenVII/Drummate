@@ -1542,7 +1542,7 @@ function App() {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-gray-100 dark:bg-slate-900 overflow-hidden">
       {offlineMode && (
         <OfflineBanner
           onShowPending={() => setPendingModalOpen(true)}
@@ -1551,15 +1551,15 @@ function App() {
       )}
       {isSyncing && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-gray-100/80 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-gray-100/80 dark:bg-slate-900/80 backdrop-blur-sm"
           role="status"
           aria-live="polite"
         >
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-700 font-medium">{t('auth.syncing')}</p>
+          <p className="text-gray-700 dark:text-slate-200 font-medium">{t('auth.syncing')}</p>
           <button
             onClick={handleEnterOfflineMode}
-            className="mt-2 px-4 py-2 text-sm font-medium text-amber-700 bg-white border border-amber-300 rounded-lg hover:bg-amber-50"
+            className="mt-2 px-4 py-2 text-sm font-medium text-amber-700 bg-white dark:bg-slate-800 dark:text-amber-400 border border-amber-300 rounded-lg hover:bg-amber-50 dark:hover:bg-slate-700"
           >
             {t('auth.enterOfflineMode')}
           </button>
@@ -1568,7 +1568,7 @@ function App() {
       <div className="flex-1 overflow-y-auto">
         <div className={`${activeTab === 'practice' ? 'max-w-4xl' : 'max-w-lg'} mx-auto px-4 py-8 flex flex-col gap-6`}>
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-800">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">
               {t('appName')}
             </h1>
             <button
@@ -1608,13 +1608,13 @@ function App() {
           {activeTab === 'metronome' && (
             <>
               {/* Subpage toggle */}
-              <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+              <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
                 <button
                   onClick={() => handleSubpageChange('metronome')}
                   className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     metronomeSubpage === 'metronome'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500'
+                      ? 'bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm'
+                      : 'text-gray-500 dark:text-slate-400'
                   }`}
                 >
                   {t('metronomeSubpages.metronome')}
@@ -1623,8 +1623,8 @@ function App() {
                   onClick={() => handleSubpageChange('practice')}
                   className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     metronomeSubpage === 'practice'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500'
+                      ? 'bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm'
+                      : 'text-gray-500 dark:text-slate-400'
                   }`}
                 >
                   {t('metronomeSubpages.practice')}
@@ -1633,8 +1633,8 @@ function App() {
                   onClick={() => handleSubpageChange('sequencer')}
                   className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     metronomeSubpage === 'sequencer'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500'
+                      ? 'bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm'
+                      : 'text-gray-500 dark:text-slate-400'
                   }`}
                 >
                   {t('metronomeSubpages.sequencer')}
@@ -1643,8 +1643,8 @@ function App() {
                   onClick={() => handleSubpageChange('multiMeter')}
                   className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     metronomeSubpage === 'multiMeter'
-                      ? 'bg-white text-gray-800 shadow-sm'
-                      : 'text-gray-500'
+                      ? 'bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm'
+                      : 'text-gray-500 dark:text-slate-400'
                   }`}
                 >
                   {t('metronomeSubpages.multiMeter')}
@@ -1731,15 +1731,15 @@ function App() {
           {activeTab === 'report' && (
             <>
               {/* Report subpage toggle */}
-              <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+              <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
                 {['daily', 'weekly', 'monthly', 'yearly', 'stats'].map((page) => (
                   <button
                     key={page}
                     onClick={() => setReportSubpage(page)}
                     className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       reportSubpage === page
-                        ? 'bg-white text-gray-800 shadow-sm'
-                        : 'text-gray-500'
+                        ? 'bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm'
+                        : 'text-gray-500 dark:text-slate-400'
                     }`}
                   >
                     {t(`reportSubpages.${page}`)}
@@ -1867,7 +1867,7 @@ function App() {
 
       {goOnlineToast && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg shadow-lg max-w-xs text-center"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-800 dark:bg-slate-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg max-w-xs text-center"
           role="status"
           aria-live="polite"
         >

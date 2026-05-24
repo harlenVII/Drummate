@@ -93,7 +93,7 @@ function TabBar({ activeTab, onTabChange }) {
   ];
 
   return (
-    <nav className="shrink-0 bg-white border-t border-gray-200 flex pb-[env(safe-area-inset-bottom)]">
+    <nav className="shrink-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 flex pb-[env(safe-area-inset-bottom)]">
       {tabs.map((tab) => (
         <button
           key={tab.key}
@@ -101,7 +101,7 @@ function TabBar({ activeTab, onTabChange }) {
           className={`flex-1 flex flex-col items-center py-2 text-xs font-medium transition-colors ${
             activeTab === tab.key
               ? 'text-blue-600'
-              : 'text-gray-400 hover:text-gray-600'
+              : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
           }`}
         >
           {tab.icon}
