@@ -112,7 +112,7 @@ function NoteEditModal({
           </>
         )}
 
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
           {t('notes.bodyLabel')}
         </label>
         <textarea
