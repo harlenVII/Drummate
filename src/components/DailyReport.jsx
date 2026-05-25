@@ -3,7 +3,7 @@ import { formatTime, formatMinutes, formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 
-function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit }) {
+function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit, groupByCategory }) {
   const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -165,32 +165,38 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       </div>
 
       {/* Per-item breakdown */}
-      {fundamentals.length > 0 && (
+      {groupByCategory ? (
         <>
-          <div className="flex justify-between items-center px-1 pt-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
-              {t('categories.fundamentals')}
-            </span>
-            <span className="text-xs text-gray-400 dark:text-slate-500">
-              {formatDuration(fundamentals.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
-            </span>
-          </div>
-          {fundamentals.map(renderItemCard)}
-        </>
-      )}
+          {fundamentals.length > 0 && (
+            <>
+              <div className="flex justify-between items-center px-1 pt-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                  {t('categories.fundamentals')}
+                </span>
+                <span className="text-xs text-gray-400 dark:text-slate-500">
+                  {formatDuration(fundamentals.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
+                </span>
+              </div>
+              {fundamentals.map(renderItemCard)}
+            </>
+          )}
 
-      {songs.length > 0 && (
-        <>
-          <div className="flex justify-between items-center px-1 pt-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
-              {t('categories.songs')}
-            </span>
-            <span className="text-xs text-gray-400 dark:text-slate-500">
-              {formatDuration(songs.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
-            </span>
-          </div>
-          {songs.map(renderItemCard)}
+          {songs.length > 0 && (
+            <>
+              <div className="flex justify-between items-center px-1 pt-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                  {t('categories.songs')}
+                </span>
+                <span className="text-xs text-gray-400 dark:text-slate-500">
+                  {formatDuration(songs.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
+                </span>
+              </div>
+              {songs.map(renderItemCard)}
+            </>
+          )}
         </>
+      ) : (
+        breakdown.map(renderItemCard)
       )}
 
       {items.length === 0 && (
@@ -241,12 +247,12 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           >
             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('dailyReport')}</h2>
             <pre className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 text-sm text-gray-700 dark:text-slate-200 whitespace-pre-wrap select-text">
-              {generateReportText(reportDate, grandTotal, breakdown, t, timeUnit)}
+              {generateReportText(reportDate, grandTotal, breakdown, t, timeUnit, groupByCategory)}
             </pre>
             <button
               onClick={async () => {
                 await navigator.clipboard.writeText(
-                  generateReportText(reportDate, grandTotal, breakdown, t, timeUnit)
+                  generateReportText(reportDate, grandTotal, breakdown, t, timeUnit, groupByCategory)
                 );
                 setCopied(true);
               }}
@@ -365,7 +371,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
   );
 }
 
-function generateReportText(reportDate, grandTotal, breakdown, t, timeUnit) {
+function generateReportText(reportDate, grandTotal, breakdown, t, timeUnit, groupByCategory) {
   const [year, month, day] = reportDate.split('-');
   const formattedDate = `${year}/${month}/${day}`;
   const fmt = (d) => `${formatDuration(d, timeUnit)} ${t(timeUnit)}`;
@@ -378,18 +384,24 @@ function generateReportText(reportDate, grandTotal, breakdown, t, timeUnit) {
     `${t('total')}: ${fmt(grandTotal)}`,
   ];
 
-  if (fundamentals.length > 0) {
-    lines.push('');
-    lines.push(`${t('categories.fundamentals')}:`);
-    for (const entry of fundamentals) {
-      lines.push(`${entry.name}: ${fmt(entry.duration)}`);
+  if (groupByCategory) {
+    if (fundamentals.length > 0) {
+      lines.push('');
+      lines.push(`${t('categories.fundamentals')}:`);
+      for (const entry of fundamentals) {
+        lines.push(`${entry.name}: ${fmt(entry.duration)}`);
+      }
     }
-  }
-
-  if (songs.length > 0) {
+    if (songs.length > 0) {
+      lines.push('');
+      lines.push(`${t('categories.songs')}:`);
+      for (const entry of songs) {
+        lines.push(`${entry.name}: ${fmt(entry.duration)}`);
+      }
+    }
+  } else {
     lines.push('');
-    lines.push(`${t('categories.songs')}:`);
-    for (const entry of songs) {
+    for (const entry of breakdown) {
       lines.push(`${entry.name}: ${fmt(entry.duration)}`);
     }
   }
