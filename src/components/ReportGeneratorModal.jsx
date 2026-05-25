@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
 import { getTodayString, shiftDate, getMonthStart } from '../utils/dateHelpers';
+
+const toPickerDate = (s) => (s ? new Date(s + 'T12:00:00') : null);
+const fromPickerDate = (d) => {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 import { formatDuration } from '../utils/formatTime';
 import { getLogsByDateRange } from '../services/database';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -108,27 +118,31 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
             <label htmlFor="report-start-date" className="text-sm text-gray-600 dark:text-slate-400 w-20 shrink-0">
               {t('reportGenerator.startDate')}
             </label>
-            <input
+            <DatePicker
               id="report-start-date"
-              type="date"
-              value={startDate}
-              max={today}
-              onChange={(e) => handleStartDateChange(e.target.value)}
-              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+              selected={toPickerDate(startDate)}
+              onChange={(d) => handleStartDateChange(fromPickerDate(d))}
+              maxDate={new Date()}
+              dateFormat="MM/dd/yyyy"
+              className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+              wrapperClassName="flex-1"
+              popperProps={{ strategy: 'fixed' }}
             />
           </div>
           <div className="flex items-center gap-3">
             <label htmlFor="report-end-date" className="text-sm text-gray-600 dark:text-slate-400 w-20 shrink-0">
               {t('reportGenerator.endDate')}
             </label>
-            <input
+            <DatePicker
               id="report-end-date"
-              type="date"
-              value={endDate}
-              max={today}
-              min={startDate}
-              onChange={(e) => handleEndDateChange(e.target.value)}
-              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+              selected={toPickerDate(endDate)}
+              onChange={(d) => handleEndDateChange(fromPickerDate(d))}
+              minDate={toPickerDate(startDate)}
+              maxDate={new Date()}
+              dateFormat="MM/dd/yyyy"
+              className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+              wrapperClassName="flex-1"
+              popperProps={{ strategy: 'fixed' }}
             />
           </div>
         </div>
