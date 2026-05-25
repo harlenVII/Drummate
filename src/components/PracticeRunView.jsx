@@ -328,7 +328,7 @@ export default function PracticeRunView({
 
       {complete ? (
         <div className="flex flex-col items-center gap-3">
-          <div className="text-lg font-semibold text-green-700">{t('practiceMode.complete')}</div>
+          <div className="text-lg font-semibold text-green-600 dark:text-green-400">{t('practiceMode.complete')}</div>
           <button
             onClick={handleEnd}
             className="px-6 py-2 rounded-lg bg-blue-600 dark:bg-indigo-600 text-white font-medium hover:bg-blue-700 dark:hover:bg-indigo-700"
