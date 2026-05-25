@@ -24,7 +24,7 @@
 
 ---
 
-### Task 1: Add i18n key
+### Task 1: Add i18n key [model: claude-haiku-4-5-20251001]
 
 **Files:**
 - Modify: `src/contexts/LanguageContext.jsx:45` (en block, near `timeUnit`)
@@ -63,7 +63,7 @@ git commit -m "feat: add groupByCategory i18n key"
 
 ---
 
-### Task 2: Add state and prop wiring in App.jsx
+### Task 2: Add state and prop wiring in App.jsx [model: claude-haiku-4-5-20251001]
 
 **Files:**
 - Modify: `src/App.jsx`
@@ -232,7 +232,7 @@ git commit -m "feat: wire groupByCategory state and props in App"
 
 ---
 
-### Task 3: Add toggle in SettingsPanel
+### Task 3: Add toggle in SettingsPanel [model: claude-haiku-4-5-20251001]
 
 **Files:**
 - Modify: `src/components/SettingsPanel.jsx`
@@ -310,7 +310,7 @@ git commit -m "feat: add Group by Category toggle in Settings"
 
 ---
 
-### Task 4: Gate DailyReport grouped rendering on prop
+### Task 4: Gate DailyReport grouped rendering on prop [model: claude-haiku-4-5-20251001]
 
 **Files:**
 - Modify: `src/components/DailyReport.jsx`
@@ -485,7 +485,7 @@ git commit -m "feat: gate DailyReport category grouping on groupByCategory prop"
 
 ---
 
-### Task 5: Add conditional grouping to WeeklyReport
+### Task 5: Add conditional grouping to WeeklyReport [model: claude-haiku-4-5-20251001]
 
 **Files:**
 - Modify: `src/components/WeeklyReport.jsx`
@@ -660,7 +660,7 @@ git commit -m "feat: add conditional category grouping to WeeklyReport"
 
 ---
 
-### Task 6: Add conditional grouping to MonthlyReport
+### Task 6: Add conditional grouping to MonthlyReport [model: claude-haiku-4-5-20251001]
 
 **Files:**
 - Modify: `src/components/MonthlyReport.jsx`
@@ -835,7 +835,7 @@ git commit -m "feat: add conditional category grouping to MonthlyReport"
 
 ---
 
-### Task 7: Add conditional grouping to YearlyReport
+### Task 7: Add conditional grouping to YearlyReport [model: claude-haiku-4-5-20251001]
 
 **Files:**
 - Modify: `src/components/YearlyReport.jsx`
@@ -1010,7 +1010,7 @@ git commit -m "feat: add conditional category grouping to YearlyReport"
 
 ---
 
-### Task 8: Build verification
+### Task 8: Build verification [model: claude-sonnet-4-6]
 
 **Files:** None (verification only)
 
