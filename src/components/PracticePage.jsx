@@ -52,7 +52,7 @@ function PracticeRow({ practice, isFocused, onStart, onEdit }) {
       ref={setNodeRef}
       style={style}
       className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 flex items-center gap-3 ${
-        isFocused ? 'ring-2 ring-blue-400' : ''
+        isFocused ? 'ring-2 ring-violet-400' : ''
       }`}
     >
       <button
@@ -88,7 +88,7 @@ function PracticeRow({ practice, isFocused, onStart, onEdit }) {
       </button>
       <button
         onClick={onStart}
-        className="px-3 py-1.5 rounded-md text-sm bg-blue-600 text-white font-medium hover:bg-blue-700"
+        className="px-3 py-1.5 rounded-md text-sm bg-violet-600 text-white font-medium hover:bg-violet-700"
       >
         {t('practiceMode.start')}
       </button>
@@ -222,7 +222,7 @@ export default function PracticePage({
 
         <button
           onClick={() => { setFocusedIndex(null); setModalState({ mode: 'create' }); }}
-          className="self-end px-4 py-2 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700"
+          className="self-end px-4 py-2 rounded-full bg-violet-600 text-white font-medium hover:bg-violet-700"
         >
           + {t('practiceMode.addPractice')}
         </button>

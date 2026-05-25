@@ -10,13 +10,13 @@ const STATE_CONFIG = {
   processing: {
     en: 'Processing...',
     zh: '处理中...',
-    color: 'bg-blue-500',
+    color: 'bg-violet-500',
     pulse: false,
   },
   feedback: {
     en: null,
     zh: null,
-    color: 'bg-blue-400',
+    color: 'bg-violet-400',
     pulse: false,
   },
   error: {

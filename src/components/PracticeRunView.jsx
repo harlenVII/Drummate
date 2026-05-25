@@ -301,7 +301,7 @@ export default function PracticeRunView({
           <div className="text-sm font-medium text-gray-500 dark:text-slate-400 uppercase tracking-widest">
             {t('practiceMode.getReady')}
           </div>
-          <div className="text-7xl font-bold text-blue-600 tabular-nums">
+          <div className="text-7xl font-bold text-violet-600 tabular-nums">
             {countInBarsLeft}
           </div>
         </div>
@@ -314,11 +314,11 @@ export default function PracticeRunView({
 
           <div className="w-full max-w-sm flex flex-col gap-1">
             <div className="flex justify-end">
-              <span className="text-sm font-semibold text-blue-600">{Math.round(progressPct)}%</span>
+              <span className="text-sm font-semibold text-violet-600">{Math.round(progressPct)}%</span>
             </div>
             <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 transition-all duration-300"
+                className="h-full bg-violet-600 transition-all duration-300"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -331,7 +331,7 @@ export default function PracticeRunView({
           <div className="text-lg font-semibold text-green-700">{t('practiceMode.complete')}</div>
           <button
             onClick={handleEnd}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700"
+            className="px-6 py-2 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700"
           >
             {t('practiceMode.done')}
           </button>
@@ -340,7 +340,7 @@ export default function PracticeRunView({
         <div className="flex gap-3">
           <button
             onClick={handleTogglePlay}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 min-w-[100px]"
+            className="px-6 py-2 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-700 min-w-[100px]"
           >
             {isPlaying ? t('practiceMode.pause') : (stepIndex === 0 && barIndex === 0 ? t('practiceMode.start') : t('practiceMode.resume'))}
           </button>

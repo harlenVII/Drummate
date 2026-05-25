@@ -87,7 +87,7 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       style={pos ? { left: pos.x, top: pos.y } : undefined}
-      className={`fixed ${pos ? '' : 'top-4 left-1/2 -translate-x-1/2'} z-50 h-9 flex items-center gap-3 pl-4 pr-2 rounded-full bg-blue-600 text-white shadow-lg max-w-[280px] hover:bg-blue-700 cursor-grab active:cursor-grabbing select-none`}
+      className={`fixed ${pos ? '' : 'top-4 left-1/2 -translate-x-1/2'} z-50 h-9 flex items-center gap-3 pl-4 pr-2 rounded-full bg-violet-600 text-white shadow-lg max-w-[280px] hover:bg-violet-700 cursor-grab active:cursor-grabbing select-none`}
       aria-label={itemName}
     >
       <span className="relative flex h-2.5 w-2.5 shrink-0">

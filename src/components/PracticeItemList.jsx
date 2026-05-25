@@ -51,7 +51,7 @@ function CategoryToggle({ value, onChange, ariaLabel }) {
         title={t('categories.fundamentals')}
         aria-pressed={value === 'fundamentals'}
         className={`px-2 py-1 text-xs font-semibold ${
-          value === 'fundamentals' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'
+          value === 'fundamentals' ? 'bg-violet-600 text-white' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'
         }`}
       >
         {t('categories.fundamentalsShort')}
@@ -62,7 +62,7 @@ function CategoryToggle({ value, onChange, ariaLabel }) {
         title={t('categories.songs')}
         aria-pressed={value === 'songs'}
         className={`px-2 py-1 text-xs font-semibold border-l border-gray-300 dark:border-slate-600 ${
-          value === 'songs' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'
+          value === 'songs' ? 'bg-violet-600 text-white' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-600'
         }`}
       >
         {t('categories.songsShort')}
@@ -77,7 +77,7 @@ function EmptyDropZone({ id, label }) {
     <div
       ref={setNodeRef}
       className={`text-sm italic px-3 py-4 rounded-lg border border-dashed transition-colors ${
-        isOver ? 'bg-blue-50 border-blue-400 text-blue-600' : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-400 dark:text-slate-500'
+        isOver ? 'bg-violet-50 border-violet-400 text-violet-600' : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-400 dark:text-slate-500'
       }`}
     >
       {label}
@@ -339,12 +339,12 @@ function PracticeItemList({
               onKeyDown={handleRenameKeyDown}
               onBlur={commitRename}
               autoFocus
-              className="flex-1 mr-3 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
+              className="flex-1 mr-3 px-3 py-1 border border-violet-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-slate-700 dark:text-slate-100"
             />
           ) : (
             <span
               onClick={() => startRename(item)}
-              className="font-medium text-gray-800 dark:text-slate-100 cursor-pointer hover:text-blue-600 transition-colors"
+              className="font-medium text-gray-800 dark:text-slate-100 cursor-pointer hover:text-violet-600 transition-colors"
               title="Click to rename"
             >
               {item.name}
@@ -367,7 +367,7 @@ function PracticeItemList({
             </button>
             <button
               onClick={() => setMergeSourceItem(item)}
-              className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-500 transition-colors"
+              className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-violet-500 transition-colors"
               title={t('merge')}
               aria-label={`${t('merge')}: ${item.name}`}
             >
@@ -466,12 +466,12 @@ function PracticeItemList({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={handleAddKeyDown}
             placeholder={t('newItemPlaceholder')}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-slate-700 dark:text-slate-100"
           />
           <button
             onClick={handleAdd}
             disabled={!newName.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             + {t('add')}
           </button>
@@ -577,7 +577,7 @@ function PracticeItemList({
         key={item.id}
         onClick={() => onFocusChange(item.id)}
         className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors cursor-pointer ${
-          isActive ? 'ring-2 ring-blue-500' : isFocused ? 'ring-2 ring-gray-300 dark:ring-slate-600' : ''
+          isActive ? 'ring-2 ring-violet-500' : isFocused ? 'ring-2 ring-gray-300 dark:ring-slate-600' : ''
         }`}
       >
         <div className="flex flex-col">

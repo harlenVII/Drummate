@@ -57,7 +57,7 @@ function MergeTargetPicker({ sourceItem, items, onCancel, onConfirm }) {
     <button
       key={item.id}
       onClick={() => setPendingTarget(item)}
-      className={`text-left w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-blue-50 hover:border-blue-300 transition-colors ${
+      className={`text-left w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-violet-50 hover:border-violet-300 transition-colors ${
         item.archived ? 'opacity-60' : ''
       }`}
     >
@@ -92,7 +92,7 @@ function MergeTargetPicker({ sourceItem, items, onCancel, onConfirm }) {
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('mergeSearchPlaceholder')}
             autoFocus
-            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-slate-700 dark:text-slate-100"
           />
         </div>
 

@@ -10,8 +10,8 @@ function BeatIndicator({ beats, currentBeat, isPlaying }) {
             className={`w-5 h-5 rounded-full transition-all duration-100 ${
               isActive
                 ? isAccent
-                  ? 'bg-blue-600 scale-125'
-                  : 'bg-blue-500 scale-125'
+                  ? 'bg-violet-600 scale-125'
+                  : 'bg-violet-500 scale-125'
                 : isAccent
                   ? 'bg-gray-300 dark:bg-slate-600'
                   : 'bg-gray-200 dark:bg-slate-700'

@@ -76,7 +76,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         {grandTotal > 0 && (
           <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
             <div
-              className="bg-blue-500 rounded-full h-1.5"
+              className="bg-violet-500 rounded-full h-1.5"
               style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
             />
           </div>
@@ -145,7 +145,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           onClick={() => setEditMode(!editMode)}
           className={`text-sm font-medium px-3 py-1 rounded-lg transition-colors ${
             editMode
-              ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30'
+              ? 'text-violet-600 bg-violet-50 dark:bg-violet-900/30'
               : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
           }`}
         >
@@ -203,7 +203,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {editMode && (
         <button
           onClick={() => setShowItemPicker(true)}
-          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-gray-500 dark:text-slate-400 font-medium hover:border-blue-400 hover:text-blue-500 transition-colors"
+          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-gray-500 dark:text-slate-400 font-medium hover:border-violet-400 hover:text-violet-500 transition-colors"
         >
           + {t('addManualTime')}
         </button>
@@ -223,7 +223,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {grandTotal > 0 && (
         <button
           onClick={() => { setCopied(false); setShowModal(true); }}
-          className="mt-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          className="mt-1 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
         >
           {t('generateReport')}
         </button>
@@ -253,7 +253,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 copied
                   ? 'bg-green-600 text-white'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-violet-600 text-white hover:bg-violet-700'
               }`}
             >
               {copied ? t('copied') : t('copyToClipboard')}
@@ -296,7 +296,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
                     {item.category && (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         item.category === 'fundamentals'
-                          ? 'bg-blue-100 text-blue-600'
+                          ? 'bg-violet-100 text-violet-600'
                           : 'bg-purple-100 text-purple-600'
                       }`}>
                         {t(`categories.${item.category}`)}
