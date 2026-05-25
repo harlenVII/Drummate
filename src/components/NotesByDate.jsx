@@ -65,7 +65,7 @@ function NotesByDate({ items, refreshKey, onEdit }) {
     <div className="flex flex-col gap-6">
       {visibleGroups.map(([date, notesForDate]) => (
         <section key={date}>
-          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2 sticky top-0 bg-gray-100 dark:bg-slate-800 py-1">
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2 sticky top-0 bg-gray-100 dark:bg-slate-900 py-1">
             {dateHeader(date)}
           </h3>
           <div className="flex flex-col gap-2">
