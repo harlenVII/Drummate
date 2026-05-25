@@ -235,6 +235,36 @@ Single global instance in `App.jsx`. Enable on start, disable on stop/tab switch
 ### Web Worker Path
 Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolute path). Vite serves `public/` as-is; relative paths break in production.
 
+## Date Pickers
+
+All date inputs use `react-datepicker` — **never use `<input type="date">`** (its calendar popup is OS-rendered and cannot be dark-mode styled).
+
+**Dark mode CSS** is in `src/index.css` (`.dark .react-datepicker*` overrides) — new pickers inherit it automatically.
+
+**Conversion pattern** (state stays `YYYY-MM-DD` string; convert only at the picker boundary):
+```js
+const toPickerDate = (s) => (s ? new Date(s + 'T12:00:00') : null); // noon anchor avoids UTC off-by-one
+const fromPickerDate = (d) => {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+```
+
+**Standard props for any picker inside a modal:**
+```jsx
+<DatePicker
+  selected={toPickerDate(dateStr)}
+  onChange={(d) => setDateStr(fromPickerDate(d))}
+  dateFormat="MM/dd/yyyy"
+  className="..."          // styles the input
+  wrapperClassName="..."   // styles the wrapper div (use for width/margin)
+  popperProps={{ strategy: 'fixed' }}  // prevents clipping in fixed-position modals
+/>
+```
+
 ## Styling
 
 - **Tailwind CSS v4 only** — no CSS modules, no inline styles
