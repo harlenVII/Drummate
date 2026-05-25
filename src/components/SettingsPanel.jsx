@@ -140,7 +140,7 @@ function SettingsPanel({
         </div>
 
         {/* Settings content */}
-        <div className="flex-1 px-5 py-6 flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-6">
           {/* Language */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('language')}</span>
