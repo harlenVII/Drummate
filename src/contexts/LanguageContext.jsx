@@ -54,6 +54,10 @@ const translations = {
     copyToClipboard: 'Copy to Clipboard',
     copied: 'Copied!',
     close: 'Close',
+    shortcuts: {
+      title: 'Keyboard Shortcuts',
+      showHideHelp: 'Show / hide this help',
+    },
     editTime: 'Edit Time',
     addTime: 'Add Time',
     addManualTime: 'Add Practice Time',
@@ -403,6 +407,10 @@ const translations = {
     copyToClipboard: '复制到剪贴板',
     copied: '已复制！',
     close: '关闭',
+    shortcuts: {
+      title: '键盘快捷键',
+      showHideHelp: '显示/隐藏此帮助',
+    },
     editTime: '编辑时间',
     addTime: '添加时间',
     addManualTime: '添加练习时间',
