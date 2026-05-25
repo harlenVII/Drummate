@@ -2,7 +2,7 @@ import { useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const getAccentColor = () =>
-  document.documentElement.classList.contains('dark') ? '#6366f1' : '#3b82f6';
+  document.documentElement.classList.contains('dark') ? '#4f46e5' : '#2563eb';
 
 const MIN_BPM = 30;
 const MAX_BPM = 300;
