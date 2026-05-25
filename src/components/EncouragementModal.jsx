@@ -31,7 +31,7 @@ function EncouragementModal({ isOpen, status, progress, message, error, onClose,
               </button>
               <button
                 onClick={onDownload}
-                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
               >
                 {t('llmCoach.downloadButton')}
               </button>
@@ -45,7 +45,7 @@ function EncouragementModal({ isOpen, status, progress, message, error, onClose,
             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-3">{t('llmCoach.downloading')}</h2>
             <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-2">
               <div
-                className="bg-violet-600 h-3 rounded-full transition-all duration-300"
+                className="bg-indigo-600 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${progress.percentage}%` }}
               />
             </div>
@@ -60,9 +60,9 @@ function EncouragementModal({ isOpen, status, progress, message, error, onClose,
             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-3">{t('llmCoach.loading')}</h2>
             <div className="flex justify-center py-4">
               <div className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2.5 h-2.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2.5 h-2.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </>
@@ -74,9 +74,9 @@ function EncouragementModal({ isOpen, status, progress, message, error, onClose,
             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-3">{t('llmCoach.modalTitle')}</h2>
             <div className="flex justify-center py-6">
               <div className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2.5 h-2.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2.5 h-2.5 bg-violet-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
             <p className="text-xs text-gray-400 dark:text-slate-500 text-center">{t('llmCoach.generating')}</p>
@@ -97,7 +97,7 @@ function EncouragementModal({ isOpen, status, progress, message, error, onClose,
               </button>
               <button
                 onClick={onRegenerate}
-                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors"
+                className="flex-1 py-2.5 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
               >
                 {t('llmCoach.regenerate')}
               </button>

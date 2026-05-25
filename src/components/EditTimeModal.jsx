@@ -82,7 +82,7 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
                 ? 'border-red-300 dark:border-red-500 focus:ring-red-500'
                 : isWarning
                   ? 'border-yellow-300 dark:border-yellow-400 focus:ring-yellow-500'
-                  : 'border-gray-300 dark:border-slate-600 focus:ring-violet-500'
+                  : 'border-gray-300 dark:border-slate-600 focus:ring-indigo-500'
             }`}
           />
         </div>
@@ -93,7 +93,7 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
             disabled={!hasChange}
             className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
               hasChange
-                ? 'bg-violet-600 text-white hover:bg-violet-700'
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
                 : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed'
             }`}
           >

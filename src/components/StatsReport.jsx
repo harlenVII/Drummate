@@ -87,7 +87,7 @@ function StatsReport({ items, timeUnit }) {
 
       <button
         onClick={() => setShowModal(true)}
-        className="mt-1 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
+        className="mt-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
       >
         {t('generateReport')}
       </button>

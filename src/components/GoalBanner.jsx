@@ -75,7 +75,7 @@ function GoalBanner({ refreshKey = 0 }) {
       </div>
       <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1">
         <div
-          className={`h-1 rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-violet-500'}`}
+          className={`h-1 rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-indigo-500'}`}
           style={{ width: `${progressPercent}%` }}
         />
       </div>

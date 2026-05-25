@@ -78,7 +78,7 @@ function NotesByDate({ items, refreshKey, onEdit }) {
                   className="text-left bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full">
+                    <span className="text-xs font-medium px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">
                       {itemName}
                     </span>
                   </div>

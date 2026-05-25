@@ -4,7 +4,7 @@ function EncouragementButton({ status, onPress }) {
   return (
     <button
       onClick={onPress}
-      className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-violet-600 hover:bg-violet-700 flex items-center justify-center text-white shadow-lg transition-all duration-200 active:scale-95"
+      className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 flex items-center justify-center text-white shadow-lg transition-all duration-200 active:scale-95"
       aria-label="AI Coach"
     >
       {isLoading ? (

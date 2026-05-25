@@ -96,9 +96,9 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
         p-3 rounded-xl border-2
         transition-all duration-150
         ${isCurrentlyPlaying
-          ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/40 scale-105 shadow-md'
+          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 scale-105 shadow-md'
           : isSelected
-            ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/20 ring-2 ring-violet-300'
+            ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-300'
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
         }
         ${editing ? 'cursor-pointer' : ''}
@@ -109,13 +109,13 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
       )}
 
       <span className={`text-[10px] font-bold mb-0.5 ${
-        isCurrentlyPlaying ? 'text-violet-600' : 'text-gray-400 dark:text-slate-500'
+        isCurrentlyPlaying ? 'text-indigo-600' : 'text-gray-400 dark:text-slate-500'
       }`}>
         {index + 1}
       </span>
 
       <span className={`text-sm font-semibold ${
-        isCurrentlyPlaying ? 'text-violet-700' : 'text-gray-700 dark:text-slate-200'
+        isCurrentlyPlaying ? 'text-indigo-700' : 'text-gray-700 dark:text-slate-200'
       }`}>
         {slot.beats}/{slot.noteValue}
       </span>
@@ -334,7 +334,7 @@ function MultiMeterPage({
                 if (!slot) return null;
                 return (
                   <div className="relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg cursor-grabbing">
-                    <span className="text-sm font-semibold text-violet-700">{slot.beats}/{slot.noteValue}</span>
+                    <span className="text-sm font-semibold text-indigo-700">{slot.beats}/{slot.noteValue}</span>
                   </div>
                 );
               })() : null}
@@ -360,12 +360,12 @@ function MultiMeterPage({
                 className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   slots.length >= MAX_SLOTS
                     ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
-                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:border-violet-400'
+                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400'
                 }`}
               >
                 {beats}/{noteValue}
                 {slots.length < MAX_SLOTS && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 text-white
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 text-white
                     rounded-full flex items-center justify-center text-[10px] font-bold">
                     +
                   </span>
@@ -384,7 +384,7 @@ function MultiMeterPage({
             onClick={() => setSoundType(key)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               soundType === key
-                ? 'bg-violet-600 text-white'
+                ? 'bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -406,7 +406,7 @@ function MultiMeterPage({
               ? 'bg-gray-300 dark:bg-slate-600 cursor-not-allowed'
               : isPlaying
                 ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-violet-600 hover:bg-violet-700'
+                : 'bg-indigo-600 hover:bg-indigo-700'
           } text-white`}
       >
         {isPlaying ? (

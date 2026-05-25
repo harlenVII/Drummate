@@ -92,8 +92,8 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
                 onClick={() => applyPreset(preset.start, preset.end)}
                 className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
                   active
-                    ? 'bg-violet-600 text-white border-violet-600'
-                    : 'text-gray-600 dark:text-slate-400 border-gray-300 dark:border-slate-600 hover:border-violet-400 hover:text-violet-600 dark:hover:border-violet-500 dark:hover:text-violet-400'
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'text-gray-600 dark:text-slate-400 border-gray-300 dark:border-slate-600 hover:border-indigo-400 hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400'
                 }`}
               >
                 {preset.label}
@@ -114,7 +114,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               value={startDate}
               max={today}
               onChange={(e) => handleStartDateChange(e.target.value)}
-              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               max={today}
               min={startDate}
               onChange={(e) => handleEndDateChange(e.target.value)}
-              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -136,7 +136,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
         {/* Generate button */}
         <button
           onClick={handleGenerate}
-          className="px-4 py-2 bg-violet-600 text-white rounded-lg font-medium hover:bg-violet-700 transition-colors"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
         >
           {t('reportGenerator.generate')}
         </button>
@@ -159,7 +159,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 copied
                   ? 'bg-green-600 text-white'
-                  : 'bg-violet-600 text-white hover:bg-violet-700'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
             >
               {copied ? t('copied') : t('copyToClipboard')}

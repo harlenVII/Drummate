@@ -58,7 +58,7 @@ function GoalCard() {
           <span className="text-gray-500 dark:text-slate-400 text-sm">{t('goal.noGoal')}</span>
           <button
             onClick={() => setShowModal(true)}
-            className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded-lg font-medium hover:bg-violet-700 transition-colors"
+            className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg font-medium hover:bg-indigo-700 transition-colors"
           >
             {t('goal.setGoal')}
           </button>
@@ -104,7 +104,7 @@ function GoalCard() {
         <div className="flex items-start justify-between">
           <div className="text-xs text-gray-400 dark:text-slate-500">{goal.startDate} – {goal.endDate}</div>
           <div className="flex gap-3">
-            <button onClick={() => setShowModal(true)} className="text-xs text-violet-600 hover:underline">
+            <button onClick={() => setShowModal(true)} className="text-xs text-indigo-600 hover:underline">
               {t('goal.editGoal')}
             </button>
             <button onClick={handleClear} className="text-xs text-red-500 hover:underline">
@@ -115,7 +115,7 @@ function GoalCard() {
 
         <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
           <div
-            className={`h-2 rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-violet-500'}`}
+            className={`h-2 rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-indigo-500'}`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>

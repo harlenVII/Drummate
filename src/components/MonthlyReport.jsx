@@ -331,7 +331,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             {entry.duration > 0 && grandTotal > 0 && (
               <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
                 <div
-                  className="bg-violet-500 rounded-full h-1.5"
+                  className="bg-indigo-500 rounded-full h-1.5"
                   style={{
                     width: `${(entry.duration / grandTotal) * 100}%`,
                   }}
