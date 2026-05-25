@@ -339,7 +339,7 @@ function PracticeItemList({
               onKeyDown={handleRenameKeyDown}
               onBlur={commitRename}
               autoFocus
-              className="flex-1 mr-3 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 mr-3 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-slate-100"
             />
           ) : (
             <span
@@ -488,7 +488,7 @@ function PracticeItemList({
           <div className="mt-4">
             <button
               onClick={() => setShowTrashed(!showTrashed)}
-              className="self-start px-3 py-1 text-sm text-red-500 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+              className="self-start px-3 py-1 text-sm text-red-500 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               {showTrashed ? t('hideTrash') : `${t('showTrash')} (${trashedItems.length})`}
             </button>

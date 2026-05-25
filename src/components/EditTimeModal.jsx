@@ -79,9 +79,9 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
             }}
             className={`w-full px-3 py-2 border rounded-lg text-lg font-mono focus:outline-none focus:ring-2 dark:bg-slate-700 dark:text-slate-100 ${
               !isValid
-                ? 'border-red-300 focus:ring-red-500'
+                ? 'border-red-300 dark:border-red-500 focus:ring-red-500'
                 : isWarning
-                  ? 'border-yellow-300 focus:ring-yellow-500'
+                  ? 'border-yellow-300 dark:border-yellow-400 focus:ring-yellow-500'
                   : 'border-gray-300 dark:border-slate-600 focus:ring-blue-500'
             }`}
           />
@@ -103,7 +103,7 @@ function EditTimeModal({ itemName, date, currentSeconds, onSave, onDelete, onClo
           {currentSeconds > 0 && (
             <button
               onClick={handleDelete}
-              className="w-full px-4 py-2 text-red-600 border border-red-300 rounded-lg font-medium hover:bg-red-50 transition-colors"
+              className="w-full px-4 py-2 text-red-600 border border-red-300 dark:border-red-500 rounded-lg font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               {t('deleteTime')}
             </button>
