@@ -70,6 +70,10 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   const p50 = getPercentile(activeDurations, 0.5);
   const p75 = getPercentile(activeDurations, 0.75);
 
+  const BG_TEXT = isDarkMode
+    ? { '#334155': '#94a3b8', '#a5b4fc': '#312e81', '#6366f1': '#ffffff', '#4338ca': '#ffffff', '#3730a3': '#ffffff' }
+    : { '#e2e8f0': '#94a3b8', '#bfdbfe': '#1e3a8a', '#60a5fa': '#ffffff', '#2563eb': '#ffffff', '#1e3a8a': '#ffffff' };
+
   const intensityColor = (seconds) => {
     if (seconds === 0) return isDarkMode ? '#334155' : '#e2e8f0'; // slate-700 / slate-200
     if (seconds <= p25) return isDarkMode ? '#a5b4fc' : '#bfdbfe'; // indigo-300 / blue-200
@@ -233,7 +237,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             const dayNum = parseInt(date.split('-')[2], 10);
             const cx = PADDING + c * (CELL + GAP);
             const cy = r * (CELL + GAP) + HEADER_H;
-            const isDark = seconds > p50;
+            const bg = intensityColor(seconds);
             return (
               <g key={date} onClick={() => onDayClick(date)} style={{ cursor: 'pointer' }}>
                 <rect
@@ -242,7 +246,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                   width={CELL}
                   height={CELL}
                   rx={4}
-                  fill={intensityColor(seconds)}
+                  fill={bg}
                   stroke={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : 'none'}
                   strokeWidth={isToday ? 2 : 0}
                 />
@@ -251,7 +255,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                   y={cy + CELL / 2 + 4}
                   textAnchor="middle"
                   fontSize="11"
-                  fill={isDark ? '#ffffff' : '#6b7280'}
+                  fill={BG_TEXT[bg]}
                 >
                   {dayNum}
                 </text>
