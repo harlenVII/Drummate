@@ -69,10 +69,10 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
 
   const intensityColor = (seconds) => {
     if (seconds === 0) return isDarkMode ? '#334155' : '#e2e8f0'; // slate-700 / slate-200
-    if (seconds <= p25) return isDarkMode ? '#c7d2fe' : '#bfdbfe'; // indigo-200 / blue-200
-    if (seconds <= p50) return isDarkMode ? '#818cf8' : '#60a5fa'; // indigo-400 / blue-400
-    if (seconds <= p75) return isDarkMode ? '#4f46e5' : '#2563eb'; // indigo-600 / blue-600
-    return isDarkMode ? '#312e81' : '#1e3a8a'; // indigo-900 / blue-900
+    if (seconds <= p25) return isDarkMode ? '#a5b4fc' : '#bfdbfe'; // indigo-300 / blue-200
+    if (seconds <= p50) return isDarkMode ? '#6366f1' : '#60a5fa'; // indigo-500 / blue-400
+    if (seconds <= p75) return isDarkMode ? '#4338ca' : '#2563eb'; // indigo-700 / blue-600
+    return isDarkMode ? '#3730a3' : '#1e3a8a'; // indigo-800 / blue-900
   };
 
   // Build grid: columns = day of week (0=Mon, 6=Sun), rows = weeks
