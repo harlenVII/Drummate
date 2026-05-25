@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import DatePicker from 'react-datepicker';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTodayString } from '../utils/dateHelpers';
 
@@ -11,6 +12,17 @@ function NoteEditModal({
   onClose,
 }) {
   const { t } = useLanguage();
+
+  const toPickerDate = (s) => (s ? new Date(s + 'T12:00:00') : null);
+
+  const fromPickerDate = (d) => {
+    if (!d) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   const isEdit = note != null;
 
   const activeItems = useMemo(
@@ -102,12 +114,14 @@ function NoteEditModal({
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
               {t('notes.dateLabel')}
             </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              max={getTodayString()}
-              className="w-full mb-3 px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md"
+            <DatePicker
+              selected={toPickerDate(date)}
+              onChange={(d) => setDate(fromPickerDate(d))}
+              maxDate={new Date()}
+              dateFormat="MM/dd/yyyy"
+              className="w-full px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md"
+              wrapperClassName="w-full mb-3"
+              popperProps={{ strategy: 'fixed' }}
             />
           </>
         )}
