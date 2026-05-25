@@ -158,7 +158,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               }}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 copied
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-teal-600 text-white'
                   : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
             >
