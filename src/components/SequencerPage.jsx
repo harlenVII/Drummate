@@ -45,9 +45,9 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
         p-2 rounded-xl border-2
         transition-all duration-150
         ${isCurrentlyPlaying
-          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 scale-105 shadow-md'
+          ? 'border-blue-500 dark:border-indigo-500 bg-blue-50 dark:bg-indigo-50 dark:bg-indigo-900/40 scale-105 shadow-md'
           : isSelected
-            ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-300'
+            ? 'border-blue-400 dark:border-indigo-400 bg-blue-50 dark:bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-blue-300 dark:ring-indigo-300'
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
         }
         ${editing ? 'cursor-pointer' : ''}
@@ -60,14 +60,14 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
 
       {/* Slot number badge */}
       <span className={`text-[10px] font-bold mb-0.5 ${
-        isCurrentlyPlaying ? 'text-indigo-600' : 'text-gray-400 dark:text-slate-500'
+        isCurrentlyPlaying ? 'text-blue-600 dark:text-indigo-600' : 'text-gray-400 dark:text-slate-500'
       }`}>
         {index + 1}
       </span>
 
       {/* Subdivision icon */}
       <div className={`${
-        isCurrentlyPlaying ? 'text-indigo-600' : 'text-gray-700 dark:text-slate-200'
+        isCurrentlyPlaying ? 'text-blue-600 dark:text-indigo-600' : 'text-gray-700 dark:text-slate-200'
       }`}>
         <SubdivisionIcon type={slot.subdivision} />
       </div>
@@ -333,7 +333,7 @@ function SequencerPage({
                 onClick={() => setInsertMode('before')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                   insertMode === 'before'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                     : 'text-gray-600 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-600'
                 }`}
               >
@@ -343,7 +343,7 @@ function SequencerPage({
                 onClick={() => setInsertMode('after')}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                   insertMode === 'after'
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                     : 'text-gray-600 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-600'
                 }`}
               >
@@ -366,13 +366,13 @@ function SequencerPage({
                   className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     slots.length >= MAX_SLOTS
                       ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
-                      : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400'
+                      : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-blue-400 dark:hover:border-indigo-400'
                   }`}
                 >
                   <SubdivisionIcon type={key} />
                   {/* Small + badge */}
                   {slots.length < MAX_SLOTS && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 text-white
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 dark:bg-indigo-500 text-white
                       rounded-full flex items-center justify-center text-[10px] font-bold">
                       +
                     </span>
@@ -392,7 +392,7 @@ function SequencerPage({
             onClick={() => setSoundType(key)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               soundType === key
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -414,7 +414,7 @@ function SequencerPage({
               ? 'bg-gray-300 dark:bg-slate-600 cursor-not-allowed'
               : isPlaying
                 ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-indigo-600 hover:bg-indigo-700'
+                : 'bg-blue-600 dark:bg-indigo-600 hover:bg-blue-700 dark:hover:bg-indigo-700'
           } text-white`}
       >
         {isPlaying ? (

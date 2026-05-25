@@ -176,7 +176,7 @@ function Metronome({
             onClick={() => setSoundType(key)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               soundType === key
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -193,7 +193,7 @@ function Metronome({
             onClick={() => handleTimeSignatureChange([num, den])}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               timeSignature[0] === num && timeSignature[1] === den
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -210,7 +210,7 @@ function Metronome({
             onClick={() => handleSubdivisionChange(key)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               subdivision === key
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -224,7 +224,7 @@ function Metronome({
         onClick={() => setAccentFirstBeat(!accentFirstBeat)}
         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
           accentFirstBeat
-            ? 'bg-indigo-600 text-white'
+            ? 'bg-blue-600 dark:bg-indigo-600 text-white'
             : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
         }`}
       >
@@ -237,7 +237,7 @@ function Metronome({
         className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors shadow-md ${
           isPlaying
             ? 'bg-red-500 hover:bg-red-600'
-            : 'bg-indigo-600 hover:bg-indigo-700'
+            : 'bg-blue-600 dark:bg-indigo-600 hover:bg-blue-700 dark:hover:bg-indigo-700'
         } text-white`}
       >
         {isPlaying ? (

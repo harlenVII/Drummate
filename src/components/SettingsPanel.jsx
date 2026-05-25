@@ -128,7 +128,7 @@ function SettingsPanel({
 
         {/* Profile card */}
         <div className="px-5 py-5 flex items-center gap-4 border-b border-gray-100 dark:border-slate-800">
-          <div className="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white text-lg font-semibold shrink-0">
+          <div className="w-12 h-12 rounded-full bg-blue-600 dark:bg-indigo-600 flex items-center justify-center text-white text-lg font-semibold shrink-0">
             {(user?.name || user?.email || '?')[0].toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -225,7 +225,7 @@ function SettingsPanel({
               <button
                 onClick={onToggleAiCoach}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  aiCoachEnabled ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
+                  aiCoachEnabled ? 'bg-blue-600 dark:bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
                 } cursor-pointer`}
                 role="switch"
                 aria-checked={aiCoachEnabled}
@@ -250,7 +250,7 @@ function SettingsPanel({
                 onClick={onToggleKokoro}
                 disabled={kokoroStatus === 'downloading' || kokoroDisabled}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  kokoroEffective ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
+                  kokoroEffective ? 'bg-blue-600 dark:bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
                 } ${kokoroStatus === 'downloading' || kokoroDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 role="switch"
                 aria-checked={kokoroEffective}
@@ -265,10 +265,10 @@ function SettingsPanel({
 
             {kokoroStatus === 'downloading' && (
               <div className="flex flex-col gap-1">
-                <p className="text-xs text-indigo-500">{t('naturalVoice.downloading')}</p>
+                <p className="text-xs text-blue-500 dark:text-indigo-500">{t('naturalVoice.downloading')}</p>
                 <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                    className="h-full bg-blue-500 dark:bg-indigo-500 rounded-full transition-all duration-300"
                     style={{ width: `${kokoroProgress.percentage}%` }}
                   />
                 </div>
@@ -314,7 +314,7 @@ function SettingsPanel({
                 onClick={onToggleHandsFree}
                 disabled={wakeWordLoading || !isChrome}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  handsFreeMode ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
+                  handsFreeMode ? 'bg-blue-600 dark:bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
                 } ${wakeWordLoading || !isChrome ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 role="switch"
                 aria-checked={handsFreeMode}
@@ -332,7 +332,7 @@ function SettingsPanel({
             ) : (
               <>
                 {wakeWordLoading && (
-                  <p className="text-xs text-indigo-500">{t('handsFree.loading')}</p>
+                  <p className="text-xs text-blue-500 dark:text-indigo-500">{t('handsFree.loading')}</p>
                 )}
 
                 {wakeWordDetected && listeningState === 'listening' && (
@@ -340,7 +340,7 @@ function SettingsPanel({
                 )}
 
                 {listeningState === 'processing' && voiceTranscript && (
-                  <p className="text-xs text-indigo-600 font-medium">&ldquo;{voiceTranscript}&rdquo;</p>
+                  <p className="text-xs text-blue-600 dark:text-indigo-600 font-medium">&ldquo;{voiceTranscript}&rdquo;</p>
                 )}
 
                 {wakeWordDetected && listeningState === 'idle' && (
@@ -399,7 +399,7 @@ function SettingsPanel({
           {offlineMode && (
             <button
               onClick={onShowPending}
-              className="text-left text-sm text-indigo-600 hover:underline"
+              className="text-left text-sm text-blue-600 dark:text-indigo-600 hover:underline"
             >
               {t('offline.settingsPendingRow', { count: pendingCount })}
             </button>

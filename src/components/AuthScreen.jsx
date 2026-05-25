@@ -65,7 +65,7 @@ export default function AuthScreen() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('auth.name')}
                 autoComplete="name"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 focus:border-transparent"
               />
             )}
 
@@ -77,7 +77,7 @@ export default function AuthScreen() {
               required
               inputMode="email"
               autoComplete="email"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 focus:border-transparent"
             />
 
             <input
@@ -88,7 +88,7 @@ export default function AuthScreen() {
               required
               minLength={8}
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 focus:border-transparent"
             />
 
             {error && (
@@ -98,7 +98,7 @@ export default function AuthScreen() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 bg-indigo-500 text-white font-semibold rounded-xl hover:bg-indigo-600 transition-colors disabled:opacity-50"
+              className="w-full py-3 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50"
             >
               {submitting
                 ? t('auth.syncing')
@@ -111,7 +111,7 @@ export default function AuthScreen() {
             {isSignUp ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
             <button
               onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
-              className="text-indigo-500 font-medium hover:underline"
+              className="text-blue-500 dark:text-indigo-500 font-medium hover:underline"
             >
               {isSignUp ? t('auth.signIn') : t('auth.signUp')}
             </button>

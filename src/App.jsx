@@ -1555,7 +1555,7 @@ function App() {
           role="status"
           aria-live="polite"
         >
-          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-blue-500 dark:border-indigo-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-700 dark:text-slate-200 font-medium">{t('auth.syncing')}</p>
           <button
             onClick={handleEnterOfflineMode}
@@ -1573,7 +1573,7 @@ function App() {
             </h1>
             <button
               onClick={() => setSettingsOpen(true)}
-              className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold hover:bg-indigo-700 transition-colors shrink-0"
+              className="w-9 h-9 rounded-full bg-blue-600 dark:bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors shrink-0"
               aria-label="Open settings"
             >
               {(user?.name || user?.email || '?')[0].toUpperCase()}

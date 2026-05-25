@@ -69,10 +69,10 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
 
   const intensityColor = (seconds) => {
     if (seconds === 0) return isDarkMode ? '#1e293b' : '#f3f4f6'; // slate-800 / gray-100
-    if (seconds <= p25) return '#c7d2fe'; // blue-200
-    if (seconds <= p50) return '#818cf8'; // blue-400
-    if (seconds <= p75) return '#4f46e5'; // blue-600
-    return '#312e81'; // blue-900
+    if (seconds <= p25) return isDarkMode ? '#c7d2fe' : '#bfdbfe'; // indigo-200 / blue-200
+    if (seconds <= p50) return isDarkMode ? '#818cf8' : '#60a5fa'; // indigo-400 / blue-400
+    if (seconds <= p75) return isDarkMode ? '#4f46e5' : '#2563eb'; // indigo-600 / blue-600
+    return isDarkMode ? '#312e81' : '#1e3a8a'; // indigo-900 / blue-900
   };
 
   // Build grid: columns = day of week (0=Mon, 6=Sun), rows = weeks
@@ -262,7 +262,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
                 height={CELL}
                 rx={2}
                 fill={intensityColor(seconds)}
-                stroke={isToday ? '#6366f1' : 'none'}
+                stroke={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : 'none'}
                 strokeWidth={isToday ? 1 : 0}
                 onClick={() => onDayClick(date)}
                 style={{ cursor: 'pointer' }}
@@ -313,7 +313,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
                       width={BAR_W}
                       height={barH}
                       rx={3}
-                      fill={isFutureMonth ? '#a5b4fc' : '#6366f1'}
+                      fill={isFutureMonth ? (isDarkMode ? '#a5b4fc' : '#93c5fd') : (isDarkMode ? '#6366f1' : '#3b82f6')}
                     />
                   )}
                   {/* Duration label */}
@@ -374,7 +374,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
             {entry.duration > 0 && grandTotal > 0 && (
               <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
                 <div
-                  className="bg-indigo-500 rounded-full h-1.5"
+                  className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
                   style={{
                     width: `${(entry.duration / grandTotal) * 100}%`,
                   }}

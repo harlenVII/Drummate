@@ -1,6 +1,9 @@
 import { useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
+const getAccentColor = () =>
+  document.documentElement.classList.contains('dark') ? '#6366f1' : '#3b82f6';
+
 const MIN_BPM = 30;
 const MAX_BPM = 300;
 
@@ -195,7 +198,7 @@ function BpmDial({ bpm, onBpmChange }) {
           <path
             d={arcPath}
             fill="none"
-            stroke="#6366f1"
+            stroke={getAccentColor()}
             strokeWidth="8"
             strokeLinecap="round"
           />
@@ -206,7 +209,7 @@ function BpmDial({ bpm, onBpmChange }) {
           cx={handle.x}
           cy={handle.y}
           r={HANDLE_RADIUS}
-          fill="#6366f1"
+          fill={getAccentColor()}
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
         />
 

@@ -100,7 +100,7 @@ function TabBar({ activeTab, onTabChange }) {
           onClick={() => onTabChange(tab.key)}
           className={`flex-1 flex flex-col items-center py-2 text-xs font-medium transition-colors ${
             activeTab === tab.key
-              ? 'text-indigo-600'
+              ? 'text-blue-600 dark:text-indigo-600'
               : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'
           }`}
         >

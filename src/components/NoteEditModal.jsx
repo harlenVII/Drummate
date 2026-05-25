@@ -147,7 +147,7 @@ function NoteEditModal({
             <button
               onClick={handleSave}
               disabled={!canSave || saving}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-blue-600 dark:bg-indigo-600 text-white rounded hover:bg-blue-700 dark:hover:bg-indigo-700 disabled:opacity-50"
             >
               {t('notes.save')}
             </button>

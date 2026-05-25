@@ -157,9 +157,9 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
                     rx={3}
                     fill={
                       isToday
-                        ? '#6366f1'
+                        ? (isDarkMode ? '#6366f1' : '#3b82f6')
                         : seconds > 0
-                          ? '#a5b4fc'
+                          ? (isDarkMode ? '#a5b4fc' : '#93c5fd')
                           : isDarkMode ? '#1e293b' : '#f3f4f6'
                     }
                   />
@@ -179,7 +179,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
                     y={LABEL_TOP + CHART_H + 16}
                     textAnchor="middle"
                     fontSize="10"
-                    fill={isToday ? '#6366f1' : '#9ca3af'}
+                    fill={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : '#9ca3af'}
                   >
                     {t(`analytics.weekdays.${WEEKDAY_KEYS[i]}`)}
                   </text>
@@ -219,7 +219,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
             {entry.duration > 0 && grandTotal > 0 && (
               <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
                 <div
-                  className="bg-indigo-500 rounded-full h-1.5"
+                  className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
                   style={{
                     width: `${(entry.duration / grandTotal) * 100}%`,
                   }}

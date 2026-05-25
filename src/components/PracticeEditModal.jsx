@@ -150,7 +150,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
                   onClick={() => setField('timeSignature', { beats: ts.beats, noteValue: ts.noteValue })}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     form.timeSignature.beats === ts.beats && form.timeSignature.noteValue === ts.noteValue
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                       : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
                   }`}
                 >
@@ -171,7 +171,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
                   onClick={() => setField('subdivision', s.key)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     form.subdivision === s.key
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                       : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
                   }`}
                 >
@@ -191,7 +191,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
                   onClick={() => setField('soundType', s)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     form.soundType === s
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                       : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-200 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
                   }`}
                 >
@@ -223,7 +223,7 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700"
+                className="px-4 py-2 rounded-lg bg-blue-600 dark:bg-indigo-600 text-white font-medium hover:bg-blue-700 dark:hover:bg-indigo-700"
               >
                 {t('done')}
               </button>

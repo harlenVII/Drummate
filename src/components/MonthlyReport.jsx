@@ -72,10 +72,10 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
 
   const intensityColor = (seconds) => {
     if (seconds === 0) return isDarkMode ? '#1e293b' : '#f3f4f6'; // slate-800 / gray-100
-    if (seconds <= p25) return '#c7d2fe'; // blue-200
-    if (seconds <= p50) return '#818cf8'; // blue-400
-    if (seconds <= p75) return '#4f46e5'; // blue-600
-    return '#312e81'; // blue-900
+    if (seconds <= p25) return isDarkMode ? '#c7d2fe' : '#bfdbfe'; // indigo-200 / blue-200
+    if (seconds <= p50) return isDarkMode ? '#818cf8' : '#60a5fa'; // indigo-400 / blue-400
+    if (seconds <= p75) return isDarkMode ? '#4f46e5' : '#2563eb'; // indigo-600 / blue-600
+    return isDarkMode ? '#312e81' : '#1e3a8a'; // indigo-900 / blue-900
   };
 
   // Build calendar grid cells
@@ -243,7 +243,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                   height={CELL}
                   rx={4}
                   fill={intensityColor(seconds)}
-                  stroke={isToday ? '#6366f1' : 'none'}
+                  stroke={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : 'none'}
                   strokeWidth={isToday ? 2 : 0}
                 />
                 <text
@@ -271,7 +271,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             <polyline
               points={polylineStr}
               fill="none"
-              stroke="#6366f1"
+              stroke={isDarkMode ? '#6366f1' : '#3b82f6'}
               strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -285,7 +285,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                     : 'middle';
               return (
                 <g key={i}>
-                  <circle cx={p.x} cy={p.y} r={4} fill="#6366f1" />
+                  <circle cx={p.x} cy={p.y} r={4} fill={isDarkMode ? '#6366f1' : '#3b82f6'} />
                   <text
                     x={p.x}
                     y={p.y - 8}
@@ -331,7 +331,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             {entry.duration > 0 && grandTotal > 0 && (
               <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
                 <div
-                  className="bg-indigo-500 rounded-full h-1.5"
+                  className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
                   style={{
                     width: `${(entry.duration / grandTotal) * 100}%`,
                   }}
