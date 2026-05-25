@@ -170,9 +170,10 @@ function BpmDial({ bpm, onBpmChange }) {
           cy={CY}
           r={RADIUS}
           fill="none"
-          stroke="#e5e7eb"
+          stroke="currentColor"
           strokeWidth="8"
           strokeLinecap="round"
+          className="text-gray-200 dark:text-slate-700"
         />
 
         {/* Tick marks */}
@@ -183,8 +184,9 @@ function BpmDial({ bpm, onBpmChange }) {
             y1={tick.y}
             x2={tick.x2}
             y2={tick.y2}
-            stroke={tick.isMajor ? '#9ca3af' : '#d1d5db'}
+            stroke="currentColor"
             strokeWidth={tick.isMajor ? 2 : 1}
+            className={tick.isMajor ? 'text-gray-400 dark:text-slate-500' : 'text-gray-300 dark:text-slate-600'}
           />
         ))}
 
@@ -214,7 +216,8 @@ function BpmDial({ bpm, onBpmChange }) {
           y={CY - 12}
           textAnchor="middle"
           style={{ fontSize: '48px', fontWeight: '700' }}
-          fill="#1f2937"
+          fill="currentColor"
+          className="text-gray-800 dark:text-slate-100"
         >
           {bpm}
         </text>
@@ -223,7 +226,8 @@ function BpmDial({ bpm, onBpmChange }) {
           y={CY + 16}
           textAnchor="middle"
           style={{ fontSize: '16px', fontWeight: '500' }}
-          fill="#6b7280"
+          fill="currentColor"
+          className="text-gray-500 dark:text-slate-400"
         >
           {getTempoName(bpm, t)}
         </text>
@@ -232,7 +236,8 @@ function BpmDial({ bpm, onBpmChange }) {
           y={CY + 36}
           textAnchor="middle"
           style={{ fontSize: '12px' }}
-          fill="#9ca3af"
+          fill="currentColor"
+          className="text-gray-400 dark:text-slate-500"
         >
           {t('bpm')}
         </text>
