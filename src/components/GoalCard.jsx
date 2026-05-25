@@ -27,7 +27,7 @@ function readGoal() {
 
 function formatRequired(hoursPerDay, t) {
   if (hoursPerDay <= 0) return t('goal.met');
-  if (hoursPerDay < 1) return `${Math.round(hoursPerDay * 60)} ${t('minutes')}`;
+  if (hoursPerDay < 1) return `${(hoursPerDay * 60).toFixed(2)} ${t('minutes')}`;
   return `${hoursPerDay.toFixed(1)} ${t('hours')}`;
 }
 

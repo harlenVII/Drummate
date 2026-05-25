@@ -58,7 +58,7 @@ function GoalBanner({ refreshKey = 0 }) {
     const remainingHours = Math.max(0, goal.targetHours - practicedHours);
     const perDay = remainingHours / daysLeft;
     const amount = perDay < 1
-      ? `${Math.round(perDay * 60)} ${t('minutes')}`
+      ? `${(perDay * 60).toFixed(2)} ${t('minutes')}`
       : `${perDay.toFixed(1)} ${t('hours')}`;
     rightText = t('goal.needPerDay', { amount });
   }
