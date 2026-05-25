@@ -66,7 +66,7 @@ function DragHandle({ listeners, attributes }) {
     <button
       {...listeners}
       {...attributes}
-      className="absolute top-0.5 left-0.5 p-0.5 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none"
+      className="absolute top-0.5 left-0.5 p-0.5 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 cursor-grab active:cursor-grabbing touch-none"
       aria-label="Drag to reorder"
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -99,7 +99,7 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
           ? 'border-blue-500 bg-blue-50 scale-105 shadow-md'
           : isSelected
             ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-300'
-            : 'border-gray-200 bg-white'
+            : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
         }
         ${editing ? 'cursor-pointer' : ''}
       `}
@@ -109,13 +109,13 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
       )}
 
       <span className={`text-[10px] font-bold mb-0.5 ${
-        isCurrentlyPlaying ? 'text-blue-600' : 'text-gray-400'
+        isCurrentlyPlaying ? 'text-blue-600' : 'text-gray-400 dark:text-slate-500'
       }`}>
         {index + 1}
       </span>
 
       <span className={`text-sm font-semibold ${
-        isCurrentlyPlaying ? 'text-blue-700' : 'text-gray-700'
+        isCurrentlyPlaying ? 'text-blue-700' : 'text-gray-700 dark:text-slate-200'
       }`}>
         {slot.beats}/{slot.noteValue}
       </span>
@@ -313,7 +313,7 @@ function MultiMeterPage({
       <div className="w-full">
         {slots.length === 0 ? (
           !editing ? (
-            <div className="text-center py-12 text-gray-500 text-sm">
+            <div className="text-center py-12 text-gray-500 dark:text-slate-400 text-sm">
               {t('multiMeter.emptyState')}
             </div>
           ) : null
@@ -333,7 +333,7 @@ function MultiMeterPage({
                 const slot = slots.find(s => s.id === activeDragId);
                 if (!slot) return null;
                 return (
-                  <div className="relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-gray-200 bg-white shadow-lg cursor-grabbing">
+                  <div className="relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg cursor-grabbing">
                     <span className="text-sm font-semibold text-blue-700">{slot.beats}/{slot.noteValue}</span>
                   </div>
                 );
@@ -348,7 +348,7 @@ function MultiMeterPage({
       {/* Edit mode: time signature picker */}
       {editing && (
         <>
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-gray-500 dark:text-slate-400 text-center">
             {t('multiMeter.tapToAdd')}
           </p>
           <div className="flex gap-2 flex-wrap justify-center">
@@ -359,8 +359,8 @@ function MultiMeterPage({
                 disabled={slots.length >= MAX_SLOTS}
                 className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   slots.length >= MAX_SLOTS
-                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                    : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50 hover:border-blue-400'
+                    ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
+                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-blue-50 hover:border-blue-400'
                 }`}
               >
                 {beats}/{noteValue}
@@ -385,7 +385,7 @@ function MultiMeterPage({
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               soundType === key
                 ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
             {t(`soundTypes.${key}`)}
@@ -403,7 +403,7 @@ function MultiMeterPage({
         className={`w-16 h-16 rounded-full flex items-center justify-center
           transition-colors shadow-md ${
             slots.length === 0
-              ? 'bg-gray-300 cursor-not-allowed'
+              ? 'bg-gray-300 dark:bg-slate-600 cursor-not-allowed'
               : isPlaying
                 ? 'bg-red-500 hover:bg-red-600'
                 : 'bg-blue-600 hover:bg-blue-700'
@@ -432,7 +432,7 @@ function MultiMeterPage({
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-700 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
           >
             {t('edit')}
           </button>

@@ -13,8 +13,8 @@ function BeatIndicator({ beats, currentBeat, isPlaying }) {
                   ? 'bg-blue-600 scale-125'
                   : 'bg-blue-500 scale-125'
                 : isAccent
-                  ? 'bg-gray-300'
-                  : 'bg-gray-200'
+                  ? 'bg-gray-300 dark:bg-slate-600'
+                  : 'bg-gray-200 dark:bg-slate-700'
             }`}
           />
         );

@@ -177,7 +177,7 @@ function Metronome({
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               soundType === key
                 ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
             {t(`soundTypes.${key}`)}
@@ -194,7 +194,7 @@ function Metronome({
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               timeSignature[0] === num && timeSignature[1] === den
                 ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
             {num}/{den}
@@ -211,7 +211,7 @@ function Metronome({
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               subdivision === key
                 ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
             <SubdivisionIcon type={key} />
@@ -225,7 +225,7 @@ function Metronome({
         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
           accentFirstBeat
             ? 'bg-blue-600 text-white'
-            : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+            : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
         }`}
       >
         {t('accentBeat1')}
@@ -254,7 +254,7 @@ function Metronome({
       {/* Tap Tempo button */}
       <button
         onClick={handleTap}
-        className="px-6 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+        className="px-6 py-2 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
       >
         {t('tapTempo')}
       </button>
