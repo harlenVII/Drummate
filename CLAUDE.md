@@ -192,6 +192,7 @@ All shortcuts are blocked when focus is in an `<input>` or `<textarea>`.
 | `←` / `→` | Step report date back/forward (daily=1 day, weekly=1 week, monthly=1 month, yearly=1 year); **not bound on Notes tab** |
 | `M` / `H` | Set time unit to minutes / hours |
 | `E` / `C` | Switch language to English / Chinese |
+| `L` / `D` | Switch theme to Light / Dark |
 | `S` | Stop the active practice timer (no-op if no timer running) |
 
 ## Utilities
@@ -266,6 +267,7 @@ Worker MUST be in `public/` folder, referenced as `/metronome-worker.js` (absolu
 22. **`flushSyncQueue` writes BOTH cloud AND local Dexie for field-update actions** — `reorder`, `rename_item`, `archive_item`, `trash_item`, `set_category`, `push_note`, `push_practice`, `reorder_practices`. After pushing to cloud, the handler re-asserts the payload values in local Dexie. This restores the offline intent that the earlier `pullAll` just overwrote, so `loadData` (in `init`'s `finally`) reads the final post-merge state with no flicker.
 23. **`subscribeToChanges` items/notes/practices listeners handle `'added'` and `'modified'` with the same reconciliation logic** — the Firestore initial snapshot after listener registration reports every doc as `change.type === 'added'`, including docs we just updated via `flushSyncQueue`. Without unified handling, cloud-side updates that happened before subscription registers would never propagate to local Dexie until refresh. The logs listener doesn't need this unification (no field updates flow through that path).
 24. **Offline-mode push payloads are enriched with the full mutable state** — `push_note` carries `body`, `trashed`, `trashedAt`, `itemUid`, `createdAt`. `push_practice` carries every BPM/time-signature/etc field. `flushSyncQueue`'s handlers push directly from the payload via `setDoc`, NOT by re-reading local Dexie (which would already be pull-overwritten). Legacy minimal payloads (from the catch-block fallback when `navigator.onLine` is true but Firestore actually fails) fall back to re-reading local — see the dual-path handlers in `flushSyncQueue`.
+25. **Theme is applied before React mounts** — `src/services/themeService.js` reads `drummate_theme` from localStorage and applies the `dark` class to `<html>` at module load. `src/main.jsx` imports this module before `App` so the class is set before first paint, avoiding a light-flash on reload in dark mode. Do not move this import below `App`, and do not gate `applyTheme` behind React state.
 
 ### Floating Practice Widget
 `FloatingPracticeWidget.jsx` renders a top-anchored pill (`fixed top-4 left-1/2`) when `activeItemId != null && activeTab !== 'practice'`. Body click navigates to Practice tab; inner stop control (a `role="button"` span — HTML disallows nested buttons) calls `saveAndStop`. Stateless; consumes existing App.jsx state via props. The `s` global hotkey wired into the keydown handler at App.jsx calls `saveAndStop` when `activeItemIdRef.current != null`.
