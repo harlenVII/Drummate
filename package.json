@@ -24,6 +24,7 @@
     "onnxruntime-web": "^1.24.2",
     "openwakeword-wasm-browser": "^0.1.1",
     "react": "^19.2.0",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
