@@ -27,6 +27,7 @@ import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from './servi
 import { getTheme, setTheme as setThemeService } from './services/themeService';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
+import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import { createSttService } from './services/sttService';
 import { parseIntent, findBestItemMatch } from './services/intentParser';
 import { speak, getLang, cancelSpeech } from './services/voiceFeedback';
@@ -328,6 +329,7 @@ function App() {
   const [offlineMode, _setOfflineMode] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
   const setOfflineMode = useCallback((value) => {
     setOfflineServiceMode(value);
@@ -1453,6 +1455,7 @@ function App() {
       else if (e.code === 'KeyS') {
         if (activeItemIdRef.current != null) saveAndStop();
       }
+      else if (e.key === '?') setShowKeyboardHelp(prev => !prev)
       else if (e.key === 'Tab') {
         if (activeTabRef.current === 'metronome') {
           e.preventDefault();
@@ -1863,6 +1866,11 @@ function App() {
       <PendingChangesModal
         isOpen={pendingModalOpen}
         onClose={() => setPendingModalOpen(false)}
+      />
+
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
       />
 
       {goOnlineToast && (
