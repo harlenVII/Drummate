@@ -596,7 +596,7 @@ function PracticeItemList({
         ) : (
           <button
             onClick={() => onStart(item.id)}
-            className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            className="px-4 py-1.5 bg-green-600 dark:bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-teal-700 transition-colors"
           >
             {t('start')}
           </button>
