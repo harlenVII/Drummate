@@ -89,6 +89,14 @@ function App() {
       return 'minutes';
     }
   });
+  const [groupByCategory, setGroupByCategory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('drummate_group_by_category');
+      return saved === null ? true : saved === 'true';
+    } catch {
+      return true;
+    }
+  });
   const [theme, setThemeState] = useState(getTheme);
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
@@ -307,6 +315,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('drummate_time_unit', timeUnit);
   }, [timeUnit]);
+
+  useEffect(() => {
+    try { localStorage.setItem('drummate_group_by_category', String(groupByCategory)); } catch {}
+  }, [groupByCategory]);
 
   // Persist sequencer settings to localStorage
   useEffect(() => {
@@ -1761,6 +1773,7 @@ function App() {
                   onAddTime={handleAddTime}
                   onMergeToYesterday={handleMergeToYesterday}
                   timeUnit={timeUnit}
+                  groupByCategory={groupByCategory}
                 />
               )}
 
@@ -1772,6 +1785,7 @@ function App() {
                   onWeekChange={handleWeekChange}
                   onDayClick={handleDayClick}
                   timeUnit={timeUnit}
+                  groupByCategory={groupByCategory}
                 />
               )}
 
@@ -1783,6 +1797,7 @@ function App() {
                   onMonthChange={handleMonthChange}
                   onDayClick={handleDayClick}
                   timeUnit={timeUnit}
+                  groupByCategory={groupByCategory}
                 />
               )}
 
@@ -1794,6 +1809,7 @@ function App() {
                   onYearChange={handleYearChange}
                   onDayClick={handleDayClick}
                   timeUnit={timeUnit}
+                  groupByCategory={groupByCategory}
                 />
               )}
 
@@ -1859,6 +1875,8 @@ function App() {
         onEnterOfflineMode={handleEnterOfflineMode}
         onGoOnline={handleGoOnline}
         onShowPending={() => setPendingModalOpen(true)}
+        groupByCategory={groupByCategory}
+        onToggleGroupByCategory={() => setGroupByCategory((v) => !v)}
         theme={theme}
         onThemeChange={setTheme}
       />
