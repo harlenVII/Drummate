@@ -13,7 +13,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, timeUnit }) {
+function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, timeUnit, groupByCategory }) {
   const { t } = useLanguage();
   const isDarkMode = document.documentElement.classList.contains('dark');
   const yearEnd = getYearEnd(yearStart);
@@ -40,10 +40,14 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
     .map((item) => ({
       id: item.id,
       name: item.name,
+      category: item.category,
       duration: itemTotals[item.id] || 0,
     }))
     .filter((e) => e.duration > 0)
     .sort((a, b) => b.duration - a.duration);
+
+  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
+  const songs = breakdown.filter((e) => e.category === 'songs');
 
   // Derive total from breakdown so trashed items' logs don't inflate the count
   const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
@@ -148,6 +152,40 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
     const nextYear = String(Number(year) + 1);
     onYearChange(`${nextYear}-01-01`);
   };
+
+  function renderItemCard(entry) {
+    const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
+    return (
+      <div key={entry.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+        <div className="flex items-center justify-between">
+          <span
+            className={`font-medium ${entry.duration > 0 ? 'text-gray-800 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}
+          >
+            {entry.name}
+          </span>
+          <div
+            className={`text-right ${entry.duration > 0 ? 'text-gray-600 dark:text-slate-400' : 'text-gray-400 dark:text-slate-500'}`}
+          >
+            <div>
+              {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0}{' '}
+              {t(timeUnit)}
+            </div>
+            {entry.duration > 0 && (
+              <div className="text-xs text-gray-500 dark:text-slate-400">({percentage}%)</div>
+            )}
+          </div>
+        </div>
+        {entry.duration > 0 && grandTotal > 0 && (
+          <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+            <div
+              className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
+              style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -346,44 +384,38 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
       )}
 
       {/* Per-item breakdown */}
-      {breakdown.map((entry) => {
-        const percentage =
-          grandTotal > 0
-            ? Math.round((entry.duration / grandTotal) * 100)
-            : 0;
-        return (
-          <div key={entry.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <span
-                className={`font-medium ${entry.duration > 0 ? 'text-gray-800 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}
-              >
-                {entry.name}
-              </span>
-              <div
-                className={`text-right ${entry.duration > 0 ? 'text-gray-600 dark:text-slate-400' : 'text-gray-400 dark:text-slate-500'}`}
-              >
-                <div>
-                  {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0}{' '}
-                  {t(timeUnit)}
-                </div>
-                {entry.duration > 0 && (
-                  <div className="text-xs text-gray-500 dark:text-slate-400">({percentage}%)</div>
-                )}
+      {groupByCategory ? (
+        <>
+          {fundamentals.length > 0 && (
+            <>
+              <div className="flex justify-between items-center px-1 pt-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                  {t('categories.fundamentals')}
+                </span>
+                <span className="text-xs text-gray-400 dark:text-slate-500">
+                  {formatDuration(fundamentals.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
+                </span>
               </div>
-            </div>
-            {entry.duration > 0 && grandTotal > 0 && (
-              <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
-                <div
-                  className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
-                  style={{
-                    width: `${(entry.duration / grandTotal) * 100}%`,
-                  }}
-                />
+              {fundamentals.map(renderItemCard)}
+            </>
+          )}
+          {songs.length > 0 && (
+            <>
+              <div className="flex justify-between items-center px-1 pt-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                  {t('categories.songs')}
+                </span>
+                <span className="text-xs text-gray-400 dark:text-slate-500">
+                  {formatDuration(songs.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
+                </span>
               </div>
-            )}
-          </div>
-        );
-      })}
+              {songs.map(renderItemCard)}
+            </>
+          )}
+        </>
+      ) : (
+        breakdown.map(renderItemCard)
+      )}
 
       {items.length === 0 && (
         <p className="text-center text-gray-400 dark:text-slate-500 py-8">
