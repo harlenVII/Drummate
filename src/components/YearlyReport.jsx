@@ -69,10 +69,10 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
 
   const intensityColor = (seconds) => {
     if (seconds === 0) return isDarkMode ? '#1e293b' : '#f3f4f6'; // slate-800 / gray-100
-    if (seconds <= p25) return '#bfdbfe'; // blue-200
-    if (seconds <= p50) return '#60a5fa'; // blue-400
-    if (seconds <= p75) return '#2563eb'; // blue-600
-    return '#1e3a8a'; // blue-900
+    if (seconds <= p25) return '#c7d2fe'; // blue-200
+    if (seconds <= p50) return '#818cf8'; // blue-400
+    if (seconds <= p75) return '#4f46e5'; // blue-600
+    return '#312e81'; // blue-900
   };
 
   // Build grid: columns = day of week (0=Mon, 6=Sun), rows = weeks
@@ -262,7 +262,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
                 height={CELL}
                 rx={2}
                 fill={intensityColor(seconds)}
-                stroke={isToday ? '#3b82f6' : 'none'}
+                stroke={isToday ? '#6366f1' : 'none'}
                 strokeWidth={isToday ? 1 : 0}
                 onClick={() => onDayClick(date)}
                 style={{ cursor: 'pointer' }}
@@ -313,7 +313,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
                       width={BAR_W}
                       height={barH}
                       rx={3}
-                      fill={isFutureMonth ? '#93c5fd' : '#3b82f6'}
+                      fill={isFutureMonth ? '#a5b4fc' : '#6366f1'}
                     />
                   )}
                   {/* Duration label */}

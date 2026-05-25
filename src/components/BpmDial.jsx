@@ -195,7 +195,7 @@ function BpmDial({ bpm, onBpmChange }) {
           <path
             d={arcPath}
             fill="none"
-            stroke="#3b82f6"
+            stroke="#6366f1"
             strokeWidth="8"
             strokeLinecap="round"
           />
@@ -206,7 +206,7 @@ function BpmDial({ bpm, onBpmChange }) {
           cx={handle.x}
           cy={handle.y}
           r={HANDLE_RADIUS}
-          fill="#3b82f6"
+          fill="#6366f1"
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
         />
 

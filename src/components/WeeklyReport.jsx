@@ -157,9 +157,9 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
                     rx={3}
                     fill={
                       isToday
-                        ? '#3b82f6'
+                        ? '#6366f1'
                         : seconds > 0
-                          ? '#93c5fd'
+                          ? '#a5b4fc'
                           : isDarkMode ? '#1e293b' : '#f3f4f6'
                     }
                   />
@@ -179,7 +179,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
                     y={LABEL_TOP + CHART_H + 16}
                     textAnchor="middle"
                     fontSize="10"
-                    fill={isToday ? '#3b82f6' : '#9ca3af'}
+                    fill={isToday ? '#6366f1' : '#9ca3af'}
                   >
                     {t(`analytics.weekdays.${WEEKDAY_KEYS[i]}`)}
                   </text>

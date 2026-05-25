@@ -72,10 +72,10 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
 
   const intensityColor = (seconds) => {
     if (seconds === 0) return isDarkMode ? '#1e293b' : '#f3f4f6'; // slate-800 / gray-100
-    if (seconds <= p25) return '#bfdbfe'; // blue-200
-    if (seconds <= p50) return '#60a5fa'; // blue-400
-    if (seconds <= p75) return '#2563eb'; // blue-600
-    return '#1e3a8a'; // blue-900
+    if (seconds <= p25) return '#c7d2fe'; // blue-200
+    if (seconds <= p50) return '#818cf8'; // blue-400
+    if (seconds <= p75) return '#4f46e5'; // blue-600
+    return '#312e81'; // blue-900
   };
 
   // Build calendar grid cells
@@ -243,7 +243,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                   height={CELL}
                   rx={4}
                   fill={intensityColor(seconds)}
-                  stroke={isToday ? '#3b82f6' : 'none'}
+                  stroke={isToday ? '#6366f1' : 'none'}
                   strokeWidth={isToday ? 2 : 0}
                 />
                 <text
@@ -271,7 +271,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             <polyline
               points={polylineStr}
               fill="none"
-              stroke="#3b82f6"
+              stroke="#6366f1"
               strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -285,7 +285,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                     : 'middle';
               return (
                 <g key={i}>
-                  <circle cx={p.x} cy={p.y} r={4} fill="#3b82f6" />
+                  <circle cx={p.x} cy={p.y} r={4} fill="#6366f1" />
                   <text
                     x={p.x}
                     y={p.y - 8}
