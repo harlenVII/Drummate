@@ -65,10 +65,10 @@ function NoteEditModal({
   if (!isEdit && activeItems.length === 0) {
     return (
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <p className="text-gray-700">{t('notes.noActiveItems')}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
+          <p className="text-gray-700 dark:text-slate-200">{t('notes.noActiveItems')}</p>
           <div className="mt-4 flex justify-end">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600">
+            <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-slate-400">
               {t('notes.cancel')}
             </button>
           </div>
@@ -79,27 +79,27 @@ function NoteEditModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-4">
           {isEdit ? t('notes.editTitle') : t('notes.createTitle')}
         </h2>
 
         {!isEdit && (
           <>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
               {t('notes.itemLabel')}
             </label>
             <select
               value={itemUid}
               onChange={(e) => setItemUid(e.target.value)}
-              className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full mb-3 px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md"
             >
               {activeItems.map(item => (
                 <option key={item.uid} value={item.uid}>{item.name}</option>
               ))}
             </select>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
               {t('notes.dateLabel')}
             </label>
             <input
@@ -107,7 +107,7 @@ function NoteEditModal({
               value={date}
               onChange={(e) => setDate(e.target.value)}
               max={getTodayString()}
-              className="w-full mb-3 px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full mb-3 px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md"
             />
           </>
         )}
@@ -121,7 +121,7 @@ function NoteEditModal({
           onChange={(e) => setBody(e.target.value)}
           placeholder={t('notes.bodyPlaceholder')}
           rows={6}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md resize-y"
+          className="w-full px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md resize-y"
         />
 
         <div className="mt-4 flex items-center justify-between gap-2">
@@ -130,7 +130,7 @@ function NoteEditModal({
               <button
                 onClick={handleDelete}
                 disabled={saving}
-                className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded disabled:opacity-50"
+                className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
               >
                 {t('notes.delete')}
               </button>
@@ -140,7 +140,7 @@ function NoteEditModal({
             <button
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded disabled:opacity-50"
             >
               {t('notes.cancel')}
             </button>

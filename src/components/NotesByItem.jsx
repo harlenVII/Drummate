@@ -51,40 +51,40 @@ function NotesByItem({ items, refreshKey, onEdit }) {
     const isOpen = expanded.has(item.uid);
     const mostRecent = itemNotes[0];
     return (
-      <div key={item.uid} className="bg-white rounded-lg shadow-sm">
+      <div key={item.uid} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm">
         <button
           onClick={() => toggle(item.uid)}
-          className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
         >
-          <span className="font-medium text-gray-800">{item.name}</span>
-          <span className="text-xs text-gray-500">
+          <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
+          <span className="text-xs text-gray-500 dark:text-slate-400">
             {itemNotes.length}
           </span>
         </button>
         {!isOpen && mostRecent && (
           <button
             onClick={() => onEdit(mostRecent)}
-            className="w-full text-left border-t border-gray-100 px-3 py-2 hover:bg-gray-50 transition-colors"
+            className="w-full text-left border-t border-gray-100 dark:border-slate-800 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
           >
-            <p className="text-xs text-gray-500 mb-0.5">{mostRecent.date}</p>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap break-words line-clamp-2">
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-0.5">{mostRecent.date}</p>
+            <p className="text-sm text-gray-800 dark:text-slate-100 whitespace-pre-wrap break-words line-clamp-2">
               {mostRecent.body}
             </p>
           </button>
         )}
         {isOpen && (
-          <div className="border-t border-gray-100 px-3 py-2 flex flex-col gap-2">
+          <div className="border-t border-gray-100 dark:border-slate-800 px-3 py-2 flex flex-col gap-2">
             {itemNotes.length === 0 ? (
-              <p className="text-sm text-gray-400 py-2">{t('notes.emptyByItem')}</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500 py-2">{t('notes.emptyByItem')}</p>
             ) : (
               itemNotes.map(note => (
                 <button
                   key={note.id}
                   onClick={() => onEdit(note)}
-                  className="text-left rounded p-2 hover:bg-gray-50 transition-colors"
+                  className="text-left rounded p-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <p className="text-xs text-gray-500 mb-0.5">{note.date}</p>
-                  <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-0.5">{note.date}</p>
+                  <p className="text-sm text-gray-800 dark:text-slate-100 whitespace-pre-wrap break-words">
                     {note.body}
                   </p>
                 </button>
@@ -98,7 +98,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
 
   if (activeItems.length === 0) {
     return (
-      <p className="text-gray-500 text-center py-12">{t('notes.noActiveItems')}</p>
+      <p className="text-gray-500 dark:text-slate-400 text-center py-12">{t('notes.noActiveItems')}</p>
     );
   }
 
@@ -106,7 +106,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
     <div className="flex flex-col gap-4">
       {sections.fundamentals.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.fundamentals')}
           </h3>
           {sections.fundamentals.map(renderItem)}
@@ -114,7 +114,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
       )}
       {sections.songs.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.songs')}
           </h3>
           {sections.songs.map(renderItem)}

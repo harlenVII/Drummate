@@ -93,7 +93,7 @@ function NotesPage({
 
   return (
     <>
-      <div className="flex bg-gray-200 rounded-lg p-1 gap-1">
+      <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
         {[
           { key: 'byDate', label: t('notes.subpageByDate') },
           { key: 'byItem', label: t('notes.subpageByItem') },
@@ -103,8 +103,8 @@ function NotesPage({
             onClick={() => onSubpageChange(key)}
             className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
               notesSubpage === key
-                ? 'bg-white text-gray-800 shadow-sm'
-                : 'text-gray-500'
+                ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
+                : 'text-gray-500 dark:text-slate-400'
             }`}
           >
             {label}
@@ -140,7 +140,7 @@ function NotesPage({
         <div className="mt-2">
           <button
             onClick={() => setShowTrash(prev => !prev)}
-            className="px-3 py-1 text-sm text-red-500 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            className="px-3 py-1 text-sm text-red-500 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
           >
             {showTrash ? t('notes.hideTrash') : t('notes.showTrash', { count: trashedNotes.length })}
           </button>
@@ -148,7 +148,7 @@ function NotesPage({
           {showTrash && (
             <div className="flex flex-col gap-2 mt-3">
               {trashedNotes.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-2">{t('notes.emptyTrash')}</p>
+                <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-2">{t('notes.emptyTrash')}</p>
               )}
               {trashedNotes.map((note) => {
                 const daysLeft = note.trashedAt
@@ -157,11 +157,11 @@ function NotesPage({
                 const itemName = items.find(i => i.uid === note.itemUid)?.name ?? t('notes.itemDeleted');
                 const preview = note.body.length > 80 ? note.body.slice(0, 80) + '…' : note.body;
                 return (
-                  <div key={note.id} className="bg-white rounded-lg shadow-sm p-4 flex items-center opacity-50">
+                  <div key={note.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center opacity-50">
                     <div className="flex-1 flex items-center justify-between gap-2">
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs text-gray-500">{note.date} · {itemName}</span>
-                        <span className="text-sm text-gray-700 truncate">{preview}</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">{note.date} · {itemName}</span>
+                        <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{preview}</span>
                         <span className="text-xs text-red-400">{t('daysLeft', { days: daysLeft })}</span>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
