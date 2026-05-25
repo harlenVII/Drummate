@@ -77,10 +77,10 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 flex flex-col gap-4"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-lg max-w-md w-full p-6 flex flex-col gap-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-gray-800">{t('reportGenerator.title')}</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('reportGenerator.title')}</h2>
 
         {/* Preset buttons */}
         <div className="flex gap-2">
@@ -93,7 +93,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
                 className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
                   active
                     ? 'bg-blue-600 text-white border-blue-600'
-                    : 'text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'
+                    : 'text-gray-600 dark:text-slate-400 border-gray-300 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600 dark:hover:border-blue-500 dark:hover:text-blue-400'
                 }`}
               >
                 {preset.label}
@@ -105,7 +105,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
         {/* Date inputs */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <label htmlFor="report-start-date" className="text-sm text-gray-600 w-20 shrink-0">
+            <label htmlFor="report-start-date" className="text-sm text-gray-600 dark:text-slate-400 w-20 shrink-0">
               {t('reportGenerator.startDate')}
             </label>
             <input
@@ -114,11 +114,11 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               value={startDate}
               max={today}
               onChange={(e) => handleStartDateChange(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex items-center gap-3">
-            <label htmlFor="report-end-date" className="text-sm text-gray-600 w-20 shrink-0">
+            <label htmlFor="report-end-date" className="text-sm text-gray-600 dark:text-slate-400 w-20 shrink-0">
               {t('reportGenerator.endDate')}
             </label>
             <input
@@ -128,7 +128,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               max={today}
               min={startDate}
               onChange={(e) => handleEndDateChange(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -144,7 +144,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
         {/* Report output */}
         {reportText !== null && (
           <>
-            <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap select-text">
+            <pre className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 text-sm text-gray-700 dark:text-slate-200 whitespace-pre-wrap select-text">
               {reportText}
             </pre>
             <button
@@ -169,7 +169,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
 
         <button
           onClick={onClose}
-          className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          className="px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
         >
           {t('close')}
         </button>

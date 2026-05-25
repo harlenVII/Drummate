@@ -59,22 +59,22 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
     return (
       <div
         key={entry.id}
-        className={`bg-white rounded-lg shadow-sm p-4 transition-colors ${
-          editMode ? 'cursor-pointer hover:bg-gray-50 active:bg-gray-100' : ''
+        className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 transition-colors ${
+          editMode ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 active:bg-gray-100 dark:active:bg-slate-700' : ''
         }`}
         onClick={editMode ? () => onEditTime(entry.id, entry.name, entry.duration) : undefined}
       >
         <div className="flex items-center justify-between">
-          <span className="font-medium text-gray-800">{entry.name}</span>
-          <div className="text-right text-gray-600">
+          <span className="font-medium text-gray-800 dark:text-slate-100">{entry.name}</span>
+          <div className="text-right text-gray-600 dark:text-slate-400">
             <div>{formatDuration(entry.duration, timeUnit)} {t(timeUnit)}</div>
             {entry.duration > 0 && (
-              <div className="text-xs text-gray-500">({percentage}%)</div>
+              <div className="text-xs text-gray-500 dark:text-slate-400">({percentage}%)</div>
             )}
           </div>
         </div>
         {grandTotal > 0 && (
-          <div className="mt-2 bg-gray-100 rounded-full h-1.5">
+          <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
             <div
               className="bg-blue-500 rounded-full h-1.5"
               style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
@@ -91,7 +91,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       <div className="flex items-center justify-between">
         <button
           onClick={() => onDateChange(shiftDate(reportDate, -1))}
-          className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+          className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
           aria-label="Previous day"
         >
           <svg
@@ -109,7 +109,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
             />
           </svg>
         </button>
-        <span className="text-lg font-semibold text-gray-800">
+        <span className="text-lg font-semibold text-gray-800 dark:text-slate-100">
           {formatDateLabel(reportDate, t)}
         </span>
         <button
@@ -117,8 +117,8 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           disabled={isToday}
           className={`p-2 transition-colors ${
             isToday
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-600 hover:text-gray-800'
+              ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
+              : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
           }`}
           aria-label="Next day"
         >
@@ -145,8 +145,8 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           onClick={() => setEditMode(!editMode)}
           className={`text-sm font-medium px-3 py-1 rounded-lg transition-colors ${
             editMode
-              ? 'text-blue-600 bg-blue-50'
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30'
+              : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
           }`}
         >
           {editMode ? t('done') : t('edit')}
@@ -154,13 +154,13 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       </div>
 
       {/* Grand total card */}
-      <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-        <p className="text-sm text-gray-500 font-medium">{t('totalPracticeTime')}</p>
-        <p className="text-3xl font-mono text-gray-800 mt-1">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 text-center">
+        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">{t('totalPracticeTime')}</p>
+        <p className="text-3xl font-mono text-gray-800 dark:text-slate-100 mt-1">
           {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (
-          <p className="text-sm text-gray-400 mt-2">{t('noPracticeRecorded')}</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">{t('noPracticeRecorded')}</p>
         )}
       </div>
 
@@ -168,10 +168,10 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {fundamentals.length > 0 && (
         <>
           <div className="flex justify-between items-center px-1 pt-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
               {t('categories.fundamentals')}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-slate-500">
               {formatDuration(fundamentals.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
             </span>
           </div>
@@ -182,10 +182,10 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {songs.length > 0 && (
         <>
           <div className="flex justify-between items-center px-1 pt-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
               {t('categories.songs')}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-slate-500">
               {formatDuration(songs.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
             </span>
           </div>
@@ -194,7 +194,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       )}
 
       {items.length === 0 && (
-        <p className="text-center text-gray-400 py-8">
+        <p className="text-center text-gray-400 dark:text-slate-500 py-8">
           {t('noPracticeItems')}
         </p>
       )}
@@ -203,7 +203,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {editMode && (
         <button
           onClick={() => setShowItemPicker(true)}
-          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 font-medium hover:border-blue-400 hover:text-blue-500 transition-colors"
+          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-gray-500 dark:text-slate-400 font-medium hover:border-blue-400 hover:text-blue-500 transition-colors"
         >
           + {t('addManualTime')}
         </button>
@@ -236,11 +236,11 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 flex flex-col gap-4"
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-lg max-w-md w-full p-6 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-gray-800">{t('dailyReport')}</h2>
-            <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap select-text">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('dailyReport')}</h2>
+            <pre className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 text-sm text-gray-700 dark:text-slate-200 whitespace-pre-wrap select-text">
               {generateReportText(reportDate, grandTotal, breakdown, t, timeUnit)}
             </pre>
             <button
@@ -260,7 +260,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
             </button>
             <button
               onClick={() => setShowModal(false)}
-              className="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               {t('close')}
             </button>
@@ -275,12 +275,12 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           onClick={() => setShowItemPicker(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-2 max-h-[70vh] overflow-y-auto"
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-2 max-h-[70vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-gray-800 mb-2">{t('selectItem')}</h2>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-2">{t('selectItem')}</h2>
             {availableItems.length === 0 ? (
-              <p className="text-gray-400 text-center py-4">{t('noItemsToAdd')}</p>
+              <p className="text-gray-400 dark:text-slate-500 text-center py-4">{t('noItemsToAdd')}</p>
             ) : (
               availableItems.map((item) => (
                 <button
@@ -289,9 +289,9 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
                     setShowItemPicker(false);
                     onAddTime(item.id);
                   }}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-between"
+                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-between"
                 >
-                  <span className="font-medium text-gray-800">{item.name}</span>
+                  <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
                   <div className="flex items-center gap-2 ml-2">
                     {item.category && (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -303,7 +303,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
                       </span>
                     )}
                     {item.archived && (
-                      <span className="text-xs text-gray-400">{t('archived')}</span>
+                      <span className="text-xs text-gray-400 dark:text-slate-500">{t('archived')}</span>
                     )}
                   </div>
                 </button>
@@ -311,7 +311,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
             )}
             <button
               onClick={() => setShowItemPicker(false)}
-              className="mt-2 px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              className="mt-2 px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
             >
               {t('cancel')}
             </button>
@@ -326,18 +326,18 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           onClick={() => !merging && setShowMergeConfirm(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-4"
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-lg max-w-sm w-full p-6 flex flex-col gap-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-bold text-gray-800">{t('mergeToYesterday')}</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('mergeToYesterday')}</h2>
+            <p className="text-sm text-gray-600 dark:text-slate-400">
               {t('confirmMergeToYesterday')}
             </p>
             <div className="flex gap-2">
               <button
                 disabled={merging}
                 onClick={() => setShowMergeConfirm(false)}
-                className="flex-1 px-4 py-2 text-gray-500 border border-gray-300 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
               >
                 {t('cancel')}
               </button>

@@ -46,38 +46,38 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
-        <h2 className="text-lg font-semibold text-gray-800">{t('goal.title')}</h2>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{t('goal.title')}</h2>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">{t('goal.startDate')}</span>
+          <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.startDate')}</span>
           <input
             type="date"
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); setError(''); }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">{t('goal.endDate')}</span>
+          <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.endDate')}</span>
           <input
             type="date"
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); setError(''); }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">{t('goal.targetHours')}</span>
+          <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.targetHours')}</span>
           <input
             type="number"
             min="0.5"
             step="0.5"
             value={targetHours}
             onChange={(e) => { setTargetHours(e.target.value); setError(''); }}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </label>
 
@@ -86,7 +86,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
         <div className="flex gap-2 justify-end pt-1">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
           >
             {t('cancel')}
           </button>

@@ -148,7 +148,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       <div className="flex items-center justify-between">
         <button
           onClick={handlePrevMonth}
-          className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+          className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
           aria-label="Previous month"
         >
           <svg
@@ -166,14 +166,14 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             />
           </svg>
         </button>
-        <span className="text-lg font-semibold text-gray-800">{monthLabel}</span>
+        <span className="text-lg font-semibold text-gray-800 dark:text-slate-100">{monthLabel}</span>
         <button
           onClick={handleNextMonth}
           disabled={isCurrentMonth}
           className={`p-2 transition-colors ${
             isCurrentMonth
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-600 hover:text-gray-800'
+              ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
+              : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
           }`}
           aria-label="Next month"
         >
@@ -195,22 +195,22 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       </div>
 
       {/* Grand total card */}
-      <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-        <p className="text-sm text-gray-500 font-medium">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 text-center">
+        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
           {t('analytics.totalThisMonth')}
         </p>
-        <p className="text-3xl font-mono text-gray-800 mt-1">
+        <p className="text-3xl font-mono text-gray-800 dark:text-slate-100 mt-1">
           {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">
             {t('analytics.noDataThisMonth')}
           </p>
         )}
       </div>
 
       {/* Calendar heatmap */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
         <svg viewBox={`0 0 ${gridW} ${gridH}`} className="w-full">
           {/* Day-of-week headers */}
           {WEEKDAY_KEYS.map((key, i) => (
@@ -262,8 +262,8 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
 
       {/* Weekly trend chart */}
       {grandTotal > 0 && weekTotals.length > 1 && (
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-sm text-gray-500 font-medium mb-2">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+          <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mb-2">
             {t('analytics.weeklyTrend')}
           </p>
           <svg viewBox={`0 0 ${TREND_W + TREND_PAD_X * 2} ${TREND_PAD_TOP + TREND_H + TREND_PAD_BOTTOM}`} className="w-full">
@@ -308,27 +308,27 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             ? Math.round((entry.duration / grandTotal) * 100)
             : 0;
         return (
-          <div key={entry.id} className="bg-white rounded-lg shadow-sm p-4">
+          <div key={entry.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between">
               <span
-                className={`font-medium ${entry.duration > 0 ? 'text-gray-800' : 'text-gray-400'}`}
+                className={`font-medium ${entry.duration > 0 ? 'text-gray-800 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}
               >
                 {entry.name}
               </span>
               <div
-                className={`text-right ${entry.duration > 0 ? 'text-gray-600' : 'text-gray-400'}`}
+                className={`text-right ${entry.duration > 0 ? 'text-gray-600 dark:text-slate-400' : 'text-gray-400 dark:text-slate-500'}`}
               >
                 <div>
                   {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0}{' '}
                   {t(timeUnit)}
                 </div>
                 {entry.duration > 0 && (
-                  <div className="text-xs text-gray-500">({percentage}%)</div>
+                  <div className="text-xs text-gray-500 dark:text-slate-400">({percentage}%)</div>
                 )}
               </div>
             </div>
             {entry.duration > 0 && grandTotal > 0 && (
-              <div className="mt-2 bg-gray-100 rounded-full h-1.5">
+              <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
                 <div
                   className="bg-blue-500 rounded-full h-1.5"
                   style={{
@@ -342,7 +342,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       })}
 
       {items.length === 0 && (
-        <p className="text-center text-gray-400 py-8">
+        <p className="text-center text-gray-400 dark:text-slate-500 py-8">
           {t('noPracticeItems')}
         </p>
       )}

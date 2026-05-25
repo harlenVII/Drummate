@@ -154,7 +154,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
       <div className="flex items-center justify-between">
         <button
           onClick={handlePrevYear}
-          className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+          className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
           aria-label="Previous year"
         >
           <svg
@@ -172,14 +172,14 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
             />
           </svg>
         </button>
-        <span className="text-lg font-semibold text-gray-800">{year}</span>
+        <span className="text-lg font-semibold text-gray-800 dark:text-slate-100">{year}</span>
         <button
           onClick={handleNextYear}
           disabled={isCurrentYear}
           className={`p-2 transition-colors ${
             isCurrentYear
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-600 hover:text-gray-800'
+              ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
+              : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
           }`}
           aria-label="Next year"
         >
@@ -201,22 +201,22 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
       </div>
 
       {/* Grand total card */}
-      <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-        <p className="text-sm text-gray-500 font-medium">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 text-center">
+        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
           {t('analytics.totalThisYear')}
         </p>
-        <p className="text-3xl font-mono text-gray-800 mt-1">
+        <p className="text-3xl font-mono text-gray-800 dark:text-slate-100 mt-1">
           {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">
             {t('analytics.noDataThisYear')}
           </p>
         )}
       </div>
 
       {/* GitHub-style heatmap */}
-      <div className="bg-white rounded-lg shadow-sm p-4 flex justify-center">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex justify-center">
         <svg
           width={gridW * 3}
           viewBox={`0 0 ${gridW} ${heatmapTotalH}`}
@@ -272,19 +272,19 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
       </div>
 
       {/* Practice days count */}
-      <div className="bg-white rounded-lg shadow-sm p-4 text-center">
-        <p className="text-sm text-gray-500 font-medium">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 text-center">
+        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
           {t('analytics.practiceDays')}
         </p>
-        <p className="text-xl font-mono text-gray-800 mt-1">
+        <p className="text-xl font-mono text-gray-800 dark:text-slate-100 mt-1">
           {practiceDayCount} / {totalDaysInYear}
         </p>
       </div>
 
       {/* Monthly bar chart */}
       {grandTotal > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-sm text-gray-500 font-medium mb-2">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+          <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mb-2">
             {t('analytics.monthlyTrend')}
           </p>
           <svg viewBox={`0 0 ${chartW} ${chartTotalH}`} className="w-full">
@@ -351,27 +351,27 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
             ? Math.round((entry.duration / grandTotal) * 100)
             : 0;
         return (
-          <div key={entry.id} className="bg-white rounded-lg shadow-sm p-4">
+          <div key={entry.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between">
               <span
-                className={`font-medium ${entry.duration > 0 ? 'text-gray-800' : 'text-gray-400'}`}
+                className={`font-medium ${entry.duration > 0 ? 'text-gray-800 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}
               >
                 {entry.name}
               </span>
               <div
-                className={`text-right ${entry.duration > 0 ? 'text-gray-600' : 'text-gray-400'}`}
+                className={`text-right ${entry.duration > 0 ? 'text-gray-600 dark:text-slate-400' : 'text-gray-400 dark:text-slate-500'}`}
               >
                 <div>
                   {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0}{' '}
                   {t(timeUnit)}
                 </div>
                 {entry.duration > 0 && (
-                  <div className="text-xs text-gray-500">({percentage}%)</div>
+                  <div className="text-xs text-gray-500 dark:text-slate-400">({percentage}%)</div>
                 )}
               </div>
             </div>
             {entry.duration > 0 && grandTotal > 0 && (
-              <div className="mt-2 bg-gray-100 rounded-full h-1.5">
+              <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
                 <div
                   className="bg-blue-500 rounded-full h-1.5"
                   style={{
@@ -385,7 +385,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
       })}
 
       {items.length === 0 && (
-        <p className="text-center text-gray-400 py-8">
+        <p className="text-center text-gray-400 dark:text-slate-500 py-8">
           {t('noPracticeItems')}
         </p>
       )}

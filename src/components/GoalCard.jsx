@@ -54,8 +54,8 @@ function GoalCard() {
   if (!goal) {
     return (
       <>
-        <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-          <span className="text-gray-500 text-sm">{t('goal.noGoal')}</span>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between">
+          <span className="text-gray-500 dark:text-slate-400 text-sm">{t('goal.noGoal')}</span>
           <button
             onClick={() => setShowModal(true)}
             className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -100,9 +100,9 @@ function GoalCard() {
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col gap-3">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between">
-          <div className="text-xs text-gray-400">{goal.startDate} – {goal.endDate}</div>
+          <div className="text-xs text-gray-400 dark:text-slate-500">{goal.startDate} – {goal.endDate}</div>
           <div className="flex gap-3">
             <button onClick={() => setShowModal(true)} className="text-xs text-blue-600 hover:underline">
               {t('goal.editGoal')}
@@ -113,14 +113,14 @@ function GoalCard() {
           </div>
         </div>
 
-        <div className="w-full bg-gray-100 rounded-full h-2">
+        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-blue-500'}`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        <div className="flex justify-between text-xs text-gray-600">
+        <div className="flex justify-between text-xs text-gray-600 dark:text-slate-400">
           <span>
             {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')} ({progressPercent.toFixed(2)}%)
           </span>
@@ -130,7 +130,7 @@ function GoalCard() {
         </div>
 
         {requiredText && (
-          <div className="text-xs text-gray-500 border-t border-gray-100 pt-2">
+          <div className="text-xs text-gray-500 dark:text-slate-400 border-t border-gray-100 dark:border-slate-700 pt-2">
             {requiredText}
           </div>
         )}

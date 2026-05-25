@@ -54,16 +54,16 @@ function StatsReport({ items, timeUnit }) {
       <div className="flex flex-col gap-4">
         {sections.map((section) => (
           <div key={section.title} className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
               {section.title}
             </h3>
             {section.items.map((item) => (
-              <div key={item.label} className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-                <span className="text-gray-600 text-sm">{item.label}</span>
+              <div key={item.label} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between">
+                <span className="text-gray-600 dark:text-slate-400 text-sm">{item.label}</span>
                 <div className="text-right">
-                  <span className="font-mono font-semibold text-gray-800">{item.value}</span>
+                  <span className="font-mono font-semibold text-gray-800 dark:text-slate-100">{item.value}</span>
                   {item.sub && (
-                    <div className="text-xs text-gray-400 mt-0.5">{item.sub}</div>
+                    <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{item.sub}</div>
                   )}
                 </div>
               </div>
@@ -72,13 +72,13 @@ function StatsReport({ items, timeUnit }) {
         ))}
 
         {stats.totalSessions === 0 && (
-          <p className="text-center text-gray-400 py-8">
+          <p className="text-center text-gray-400 dark:text-slate-500 py-8">
             {t('noPracticeRecorded')}
           </p>
         )}
 
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide px-1">
+          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('goal.title')}
           </h3>
           <GoalCard />
