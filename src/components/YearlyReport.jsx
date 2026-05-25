@@ -68,7 +68,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   const p75 = getPercentile(activeDurations, 0.75);
 
   const intensityColor = (seconds) => {
-    if (seconds === 0) return isDarkMode ? '#1e293b' : '#f3f4f6'; // slate-800 / gray-100
+    if (seconds === 0) return isDarkMode ? '#334155' : '#e2e8f0'; // slate-700 / slate-200
     if (seconds <= p25) return isDarkMode ? '#c7d2fe' : '#bfdbfe'; // indigo-200 / blue-200
     if (seconds <= p50) return isDarkMode ? '#818cf8' : '#60a5fa'; // indigo-400 / blue-400
     if (seconds <= p75) return isDarkMode ? '#4f46e5' : '#2563eb'; // indigo-600 / blue-600
