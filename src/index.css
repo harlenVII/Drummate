@@ -92,6 +92,11 @@ input, textarea {
   font-weight: bold;
 }
 
+.dark .react-datepicker__day--today.react-datepicker__day--selected,
+.dark .react-datepicker__day--today.react-datepicker__day--keyboard-selected {
+  color: #ffffff;
+}
+
 .dark .react-datepicker__day--disabled,
 .dark .react-datepicker__day--outside-month {
   color: #64748b; /* slate-500 */
