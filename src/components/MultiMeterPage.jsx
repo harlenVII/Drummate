@@ -123,9 +123,9 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
       {editing && (
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(index); }}
-          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-500
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-400
             text-white rounded-full flex items-center justify-center
-            text-xs font-bold shadow-sm hover:bg-slate-400 transition-colors"
+            text-xs font-bold shadow-sm hover:bg-rose-300 transition-colors"
         >
           ×
         </button>
