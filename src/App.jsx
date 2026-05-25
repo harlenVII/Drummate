@@ -1455,7 +1455,7 @@ function App() {
       else if (e.code === 'KeyS') {
         if (activeItemIdRef.current != null) saveAndStop();
       }
-      else if (e.key === '?') setShowKeyboardHelp(prev => !prev)
+      else if (e.key === '?') setShowKeyboardHelp(prev => !prev);
       else if (e.key === 'Tab') {
         if (activeTabRef.current === 'metronome') {
           e.preventDefault();
