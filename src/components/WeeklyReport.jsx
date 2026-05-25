@@ -11,6 +11,7 @@ const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, timeUnit }) {
   const { t } = useLanguage();
+  const isDarkMode = document.documentElement.classList.contains('dark');
   const weekEnd = getWeekEnd(weekStart);
   const weekDays = getDaysInRange(weekStart, weekEnd);
   const today = getTodayString();
@@ -159,7 +160,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
                         ? '#3b82f6'
                         : seconds > 0
                           ? '#93c5fd'
-                          : '#f3f4f6'
+                          : isDarkMode ? '#1e293b' : '#f3f4f6'
                     }
                   />
                   {seconds > 0 && (

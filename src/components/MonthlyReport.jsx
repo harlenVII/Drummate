@@ -13,6 +13,7 @@ const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, timeUnit }) {
   const { t } = useLanguage();
+  const isDarkMode = document.documentElement.classList.contains('dark');
   const monthEnd = getMonthEnd(monthStart);
   const monthDays = getDaysInRange(monthStart, monthEnd);
   const today = getTodayString();
@@ -70,7 +71,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   const p75 = getPercentile(activeDurations, 0.75);
 
   const intensityColor = (seconds) => {
-    if (seconds === 0) return '#f3f4f6'; // gray-100
+    if (seconds === 0) return isDarkMode ? '#1e293b' : '#f3f4f6'; // slate-800 / gray-100
     if (seconds <= p25) return '#bfdbfe'; // blue-200
     if (seconds <= p50) return '#60a5fa'; // blue-400
     if (seconds <= p75) return '#2563eb'; // blue-600

@@ -15,6 +15,7 @@ const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep
 
 function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, timeUnit }) {
   const { t } = useLanguage();
+  const isDarkMode = document.documentElement.classList.contains('dark');
   const yearEnd = getYearEnd(yearStart);
   const year = yearStart.split('-')[0];
   const today = getTodayString();
@@ -67,7 +68,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   const p75 = getPercentile(activeDurations, 0.75);
 
   const intensityColor = (seconds) => {
-    if (seconds === 0) return '#f3f4f6'; // gray-100
+    if (seconds === 0) return isDarkMode ? '#1e293b' : '#f3f4f6'; // slate-800 / gray-100
     if (seconds <= p25) return '#bfdbfe'; // blue-200
     if (seconds <= p50) return '#60a5fa'; // blue-400
     if (seconds <= p75) return '#2563eb'; // blue-600
@@ -302,7 +303,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
                     width={BAR_W}
                     height={CHART_H}
                     rx={3}
-                    fill="#f3f4f6"
+                    fill={isDarkMode ? '#1e293b' : '#f3f4f6'}
                   />
                   {/* Bar fill */}
                   {barH > 0 && (

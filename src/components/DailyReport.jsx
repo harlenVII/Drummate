@@ -213,7 +213,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {editMode && isToday && grandTotal > 0 && (
         <button
           onClick={() => setShowMergeConfirm(true)}
-          className="w-full px-4 py-3 border border-amber-300 rounded-lg text-amber-700 font-medium bg-amber-50 hover:bg-amber-100 transition-colors"
+          className="w-full px-4 py-3 border border-amber-300 dark:border-amber-700 rounded-lg text-amber-700 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
         >
           {t('mergeToYesterday')}
         </button>
