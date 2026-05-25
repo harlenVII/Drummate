@@ -30,17 +30,17 @@ export default function AuthScreen() {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center bg-gray-100 px-4 pt-20 pb-8">
+    <div className="min-h-[100dvh] flex flex-col items-center bg-gray-100 dark:bg-slate-900 px-4 pt-20 pb-8">
       <div className="w-full max-w-sm">
         {/* Brand header */}
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-3">
             <span className="text-4xl">🥁</span>
-            <h1 className="text-3xl font-bold text-gray-800">{t('appName')}</h1>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">{t('appName')}</h1>
           </div>
           <button
             onClick={toggleLanguage}
-            className="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-3 py-1 text-sm font-medium text-gray-600 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
           >
             {language === 'en' ? '中文' : 'EN'}
           </button>
@@ -52,8 +52,8 @@ export default function AuthScreen() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-6">
             {isSignUp ? t('auth.signUp') : t('auth.signIn')}
           </h2>
 
@@ -65,7 +65,7 @@ export default function AuthScreen() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('auth.name')}
                 autoComplete="name"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             )}
 
@@ -77,7 +77,7 @@ export default function AuthScreen() {
               required
               inputMode="email"
               autoComplete="email"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
             <input
@@ -88,7 +88,7 @@ export default function AuthScreen() {
               required
               minLength={8}
               autoComplete={isSignUp ? 'new-password' : 'current-password'}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
 
             {error && (
@@ -107,7 +107,7 @@ export default function AuthScreen() {
             </button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <p className="mt-4 text-center text-sm text-gray-500 dark:text-slate-400">
             {isSignUp ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
             <button
               onClick={() => { setIsSignUp(!isSignUp); setError(''); }}

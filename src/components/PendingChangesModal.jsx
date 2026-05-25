@@ -34,21 +34,21 @@ function PendingChangesModal({ isOpen, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pending-changes-title"
       >
-        <div className="px-5 py-3 border-b border-gray-200">
-          <h2 id="pending-changes-title" className="text-lg font-semibold text-gray-800">
+        <div className="px-5 py-3 border-b border-gray-200 dark:border-slate-700">
+          <h2 id="pending-changes-title" className="text-lg font-semibold text-gray-800 dark:text-slate-100">
             {t('offline.pendingChangesTitle')}
           </h2>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {entries.length === 0 ? (
-            <p className="text-sm text-gray-500 py-6 text-center">
+            <p className="text-sm text-gray-500 dark:text-slate-400 py-6 text-center">
               {t('offline.noPendingChangesEmpty')}
             </p>
           ) : (
@@ -56,7 +56,7 @@ function PendingChangesModal({ isOpen, onClose }) {
               {entries.map((entry) => (
                 <li
                   key={entry.id}
-                  className="text-sm text-gray-700 px-3 py-2 bg-gray-50 rounded-md"
+                  className="text-sm text-gray-700 dark:text-slate-200 px-3 py-2 bg-gray-50 dark:bg-slate-900 rounded-md"
                 >
                   {formatPendingAction(entry, t)}
                 </li>
@@ -65,10 +65,10 @@ function PendingChangesModal({ isOpen, onClose }) {
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-200 flex justify-end">
+        <div className="px-5 py-3 border-t border-gray-200 dark:border-slate-700 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
           >
             {t('close')}
           </button>
