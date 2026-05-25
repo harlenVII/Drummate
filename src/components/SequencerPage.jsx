@@ -45,9 +45,9 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
         p-2 rounded-xl border-2
         transition-all duration-150
         ${isCurrentlyPlaying
-          ? 'border-blue-500 bg-blue-50 scale-105 shadow-md'
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/40 scale-105 shadow-md'
           : isSelected
-            ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-300'
+            ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-300'
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
         }
         ${editing ? 'cursor-pointer' : ''}
@@ -366,7 +366,7 @@ function SequencerPage({
                   className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     slots.length >= MAX_SLOTS
                       ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
-                      : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-blue-50 hover:border-blue-400'
+                      : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-400'
                   }`}
                 >
                   <SubdivisionIcon type={key} />
