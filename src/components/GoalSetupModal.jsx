@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react';
+import DatePicker from 'react-datepicker';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTodayString } from '../utils/dateHelpers';
+
+const toPickerDate = (s) => (s ? new Date(s + 'T12:00:00') : null);
+const fromPickerDate = (d) => {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 const GOAL_KEY = 'drummate_goal';
 
@@ -51,21 +61,25 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
 
         <label className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.startDate')}</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => { setStartDate(e.target.value); setError(''); }}
-            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+          <DatePicker
+            selected={toPickerDate(startDate)}
+            onChange={(d) => { setStartDate(fromPickerDate(d)); setError(''); }}
+            dateFormat="MM/dd/yyyy"
+            className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+            wrapperClassName="w-full"
+            popperProps={{ strategy: 'fixed' }}
           />
         </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.endDate')}</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => { setEndDate(e.target.value); setError(''); }}
-            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+          <DatePicker
+            selected={toPickerDate(endDate)}
+            onChange={(d) => { setEndDate(fromPickerDate(d)); setError(''); }}
+            dateFormat="MM/dd/yyyy"
+            className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+            wrapperClassName="w-full"
+            popperProps={{ strategy: 'fixed' }}
           />
         </label>
 
