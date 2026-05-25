@@ -580,8 +580,8 @@ function PracticeItemList({
           isActive ? 'ring-2 ring-blue-500 dark:ring-indigo-500' : isFocused ? 'ring-2 ring-gray-300 dark:ring-slate-600' : ''
         }`}
       >
-        <div className="flex flex-col">
-          <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
+        <div className="flex flex-col min-w-0 mr-3">
+          <span className="font-medium text-gray-800 dark:text-slate-100 truncate">{item.name}</span>
           <span className="font-mono text-lg text-gray-600 dark:text-slate-400">
             {formatTime(displayTime)}
           </span>
@@ -589,14 +589,14 @@ function PracticeItemList({
         {isActive ? (
           <button
             onClick={() => onStop()}
-            className="px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
+            className="shrink-0 px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
           >
             {t('stop')}
           </button>
         ) : (
           <button
             onClick={() => onStart(item.id)}
-            className="px-4 py-1.5 bg-green-600 dark:bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-teal-700 transition-colors"
+            className="shrink-0 px-4 py-1.5 bg-green-600 dark:bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-teal-700 transition-colors"
           >
             {t('start')}
           </button>
