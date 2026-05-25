@@ -194,6 +194,7 @@ All shortcuts are blocked when focus is in an `<input>` or `<textarea>`.
 | `E` / `C` | Switch language to English / Chinese |
 | `L` / `D` | Switch theme to Light / Dark |
 | `S` | Stop the active practice timer (no-op if no timer running) |
+| `?` | Toggle keyboard shortcuts help modal (`KeyboardShortcutsModal.jsx`) |
 
 ## Utilities
 
