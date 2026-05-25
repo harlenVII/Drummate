@@ -48,7 +48,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   const songs = breakdown.filter((e) => e.category === 'songs');
 
   // Derive total from breakdown so trashed items' logs don't inflate the count
-  let grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
+  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
 
   const isCurrentMonth = monthStart >= getMonthStart(today);
 
