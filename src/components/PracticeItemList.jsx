@@ -22,7 +22,7 @@ function DragHandle({ listeners, attributes }) {
   );
 }
 
-function SortableItem({ item, children }) {
+function SortableItem({ item, children, compactMode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
   const style = {
@@ -33,7 +33,7 @@ function SortableItem({ item, children }) {
 
   return (
     <div ref={setNodeRef} style={style}>
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center">
+      <div className={`bg-white dark:bg-slate-800 shadow-sm flex items-center ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
         <DragHandle listeners={listeners} attributes={attributes} />
         {children}
       </div>
@@ -106,6 +106,7 @@ function PracticeItemList({
   focusedItemId,
   onFocusChange,
   goalRefreshKey,
+  compactMode = false,
 }) {
   const { t } = useLanguage();
   const [newName, setNewName] = useState('');
@@ -329,7 +330,7 @@ function PracticeItemList({
     const editSongs = workingItems.filter(i => i.category === 'songs');
 
     const renderEditRow = (item) => (
-      <SortableItem key={item.id} item={item}>
+      <SortableItem key={item.id} item={item} compactMode={compactMode}>
         <div className={`flex-1 flex items-center justify-between ml-2 ${item.archived ? 'opacity-50' : ''}`}>
           {editingItemId === item.id ? (
             <input
@@ -418,7 +419,7 @@ function PracticeItemList({
           onDragCancel={() => { setActiveDragId(null); setDragItems(null); }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-2">
+            <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
               <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
                 {t('categories.fundamentals')}
               </h3>
@@ -431,7 +432,7 @@ function PracticeItemList({
               </SortableContext>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
               <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
                 {t('categories.songs')}
               </h3>
@@ -576,13 +577,15 @@ function PracticeItemList({
       <div
         key={item.id}
         onClick={() => onFocusChange(item.id)}
-        className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between transition-colors cursor-pointer ${
+        className={`bg-white dark:bg-slate-800 shadow-sm flex items-center justify-between transition-colors cursor-pointer ${
+          compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'
+        } ${
           isActive ? 'ring-2 ring-blue-500 dark:ring-indigo-500' : isFocused ? 'ring-2 ring-gray-300 dark:ring-slate-600' : ''
         }`}
       >
         <div className="flex flex-col min-w-0 mr-3">
           <span className="font-medium text-gray-800 dark:text-slate-100 truncate">{item.name}</span>
-          <span className={`font-mono text-lg ${displayTime === 0 ? 'text-gray-300 dark:text-slate-700' : 'text-gray-600 dark:text-slate-400'}`}>
+          <span className={`font-mono ${compactMode ? 'text-sm' : 'text-lg'} ${displayTime === 0 ? 'text-gray-300 dark:text-slate-700' : 'text-gray-600 dark:text-slate-400'}`}>
             {displayTime === 0 ? '—' : formatTime(displayTime)}
           </span>
         </div>
@@ -609,7 +612,7 @@ function PracticeItemList({
     <div className="flex flex-col gap-3">
       <GoalBanner refreshKey={goalRefreshKey} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="flex flex-col gap-2">
+        <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
           <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.fundamentals')}
           </h3>
@@ -620,7 +623,7 @@ function PracticeItemList({
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
           <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.songs')}
           </h3>
@@ -643,17 +646,17 @@ function PracticeItemList({
             {t('categories.archived')} ({archivedItems.length})
           </button>
           {showArchivedNormal && (
-            <div className="flex flex-col gap-2 mt-1">
+            <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'} mt-1`}>
               {archivedItems.map(item => {
                 const savedTotal = totals[item.id] || 0;
                 return (
                   <div
                     key={item.id}
-                    className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between opacity-50"
+                    className={`bg-white dark:bg-slate-800 shadow-sm flex items-center justify-between opacity-50 ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}
                   >
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
-                      <span className={`font-mono text-lg ${savedTotal === 0 ? 'text-gray-300 dark:text-slate-700' : 'text-gray-600 dark:text-slate-400'}`}>
+                      <span className={`font-mono ${compactMode ? 'text-sm' : 'text-lg'} ${savedTotal === 0 ? 'text-gray-300 dark:text-slate-700' : 'text-gray-600 dark:text-slate-400'}`}>
                         {savedTotal === 0 ? '—' : formatTime(savedTotal)}
                       </span>
                     </div>
