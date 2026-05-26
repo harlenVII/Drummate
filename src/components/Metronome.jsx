@@ -203,7 +203,7 @@ function Metronome({
       </div>
 
       {/* Subdivision selector */}
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className="grid grid-cols-5 gap-2">
         {SUBDIVISIONS.filter(({ key }) => key !== 'rest').map(({ key }) => (
           <button
             key={key}
@@ -234,18 +234,18 @@ function Metronome({
       {/* Play/Stop button */}
       <button
         onClick={handleTogglePlay}
-        className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors shadow-md ${
+        className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors shadow-lg ${
           isPlaying
-            ? 'bg-red-500 hover:bg-red-600'
-            : 'bg-blue-600 dark:bg-indigo-600 hover:bg-blue-700 dark:hover:bg-indigo-700'
+            ? 'bg-red-500 hover:bg-red-600 shadow-red-500/40'
+            : 'bg-blue-600 dark:bg-indigo-600 hover:bg-blue-700 dark:hover:bg-indigo-700 shadow-blue-600/40 dark:shadow-indigo-600/40'
         } text-white`}
       >
         {isPlaying ? (
-          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-9 h-9" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="6" width="12" height="12" rx="2" />
           </svg>
         ) : (
-          <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-9 h-9" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 5v14l11-7z" />
           </svg>
         )}
