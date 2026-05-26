@@ -51,21 +51,21 @@ function PracticeRow({ practice, isFocused, onStart, onEdit }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 flex items-center gap-3 ${
+      className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-5 flex items-center gap-3 ${
         isFocused ? 'ring-2 ring-blue-400 dark:ring-indigo-400' : ''
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 cursor-grab touch-none px-1"
+        className="text-gray-300 dark:text-slate-700 hover:text-gray-500 dark:hover:text-slate-400 cursor-grab touch-none px-1 transition-colors"
         aria-label="drag"
       >
         ⋮⋮
       </button>
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-gray-800 dark:text-slate-100 truncate">{practice.name}</div>
-        <div className="text-sm text-gray-500 dark:text-slate-400 truncate">
+        <div className="font-bold text-gray-800 dark:text-slate-100 truncate">{practice.name}</div>
+        <div className="text-sm text-gray-400 dark:text-slate-500 truncate">
           {t('practiceMode.summary', {
             start: practice.startBpm,
             end: practice.endBpm,
