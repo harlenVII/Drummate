@@ -30,7 +30,7 @@
 - Modify: `src/contexts/LanguageContext.jsx:45` (en block, near `timeUnit`)
 - Modify: `src/contexts/LanguageContext.jsx:398` (zh block, near `timeUnit`)
 
-- [ ] **Step 1: Add English key after `timeUnit: 'Time Unit'`**
+- [x] **Step 1: Add English key after `timeUnit: 'Time Unit'`**
 
 Find line 45 in `src/contexts/LanguageContext.jsx`:
 ```js
@@ -42,7 +42,7 @@ Change to:
     groupByCategory: 'Group by Category',
 ```
 
-- [ ] **Step 2: Add Chinese key after `timeUnit: '时间单位'`**
+- [x] **Step 2: Add Chinese key after `timeUnit: '时间单位'`**
 
 Find the zh block line ~398 in `src/contexts/LanguageContext.jsx`:
 ```js
@@ -54,7 +54,7 @@ Change to:
     groupByCategory: '按分类分组',
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/contexts/LanguageContext.jsx
@@ -68,7 +68,7 @@ git commit -m "feat: add groupByCategory i18n key"
 **Files:**
 - Modify: `src/App.jsx`
 
-- [ ] **Step 1: Add `groupByCategory` state after the `timeUnit` state block (around line 91)**
+- [x] **Step 1: Add `groupByCategory` state after the `timeUnit` state block (around line 91)**
 
 Find:
 ```js
@@ -86,7 +86,7 @@ Insert before it:
   });
 ```
 
-- [ ] **Step 2: Add localStorage persist effect after the existing timeUnit persist effect**
+- [x] **Step 2: Add localStorage persist effect after the existing timeUnit persist effect**
 
 Find the block that contains:
 ```js
@@ -99,7 +99,7 @@ In that same `useEffect` (or near it), add a separate effect:
   }, [groupByCategory]);
 ```
 
-- [ ] **Step 3: Pass `groupByCategory` prop to DailyReport**
+- [x] **Step 3: Pass `groupByCategory` prop to DailyReport**
 
 Find:
 ```jsx
@@ -131,7 +131,7 @@ Change to:
                 />
 ```
 
-- [ ] **Step 4: Pass `groupByCategory` prop to WeeklyReport**
+- [x] **Step 4: Pass `groupByCategory` prop to WeeklyReport**
 
 Find:
 ```jsx
@@ -157,7 +157,7 @@ Change to:
                 />
 ```
 
-- [ ] **Step 5: Pass `groupByCategory` prop to MonthlyReport**
+- [x] **Step 5: Pass `groupByCategory` prop to MonthlyReport**
 
 Find:
 ```jsx
@@ -183,7 +183,7 @@ Change to:
                 />
 ```
 
-- [ ] **Step 6: Pass `groupByCategory` prop to YearlyReport**
+- [x] **Step 6: Pass `groupByCategory` prop to YearlyReport**
 
 Find:
 ```jsx
@@ -209,7 +209,7 @@ Change to:
                 />
 ```
 
-- [ ] **Step 7: Pass `groupByCategory` and `onToggleGroupByCategory` to SettingsPanel**
+- [x] **Step 7: Pass `groupByCategory` and `onToggleGroupByCategory` to SettingsPanel**
 
 Find the SettingsPanel usage block that ends with:
 ```jsx
@@ -223,7 +223,7 @@ Add before `theme={theme}`:
         onToggleGroupByCategory={() => setGroupByCategory((v) => !v)}
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/App.jsx
@@ -237,7 +237,7 @@ git commit -m "feat: wire groupByCategory state and props in App"
 **Files:**
 - Modify: `src/components/SettingsPanel.jsx`
 
-- [ ] **Step 1: Add props to function signature**
+- [x] **Step 1: Add props to function signature**
 
 Find:
 ```js
@@ -270,7 +270,7 @@ function SettingsPanel({
   onToggleGroupByCategory,
 ```
 
-- [ ] **Step 2: Add the toggle row after the Time Unit row**
+- [x] **Step 2: Add the toggle row after the Time Unit row**
 
 Find the closing of the Time Unit section:
 ```jsx
@@ -301,7 +301,7 @@ Insert between them:
 
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/components/SettingsPanel.jsx
@@ -315,7 +315,7 @@ git commit -m "feat: add Group by Category toggle in Settings"
 **Files:**
 - Modify: `src/components/DailyReport.jsx`
 
-- [ ] **Step 1: Add `groupByCategory` to function signature**
+- [x] **Step 1: Add `groupByCategory` to function signature**
 
 Find:
 ```js
@@ -326,7 +326,7 @@ Change to:
 function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit, groupByCategory }) {
 ```
 
-- [ ] **Step 2: Replace the per-item breakdown section with a conditional**
+- [x] **Step 2: Replace the per-item breakdown section with a conditional**
 
 Find the per-item breakdown section (the block starting after the grand total card, before the "Add time button"):
 ```jsx
@@ -401,7 +401,7 @@ Replace with:
       {items.length === 0 && (
 ```
 
-- [ ] **Step 3: Gate `generateReportText` category output on `groupByCategory`**
+- [x] **Step 3: Gate `generateReportText` category output on `groupByCategory`**
 
 Find the `generateReportText` function signature:
 ```js
@@ -469,14 +469,14 @@ Change to:
   return lines.join('\n');
 ```
 
-- [ ] **Step 4: Pass `groupByCategory` to the two `generateReportText` call sites**
+- [x] **Step 4: Pass `groupByCategory` to the two `generateReportText` call sites**
 
 Find both occurrences of `generateReportText(reportDate, grandTotal, breakdown, t, timeUnit)` in the JSX (inside `showModal` block) and change each to:
 ```js
 generateReportText(reportDate, grandTotal, breakdown, t, timeUnit, groupByCategory)
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/DailyReport.jsx
@@ -490,7 +490,7 @@ git commit -m "feat: gate DailyReport category grouping on groupByCategory prop"
 **Files:**
 - Modify: `src/components/WeeklyReport.jsx`
 
-- [ ] **Step 1: Add `groupByCategory` to function signature**
+- [x] **Step 1: Add `groupByCategory` to function signature**
 
 Find:
 ```js
@@ -501,7 +501,7 @@ Change to:
 function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, timeUnit, groupByCategory }) {
 ```
 
-- [ ] **Step 2: Add `category` to the breakdown map**
+- [x] **Step 2: Add `category` to the breakdown map**
 
 Find:
 ```js
@@ -530,7 +530,7 @@ Change to:
   const songs = breakdown.filter((e) => e.category === 'songs');
 ```
 
-- [ ] **Step 3: Extract inline item render to a named function**
+- [x] **Step 3: Extract inline item render to a named function**
 
 Before the `return (` statement, add:
 
@@ -570,7 +570,7 @@ Before the `return (` statement, add:
   }
 ```
 
-- [ ] **Step 4: Replace the per-item breakdown section**
+- [x] **Step 4: Replace the per-item breakdown section**
 
 Find:
 ```jsx
@@ -651,7 +651,7 @@ Replace with:
       )}
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/WeeklyReport.jsx
@@ -665,7 +665,7 @@ git commit -m "feat: add conditional category grouping to WeeklyReport"
 **Files:**
 - Modify: `src/components/MonthlyReport.jsx`
 
-- [ ] **Step 1: Add `groupByCategory` to function signature**
+- [x] **Step 1: Add `groupByCategory` to function signature**
 
 Find:
 ```js
@@ -676,7 +676,7 @@ Change to:
 function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, timeUnit, groupByCategory }) {
 ```
 
-- [ ] **Step 2: Add `category` to the breakdown map and split into groups**
+- [x] **Step 2: Add `category` to the breakdown map and split into groups**
 
 Find:
 ```js
@@ -705,7 +705,7 @@ Change to:
   const songs = breakdown.filter((e) => e.category === 'songs');
 ```
 
-- [ ] **Step 3: Extract inline item render to a named function**
+- [x] **Step 3: Extract inline item render to a named function**
 
 Before the `return (` statement, add:
 
@@ -745,7 +745,7 @@ Before the `return (` statement, add:
   }
 ```
 
-- [ ] **Step 4: Replace the per-item breakdown section**
+- [x] **Step 4: Replace the per-item breakdown section**
 
 Find:
 ```jsx
@@ -826,7 +826,7 @@ Replace with:
       )}
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/MonthlyReport.jsx
@@ -840,7 +840,7 @@ git commit -m "feat: add conditional category grouping to MonthlyReport"
 **Files:**
 - Modify: `src/components/YearlyReport.jsx`
 
-- [ ] **Step 1: Add `groupByCategory` to function signature**
+- [x] **Step 1: Add `groupByCategory` to function signature**
 
 Find:
 ```js
@@ -851,7 +851,7 @@ Change to:
 function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, timeUnit, groupByCategory }) {
 ```
 
-- [ ] **Step 2: Add `category` to the breakdown map and split into groups**
+- [x] **Step 2: Add `category` to the breakdown map and split into groups**
 
 Find:
 ```js
@@ -880,7 +880,7 @@ Change to:
   const songs = breakdown.filter((e) => e.category === 'songs');
 ```
 
-- [ ] **Step 3: Extract inline item render to a named function**
+- [x] **Step 3: Extract inline item render to a named function**
 
 Before the `return (` statement, add:
 
@@ -920,7 +920,7 @@ Before the `return (` statement, add:
   }
 ```
 
-- [ ] **Step 4: Replace the per-item breakdown section**
+- [x] **Step 4: Replace the per-item breakdown section**
 
 Find:
 ```jsx
@@ -1001,7 +1001,7 @@ Replace with:
       )}
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/YearlyReport.jsx
@@ -1014,14 +1014,14 @@ git commit -m "feat: add conditional category grouping to YearlyReport"
 
 **Files:** None (verification only)
 
-- [ ] **Step 1: Run build**
+- [x] **Step 1: Run build**
 
 ```bash
 npm run build
 ```
 Expected: exits with code 0, no TypeScript/ESLint errors, dist/ generated.
 
-- [ ] **Step 2: Run dev server and verify manually**
+- [x] **Step 2: Run dev server and verify manually**
 
 ```bash
 npm run dev
@@ -1035,7 +1035,7 @@ Open http://localhost:5173 and check:
 5. In Daily report, click "Generate Report" while toggle is OFF → confirm flat list (no category headers).
 6. Refresh page → toggle state persists.
 
-- [ ] **Step 3: Commit plan + docs**
+- [x] **Step 3: Commit plan + docs**
 
 ```bash
 git add docs/superpowers/plans/2026-05-25-report-category-grouping-toggle.md
