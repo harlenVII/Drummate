@@ -57,6 +57,7 @@ import {
   updatePracticeOrder,
 } from './services/database';
 import { initTimezone } from './services/timezoneService';
+import { initPriorHours } from './services/priorPracticeService';
 import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
 
 function App() {
@@ -465,6 +466,7 @@ function App() {
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await Promise.all([
           initTimezone(firebaseBackend, user.id),
+          initPriorHours(firebaseBackend, user.id),
           firebaseBackend.pullAll(user.id),
           firebaseBackend.pullAllNotes(user.id),
           firebaseBackend.pullAllPractices(user.id),
