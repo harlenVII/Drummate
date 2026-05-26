@@ -37,12 +37,12 @@ function StatsReport({ items, timeUnit }) {
       items: [
         { label: t('stats.currentStreak'), value: `${stats.currentStreak} ${t('stats.days')}` },
         { label: t('stats.longestStreak'), value: `${stats.longestStreak} ${t('stats.days')}` },
-        { label: t('stats.longestDayTime'), value: stats.longestDay ? `${formatDuration(stats.longestDay.duration, timeUnit)} ${t(timeUnit)}` : '-', sub: stats.longestDay ? formatDisplayDate(stats.longestDay.date) : null },
       ],
     },
     {
       title: t('stats.records'),
       items: [
+        { label: t('stats.longestDayTime'), value: stats.longestDay ? `${formatDuration(stats.longestDay.duration, timeUnit)} ${t(timeUnit)}` : '-', sub: stats.longestDay ? formatDisplayDate(stats.longestDay.date) : null },
         { label: t('stats.mostPracticedItem'), value: stats.topItem || '-', sub: stats.topItemDuration > 0 ? `${formatDuration(stats.topItemDuration, timeUnit)} ${t(timeUnit)}` : null },
         { label: t('stats.bestMonth'), value: stats.bestMonth || '-', sub: stats.bestMonthDuration > 0 ? `${formatDuration(stats.bestMonthDuration, timeUnit)} ${t(timeUnit)}` : null },
       ],
