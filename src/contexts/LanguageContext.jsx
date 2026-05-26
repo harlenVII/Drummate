@@ -45,6 +45,8 @@ const translations = {
     timeUnit: 'Time Unit',
     groupByCategory: 'Group by Category',
     compactList: 'Compact List',
+    priorPractice: 'Prior Practice',
+    priorPracticeHint: 'Hours you practiced before Drummate',
     noPracticeRecorded: 'No practice recorded',
     noPracticeItems: 'No practice items configured. Go to Practice to add some!',
     selectCategory: 'Select category',
@@ -254,6 +256,7 @@ const translations = {
       mostPracticedItem: 'Most Practiced Item',
       bestMonth: 'Best Month',
       days: 'days',
+      priorIncluded: 'incl. {hours} hrs before Drummate',
     },
     analytics: {
       totalThisWeek: 'Total This Week',
@@ -408,6 +411,8 @@ const translations = {
     timeUnit: '时间单位',
     groupByCategory: '按分类分组',
     compactList: '紧凑列表',
+    priorPractice: '之前练习时长',
+    priorPracticeHint: '在使用 Drummate 前的练习小时数',
     noPracticeRecorded: '未记录练习',
     noPracticeItems: '未配置练习项目。前往练习页面添加！',
     selectCategory: '选择分类',
@@ -617,6 +622,7 @@ const translations = {
       mostPracticedItem: '练习最多的项目',
       bestMonth: '最佳月份',
       days: '天',
+      priorIncluded: '含 Drummate 前 {hours} 小时',
     },
     analytics: {
       totalThisWeek: '本周总计',
