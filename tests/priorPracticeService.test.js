@@ -68,4 +68,15 @@ describe('priorPracticeService', () => {
     await m.initPriorHours(backend, 'user1');
     expect(localStorage.getItem('drummate_prior_hours')).toBe('200');
   });
+
+  it('initPriorHours keeps cached value when backend throws', async () => {
+    localStorage.setItem('drummate_prior_hours', '100');
+    const m = await import('../src/services/priorPracticeService.js');
+    const backend = {
+      getUserSettings: vi.fn().mockRejectedValue(new Error('network error')),
+    };
+    await m.initPriorHours(backend, 'user1');
+    expect(localStorage.getItem('drummate_prior_hours')).toBe('100');
+    expect(m.getPriorHours()).toBe(100);
+  });
 });
