@@ -1235,9 +1235,9 @@ const firebaseBackend = {
             if (local) await firebaseBackend.pushGoal(local, userId);
           }
         } else if (entry.action === 'delete_goal_permanent') {
+          // deleteGoalLocal was already called at action time (GoalsPage.handleDelete).
+          // The Dexie row is already gone; just sync the cloud deletion.
           await firebaseBackend.deleteGoalRemote(entry.payload.uid, userId);
-          const local = await db.goals.where('uid').equals(entry.payload.uid).first();
-          if (local) await db.goals.delete(local.id);
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
