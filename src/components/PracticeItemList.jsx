@@ -582,8 +582,8 @@ function PracticeItemList({
       >
         <div className="flex flex-col min-w-0 mr-3">
           <span className="font-medium text-gray-800 dark:text-slate-100 truncate">{item.name}</span>
-          <span className="font-mono text-lg text-gray-600 dark:text-slate-400">
-            {formatTime(displayTime)}
+          <span className={`font-mono text-lg ${displayTime === 0 ? 'text-gray-300 dark:text-slate-700' : 'text-gray-600 dark:text-slate-400'}`}>
+            {displayTime === 0 ? '—' : formatTime(displayTime)}
           </span>
         </div>
         {isActive ? (
@@ -653,8 +653,8 @@ function PracticeItemList({
                   >
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
-                      <span className="font-mono text-lg text-gray-600 dark:text-slate-400">
-                        {formatTime(savedTotal)}
+                      <span className={`font-mono text-lg ${savedTotal === 0 ? 'text-gray-300 dark:text-slate-700' : 'text-gray-600 dark:text-slate-400'}`}>
+                        {savedTotal === 0 ? '—' : formatTime(savedTotal)}
                       </span>
                     </div>
                   </div>
