@@ -317,7 +317,7 @@ function App() {
   }, [timeUnit]);
 
   useEffect(() => {
-    try { localStorage.setItem('drummate_group_by_category', String(groupByCategory)); } catch {}
+    localStorage.setItem('drummate_group_by_category', String(groupByCategory));
   }, [groupByCategory]);
 
   // Persist sequencer settings to localStorage
