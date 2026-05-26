@@ -97,6 +97,13 @@ function App() {
       return true;
     }
   });
+  const [compactMode, setCompactMode] = useState(() => {
+    try {
+      return localStorage.getItem('drummate_compact_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [theme, setThemeState] = useState(getTheme);
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
@@ -319,6 +326,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('drummate_group_by_category', String(groupByCategory));
   }, [groupByCategory]);
+
+  useEffect(() => {
+    localStorage.setItem('drummate_compact_mode', String(compactMode));
+  }, [compactMode]);
 
   // Persist sequencer settings to localStorage
   useEffect(() => {
@@ -1617,6 +1628,7 @@ function App() {
               focusedItemId={focusedPracticeItemId}
               onFocusChange={setFocusedPracticeItemId}
               goalRefreshKey={goalRefreshKey}
+              compactMode={compactMode}
             />
           )}
 
@@ -1877,6 +1889,8 @@ function App() {
         onShowPending={() => setPendingModalOpen(true)}
         groupByCategory={groupByCategory}
         onToggleGroupByCategory={() => setGroupByCategory((v) => !v)}
+        compactMode={compactMode}
+        onToggleCompactMode={() => setCompactMode((v) => !v)}
         theme={theme}
         onThemeChange={setTheme}
       />
