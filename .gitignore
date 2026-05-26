@@ -33,5 +33,6 @@ coverage/
 # Misc
 .cache/
 .worktrees/
+.superpowers/
 
 drummate.pem
