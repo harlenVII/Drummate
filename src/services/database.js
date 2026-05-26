@@ -163,6 +163,16 @@ db.version(14).stores({
   });
 });
 
+// v15 adds the goals table. No .upgrade() body needed — the table is new with nothing to back-fill.
+db.version(15).stores({
+  practiceItems:      '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs:       '++id, itemId, itemUid, date, duration, uid, loggedAt',
+  notes:              '++id, &uid, itemUid, date, trashed',
+  metronomePractices: '++id, &uid, sortOrder',
+  syncQueue:          '++id, action, collection, localId',
+  goals:              '++id, &uid, startDate, endDate, archived, pinned',
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -544,4 +554,105 @@ export const updatePracticeOrder = async (orderedIds) => {
       await db.metronomePractices.update(orderedIds[i], { sortOrder: i });
     }
   });
+};
+
+// --- Goals ---
+
+export const getAllGoals = async () => {
+  return await db.goals.toArray();
+};
+
+export const getGoalByUid = async (uid) => {
+  return await db.goals.where('uid').equals(uid).first();
+};
+
+export const getPinnedGoal = async () => {
+  const all = await db.goals.toArray();
+  return all.find(g => g.pinned) || null;
+};
+
+export const addGoal = async ({ name = '', startDate, endDate, targetHours }) => {
+  const uid = crypto.randomUUID();
+  const now = Date.now();
+  await db.goals.add({
+    uid,
+    name,
+    startDate,
+    endDate,
+    targetHours,
+    archived: false,
+    archivedAt: null,
+    pinned: false,
+    createdAt: now,
+    syncedOnce: false,
+  });
+  return uid;
+};
+
+export const insertGoalRecord = async (record) => {
+  // Used by legacy-migration to insert an already-built record verbatim.
+  await db.goals.add(record);
+  return record.uid;
+};
+
+export const updateGoal = async (uid, patch) => {
+  const local = await db.goals.where('uid').equals(uid).first();
+  if (!local) return null;
+  const updates = { ...patch, syncedOnce: false };
+  // Un-archive on Edit if endDate moves back into the future.
+  if (patch.endDate !== undefined) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (patch.endDate >= today && local.archived) {
+      updates.archived = false;
+      updates.archivedAt = null;
+    }
+  }
+  await db.goals.update(local.id, updates);
+  return { ...local, ...updates };
+};
+
+export const archiveGoal = async (uid) => {
+  const local = await db.goals.where('uid').equals(uid).first();
+  if (!local) return null;
+  await db.goals.update(local.id, {
+    archived: true,
+    archivedAt: Date.now(),
+    syncedOnce: false,
+  });
+  return { ...local, archived: true, archivedAt: Date.now(), syncedOnce: false };
+};
+
+export const setGoalPinned = async (uid) => {
+  // Single transaction: unpin everything, then pin the chosen one. Returns the
+  // list of goals whose pinned field changed, so the caller can push them.
+  const changed = [];
+  await db.transaction('rw', db.goals, async () => {
+    const all = await db.goals.toArray();
+    for (const g of all) {
+      if (g.uid === uid) {
+        if (!g.pinned) {
+          await db.goals.update(g.id, { pinned: true, syncedOnce: false });
+          changed.push({ ...g, pinned: true, syncedOnce: false });
+        }
+      } else if (g.pinned) {
+        await db.goals.update(g.id, { pinned: false, syncedOnce: false });
+        changed.push({ ...g, pinned: false, syncedOnce: false });
+      }
+    }
+  });
+  return changed;
+};
+
+export const unpinGoal = async (uid) => {
+  const local = await db.goals.where('uid').equals(uid).first();
+  if (!local || !local.pinned) return null;
+  await db.goals.update(local.id, { pinned: false, syncedOnce: false });
+  return { ...local, pinned: false, syncedOnce: false };
+};
+
+export const deleteGoalLocal = async (uid) => {
+  const local = await db.goals.where('uid').equals(uid).first();
+  if (!local) return null;
+  await db.goals.delete(local.id);
+  return local;
 };
