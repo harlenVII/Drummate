@@ -384,6 +384,9 @@ function SequencerPage({
         </>
       )}
 
+      {/* === BPM Dial === */}
+      <BpmDial bpm={bpm} onBpmChange={setBpm} />
+
       {/* === Play/Stop button === */}
       <button
         onClick={handleTogglePlay}
@@ -407,9 +410,6 @@ function SequencerPage({
           </svg>
         )}
       </button>
-
-      {/* === BPM Dial === */}
-      <BpmDial bpm={bpm} onBpmChange={setBpm} />
 
       {/* === Sound Type Selector === */}
       <div className="flex gap-2 flex-wrap justify-center">
