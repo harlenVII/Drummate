@@ -70,6 +70,12 @@ describe('computeGoalStatus', () => {
     expect(computeGoalStatus(G({ targetHours: 4 }), logs).met).toBe(true);
     expect(computeGoalStatus(G({ targetHours: 10 }), logs).met).toBe(false);
   });
+
+  it('targetHours === 0 returns safe defaults (met: false, progressPercent: 0)', () => {
+    const s = computeGoalStatus(G({ targetHours: 0 }), [L('2026-01-10', 3600)]);
+    expect(s.met).toBe(false);
+    expect(s.progressPercent).toBe(0);
+  });
 });
 
 describe('isCurrentGoal / isHistoryGoal', () => {
@@ -117,6 +123,10 @@ describe('selectExpiredForArchive', () => {
     const goals = [G({ archived: true, endDate: '2026-05-25' })];
     expect(selectExpiredForArchive(goals, today)).toEqual([]);
   });
+
+  it('returns empty array when given empty input', () => {
+    expect(selectExpiredForArchive([], '2026-05-26')).toEqual([]);
+  });
 });
 
 describe('shouldMigrateLegacy', () => {
@@ -145,6 +155,11 @@ describe('shouldMigrateLegacy', () => {
 });
 
 describe('buildMigratedGoal', () => {
+  it('returns null when legacyRaw is malformed', () => {
+    expect(buildMigratedGoal('bad json', 5000, () => 'uid')).toBeNull();
+    expect(buildMigratedGoal(null, 5000, () => 'uid')).toBeNull();
+  });
+
   it('produces a record with required defaults', () => {
     const raw = '{"startDate":"2026-01-01","endDate":"2026-01-31","targetHours":12}';
     const out = buildMigratedGoal(raw, 5000, () => 'fixed-uid');

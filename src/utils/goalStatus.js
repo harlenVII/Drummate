@@ -1,3 +1,7 @@
+// Goals filter by l.date (YYYY-MM-DD string) rather than loggedAt epoch.
+// Goal date ranges are user-defined calendar intervals, not TZ-shifted UTC
+// windows — using the denormalized date string is intentional and consistent
+// with the existing GoalCard/GoalBanner behaviour.
 export function computeGoalStatus(goal, logs) {
   let practicedSeconds = 0;
   for (const l of logs) {
