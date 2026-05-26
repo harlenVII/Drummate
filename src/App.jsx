@@ -595,6 +595,10 @@ function App() {
 
   const saveAndStop = useCallback(async () => {
     stopTimer();
+    if (metronomeIsPlaying && metronomeEngineRef.current) {
+      metronomeEngineRef.current.stop();
+      setMetronomeIsPlaying(false);
+    }
     const elapsed = elapsedTime;
     const itemId = activeItemId;
 
@@ -617,7 +621,7 @@ function App() {
       setActiveItemId(null);
       setElapsedTime(0);
     }
-  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType]);
+  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType, metronomeIsPlaying]);
 
   const handleStart = useCallback(
     async (itemId) => {
