@@ -25,7 +25,7 @@ function DragHandle({ listeners, attributes }) {
   );
 }
 
-function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot, onDelete, onSelect }) {
+function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot, onDelete, onSelect, compactMode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: slot.id });
   const isCurrentlyPlaying = isPlaying && index === playingSlot;
 
@@ -42,7 +42,7 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
       onClick={editing ? () => onSelect(index) : undefined}
       className={`
         relative flex flex-col items-center justify-center
-        p-2 rounded-xl border-2
+        ${compactMode ? 'p-1 rounded-lg' : 'p-2 rounded-xl'} border-2
         transition-all duration-150
         ${isCurrentlyPlaying
           ? 'border-blue-500 dark:border-indigo-500 bg-blue-50 dark:bg-indigo-50 dark:bg-indigo-900/40 scale-105 shadow-md'
@@ -101,6 +101,7 @@ function SequencerPage({
   playingSlot,
   setPlayingSlot,
   nextIdRef,
+  compactMode = false,
 }) {
   const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
@@ -267,7 +268,7 @@ function SequencerPage({
   }, [handleTogglePlay, setBpm]);
 
   const slotGrid = (
-    <div className="grid grid-cols-4 gap-2">
+    <div className={`grid grid-cols-4 ${compactMode ? 'gap-1' : 'gap-2'}`}>
       {slots.map((slot, index) => (
         <SortableSlot
           key={slot.id}
@@ -279,13 +280,14 @@ function SequencerPage({
           playingSlot={playingSlot}
           onDelete={handleDeleteSlot}
           onSelect={handleSelectSlot}
+          compactMode={compactMode}
         />
       ))}
     </div>
   );
 
   return (
-    <div className="flex flex-col items-center gap-5">
+    <div className={`flex flex-col items-center ${compactMode ? 'gap-3' : 'gap-5'}`}>
 
       {/* === Slot Sequence Visualization === */}
       <div className="w-full">
@@ -363,7 +365,7 @@ function SequencerPage({
                   key={key}
                   onClick={() => handleAddSubdivision(key)}
                   disabled={slots.length >= MAX_SLOTS}
-                  className={`relative px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`relative ${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
                     slots.length >= MAX_SLOTS
                       ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
                       : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-blue-400 dark:hover:border-indigo-400'
@@ -412,12 +414,12 @@ function SequencerPage({
       </button>
 
       {/* === Sound Type Selector === */}
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className={`flex ${compactMode ? 'gap-1' : 'gap-2'} flex-wrap justify-center`}>
         {SOUND_TYPES.map((key) => (
           <button
             key={key}
             onClick={() => setSoundType(key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
               soundType === key
                 ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'

@@ -16,6 +16,7 @@ function NotesPage({
   onSubpageChange,
   notesRefreshKey,
   onNotesRefresh,
+  compactMode = false,
 }) {
   const { t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
@@ -114,15 +115,15 @@ function NotesPage({
 
       <button
         onClick={openCreate}
-        className="self-start px-4 py-2 bg-blue-600 dark:bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors"
+        className={`self-start ${compactMode ? 'px-3 py-1' : 'px-4 py-2'} bg-blue-600 dark:bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors`}
       >
         {t('notes.addButton')}
       </button>
 
       {notesSubpage === 'byDate' ? (
-        <NotesByDate items={items} refreshKey={notesRefreshKey} onEdit={openEdit} />
+        <NotesByDate items={items} refreshKey={notesRefreshKey} onEdit={openEdit} compactMode={compactMode} />
       ) : (
-        <NotesByItem items={items} refreshKey={notesRefreshKey} onEdit={openEdit} />
+        <NotesByItem items={items} refreshKey={notesRefreshKey} onEdit={openEdit} compactMode={compactMode} />
       )}
 
       {modalOpen && (
@@ -157,7 +158,7 @@ function NotesPage({
                 const itemName = items.find(i => i.uid === note.itemUid)?.name ?? t('notes.itemDeleted');
                 const preview = note.body.length > 80 ? note.body.slice(0, 80) + '…' : note.body;
                 return (
-                  <div key={note.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center opacity-50">
+                  <div key={note.id} className={`bg-white dark:bg-slate-800 shadow-sm flex items-center opacity-50 ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
                     <div className="flex-1 flex items-center justify-between gap-2">
                       <div className="flex flex-col min-w-0">
                         <span className="text-xs text-gray-500 dark:text-slate-400">{note.date} · {itemName}</span>

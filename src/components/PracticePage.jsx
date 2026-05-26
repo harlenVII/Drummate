@@ -38,7 +38,7 @@ function formatPracticeTime(sec) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function PracticeRow({ practice, isFocused, onStart, onEdit }) {
+function PracticeRow({ practice, isFocused, onStart, onEdit, compactMode }) {
   const { t } = useLanguage();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: practice.id });
@@ -51,7 +51,7 @@ function PracticeRow({ practice, isFocused, onStart, onEdit }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-5 flex items-center gap-3 ${
+      className={`bg-white dark:bg-slate-800 ${compactMode ? 'rounded-md p-2' : 'rounded-xl p-5'} shadow-sm border border-gray-200 dark:border-slate-700 flex items-center gap-3 ${
         isFocused ? 'ring-2 ring-blue-400 dark:ring-indigo-400' : ''
       }`}
     >
@@ -82,13 +82,13 @@ function PracticeRow({ practice, isFocused, onStart, onEdit }) {
       </div>
       <button
         onClick={onEdit}
-        className="px-3 py-1.5 rounded-md text-sm text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+        className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-md text-sm text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700`}
       >
         {t('edit')}
       </button>
       <button
         onClick={onStart}
-        className="px-3 py-1.5 rounded-md text-sm bg-blue-600 dark:bg-indigo-600 text-white font-medium hover:bg-blue-700 dark:hover:bg-indigo-700"
+        className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-md text-sm bg-blue-600 dark:bg-indigo-600 text-white font-medium hover:bg-blue-700 dark:hover:bg-indigo-700`}
       >
         {t('practiceMode.start')}
       </button>
@@ -115,6 +115,7 @@ export default function PracticePage({
   setRunBarIndex,
   setRunIsPlaying,
   setRunComplete,
+  compactMode = false,
 }) {
   const { t } = useLanguage();
   const [modalState, setModalState] = useState(null); // null | { mode: 'create' } | { mode: 'edit', practice }
@@ -213,6 +214,7 @@ export default function PracticePage({
                     isFocused={focusedIndex === idx}
                     onStart={() => { setFocusedIndex(null); onStartPractice(p.uid); }}
                     onEdit={() => { setFocusedIndex(null); setModalState({ mode: 'edit', practice: p }); }}
+                    compactMode={compactMode}
                   />
                 ))}
               </div>

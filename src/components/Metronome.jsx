@@ -31,6 +31,7 @@ function Metronome({
   setSoundType,
   accentFirstBeat,
   setAccentFirstBeat,
+  compactMode = false,
 }) {
   const { t } = useLanguage();
   const tapTimesRef = useRef([]);
@@ -157,7 +158,7 @@ function Metronome({
   }, [handleTogglePlay, setBpm]);
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className={`flex flex-col items-center ${compactMode ? 'gap-3' : 'gap-6'}`}>
       {/* Beat indicator */}
       <BeatIndicator
         beats={timeSignature[0]}
@@ -189,12 +190,12 @@ function Metronome({
       </button>
 
       {/* Sound type selector */}
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className={`flex ${compactMode ? 'gap-1' : 'gap-2'} flex-wrap justify-center`}>
         {SOUND_TYPES.map((key) => (
           <button
             key={key}
             onClick={() => setSoundType(key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
               soundType === key
                 ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
@@ -206,12 +207,12 @@ function Metronome({
       </div>
 
       {/* Time signature selector */}
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className={`flex ${compactMode ? 'gap-1' : 'gap-2'} flex-wrap justify-center`}>
         {TIME_SIGNATURES.map(([num, den]) => (
           <button
             key={`${num}/${den}`}
             onClick={() => handleTimeSignatureChange([num, den])}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
               timeSignature[0] === num && timeSignature[1] === den
                 ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
@@ -223,12 +224,12 @@ function Metronome({
       </div>
 
       {/* Subdivision selector */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className={`grid grid-cols-5 ${compactMode ? 'gap-1' : 'gap-2'}`}>
         {SUBDIVISIONS.filter(({ key }) => key !== 'rest').map(({ key }) => (
           <button
             key={key}
             onClick={() => handleSubdivisionChange(key)}
-            className={`py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center ${
+            className={`${compactMode ? 'py-1.5' : 'py-3'} rounded-lg text-sm font-medium transition-colors flex items-center justify-center ${
               subdivision === key
                 ? 'bg-blue-600 dark:bg-indigo-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
@@ -242,7 +243,7 @@ function Metronome({
       {/* Accent toggle */}
       <button
         onClick={() => setAccentFirstBeat(!accentFirstBeat)}
-        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+        className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
           accentFirstBeat
             ? 'bg-blue-600 dark:bg-indigo-600 text-white'
             : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
@@ -254,7 +255,7 @@ function Metronome({
       {/* Tap Tempo button */}
       <button
         onClick={handleTap}
-        className="px-6 py-2 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
+        className={`${compactMode ? 'px-4 py-1' : 'px-6 py-2'} bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors`}
       >
         {t('tapTempo')}
       </button>

@@ -316,7 +316,7 @@ function SettingsPanel({
           />
 
           <Row
-            label={t('compactList')}
+            label={t('compactMode')}
             control={<Toggle checked={compactMode} onChange={onToggleCompactMode} />}
           />
 

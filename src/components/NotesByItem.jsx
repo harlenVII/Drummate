@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getAllNotes } from '../services/database';
 
-function NotesByItem({ items, refreshKey, onEdit }) {
+function NotesByItem({ items, refreshKey, onEdit, compactMode = false }) {
   const { t } = useLanguage();
   const [notes, setNotes] = useState([]);
   const [expanded, setExpanded] = useState(() => new Set());
@@ -51,10 +51,10 @@ function NotesByItem({ items, refreshKey, onEdit }) {
     const isOpen = expanded.has(item.uid);
     const mostRecent = itemNotes[0];
     return (
-      <div key={item.uid} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+      <div key={item.uid} className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md' : 'rounded-lg'}`}>
         <button
           onClick={() => toggle(item.uid)}
-          className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+          className={`w-full flex items-center justify-between ${compactMode ? 'px-2 py-1' : 'px-3 py-2'} hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors`}
         >
           <span className="font-medium text-gray-800 dark:text-slate-100 text-left">{item.name}</span>
           <span className="text-xs text-gray-500 dark:text-slate-400">
@@ -64,7 +64,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
         {!isOpen && mostRecent && (
           <button
             onClick={() => onEdit(mostRecent)}
-            className="w-full text-left border-t border-gray-100 dark:border-slate-800 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+            className={`w-full text-left border-t border-gray-100 dark:border-slate-800 ${compactMode ? 'px-2 py-1' : 'px-3 py-2'} hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors`}
           >
             <p className="text-xs text-gray-500 dark:text-slate-400 mb-0.5">{mostRecent.date}</p>
             <p className="text-sm text-gray-800 dark:text-slate-100 whitespace-pre-wrap break-words line-clamp-2">
@@ -73,7 +73,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
           </button>
         )}
         {isOpen && (
-          <div className="border-t border-gray-100 dark:border-slate-800 px-3 py-2 flex flex-col gap-2">
+          <div className={`border-t border-gray-100 dark:border-slate-800 ${compactMode ? 'px-2 py-1' : 'px-3 py-2'} flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
             {itemNotes.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-slate-500 py-2">{t('notes.emptyByItem')}</p>
             ) : (
@@ -103,9 +103,9 @@ function NotesByItem({ items, refreshKey, onEdit }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
       {sections.fundamentals.length > 0 && (
-        <section className="flex flex-col gap-2">
+        <section className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
           <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.fundamentals')}
           </h3>
@@ -113,7 +113,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
         </section>
       )}
       {sections.songs.length > 0 && (
-        <section className="flex flex-col gap-2">
+        <section className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
           <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('categories.songs')}
           </h3>

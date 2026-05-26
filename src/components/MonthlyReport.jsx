@@ -11,7 +11,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, timeUnit, groupByCategory }) {
+function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const isDarkMode = document.documentElement.classList.contains('dark');
   const monthEnd = getMonthEnd(monthStart);
@@ -100,9 +100,9 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
     }
   }
 
-  const CELL = 32;
-  const GAP = 4;
-  const HEADER_H = 20;
+  const CELL = compactMode ? 26 : 32;
+  const GAP = compactMode ? 3 : 4;
+  const HEADER_H = compactMode ? 16 : 20;
   const PADDING = 2; // extra space for today's stroke ring
   const gridW = 7 * (CELL + GAP) - GAP + PADDING * 2;
   const gridH = (row + 1) * (CELL + GAP) - GAP + HEADER_H + PADDING;
@@ -154,7 +154,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   function renderItemCard(entry) {
     const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
     return (
-      <div key={entry.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+      <div key={entry.id} className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
         <div className="flex items-center justify-between">
           <span
             className={`font-medium ${entry.duration > 0 ? 'text-gray-800 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}
@@ -174,7 +174,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
           </div>
         </div>
         {entry.duration > 0 && grandTotal > 0 && (
-          <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+          <div className={`${compactMode ? 'mt-1' : 'mt-2'} bg-gray-100 dark:bg-slate-700 rounded-full h-1.5`}>
             <div
               className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
               style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
@@ -186,17 +186,17 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
       {/* Month navigation */}
       <div className="flex items-center justify-between">
         <button
           onClick={handlePrevMonth}
-          className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
+          className={`${compactMode ? 'p-1' : 'p-2'} text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors`}
           aria-label="Previous month"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -209,11 +209,11 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             />
           </svg>
         </button>
-        <span className="text-lg font-semibold text-gray-800 dark:text-slate-100">{monthLabel}</span>
+        <span className={`${compactMode ? 'text-base' : 'text-lg'} font-semibold text-gray-800 dark:text-slate-100`}>{monthLabel}</span>
         <button
           onClick={handleNextMonth}
           disabled={isCurrentMonth}
-          className={`p-2 transition-colors ${
+          className={`${compactMode ? 'p-1' : 'p-2'} transition-colors ${
             isCurrentMonth
               ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
               : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
@@ -222,7 +222,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -238,11 +238,11 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       </div>
 
       {/* Grand total card */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 text-center">
+      <div className={`bg-white dark:bg-slate-800 shadow-sm text-center ${compactMode ? 'rounded-md p-3' : 'rounded-lg p-6'}`}>
         <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
           {t('analytics.totalThisMonth')}
         </p>
-        <p className="text-3xl font-mono text-gray-800 dark:text-slate-100 mt-1">
+        <p className={`${compactMode ? 'text-2xl' : 'text-3xl'} font-mono text-gray-800 dark:text-slate-100 mt-1`}>
           {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (
@@ -253,7 +253,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       </div>
 
       {/* Calendar heatmap */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+      <div className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
         <svg viewBox={`0 0 ${gridW} ${gridH}`} className="w-full">
           {/* Day-of-week headers */}
           {WEEKDAY_KEYS.map((key, i) => (
@@ -305,7 +305,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
 
       {/* Weekly trend chart */}
       {grandTotal > 0 && weekTotals.length > 1 && (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+        <div className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
           <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mb-2">
             {t('analytics.weeklyTrend')}
           </p>

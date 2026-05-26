@@ -3,7 +3,7 @@ import { formatTime, formatMinutes, formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 
-function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit, groupByCategory }) {
+function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -59,7 +59,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
     return (
       <div
         key={entry.id}
-        className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 transition-colors ${
+        className={`bg-white dark:bg-slate-800 shadow-sm transition-colors ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'} ${
           editMode ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 active:bg-gray-100 dark:active:bg-slate-700' : ''
         }`}
         onClick={editMode ? () => onEditTime(entry.id, entry.name, entry.duration) : undefined}
@@ -74,7 +74,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           </div>
         </div>
         {grandTotal > 0 && (
-          <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+          <div className={`${compactMode ? 'mt-1' : 'mt-2'} bg-gray-100 dark:bg-slate-700 rounded-full h-1.5`}>
             <div
               className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
               style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
@@ -86,17 +86,17 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
       {/* Date navigation */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => onDateChange(shiftDate(reportDate, -1))}
-          className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
+          className={`${compactMode ? 'p-1' : 'p-2'} text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors`}
           aria-label="Previous day"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -109,13 +109,13 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
             />
           </svg>
         </button>
-        <span className="text-lg font-semibold text-gray-800 dark:text-slate-100">
+        <span className={`${compactMode ? 'text-base' : 'text-lg'} font-semibold text-gray-800 dark:text-slate-100`}>
           {formatDateLabel(reportDate, t)}
         </span>
         <button
           onClick={() => onDateChange(shiftDate(reportDate, 1))}
           disabled={isToday}
-          className={`p-2 transition-colors ${
+          className={`${compactMode ? 'p-1' : 'p-2'} transition-colors ${
             isToday
               ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
               : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
@@ -124,7 +124,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -154,9 +154,9 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       </div>
 
       {/* Grand total card */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 text-center">
+      <div className={`bg-white dark:bg-slate-800 shadow-sm text-center ${compactMode ? 'rounded-md p-3' : 'rounded-lg p-6'}`}>
         <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">{t('totalPracticeTime')}</p>
-        <p className="text-3xl font-mono text-gray-800 dark:text-slate-100 mt-1">
+        <p className={`${compactMode ? 'text-2xl' : 'text-3xl'} font-mono text-gray-800 dark:text-slate-100 mt-1`}>
           {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (

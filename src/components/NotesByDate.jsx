@@ -5,7 +5,7 @@ import { getTodayString, shiftDate, formatDateLabel } from '../utils/dateHelpers
 
 const PAGE_SIZE = 20; // note count threshold per page
 
-function NotesByDate({ items, refreshKey, onEdit }) {
+function NotesByDate({ items, refreshKey, onEdit, compactMode = false }) {
   const { t } = useLanguage();
   const [notes, setNotes] = useState([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -62,20 +62,20 @@ function NotesByDate({ items, refreshKey, onEdit }) {
   const hasMore = cutoff < groups.length;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={`flex flex-col ${compactMode ? 'gap-3' : 'gap-6'}`}>
       {visibleGroups.map(([date, notesForDate]) => (
         <section key={date}>
-          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2 sticky top-0 bg-gray-100 dark:bg-slate-900 py-1">
+          <h3 className={`text-sm font-semibold text-gray-500 dark:text-slate-400 ${compactMode ? 'mb-1' : 'mb-2'} sticky top-0 bg-gray-100 dark:bg-slate-900 py-1`}>
             {dateHeader(date)}
           </h3>
-          <div className="flex flex-col gap-2">
+          <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
             {notesForDate.map(note => {
               const itemName = itemNameByUid.get(note.itemUid);
               return (
                 <button
                   key={note.id}
                   onClick={() => onEdit(note)}
-                  className="text-left bg-white dark:bg-slate-800 rounded-lg shadow-sm p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                  className={`text-left bg-white dark:bg-slate-800 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-3'}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 dark:bg-indigo-100 text-blue-700 dark:text-indigo-700 rounded-full">

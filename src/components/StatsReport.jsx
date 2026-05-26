@@ -7,7 +7,7 @@ import ReportGeneratorModal from './ReportGeneratorModal';
 import GoalCard from './GoalCard';
 import { getPriorHours } from '../services/priorPracticeService';
 
-function StatsReport({ items, timeUnit }) {
+function StatsReport({ items, timeUnit, compactMode = false }) {
   const { t } = useLanguage();
   const priorHours = getPriorHours();
   const [showModal, setShowModal] = useState(false);
@@ -53,14 +53,14 @@ function StatsReport({ items, timeUnit }) {
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
         {sections.map((section) => (
-          <div key={section.title} className="flex flex-col gap-2">
+          <div key={section.title} className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
             <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
               {section.title}
             </h3>
             {section.items.map((item) => (
-              <div key={item.label} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center justify-between">
+              <div key={item.label} className={`bg-white dark:bg-slate-800 shadow-sm flex items-center justify-between ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
                 <span className="text-gray-600 dark:text-slate-400 text-sm">{item.label}</span>
                 <div className="text-right">
                   <span className="font-mono font-semibold text-gray-800 dark:text-slate-100">{item.value}</span>
@@ -79,7 +79,7 @@ function StatsReport({ items, timeUnit }) {
           </p>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
           <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
             {t('goal.title')}
           </h3>
@@ -89,7 +89,7 @@ function StatsReport({ items, timeUnit }) {
 
       <button
         onClick={() => setShowModal(true)}
-        className="mt-1 px-4 py-2 bg-blue-600 dark:bg-indigo-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors"
+        className={`mt-1 ${compactMode ? 'px-3 py-1' : 'px-4 py-2'} bg-blue-600 dark:bg-indigo-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors`}
       >
         {t('generateReport')}
       </button>

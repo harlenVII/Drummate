@@ -9,7 +9,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, timeUnit, groupByCategory }) {
+function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const isDarkMode = document.documentElement.classList.contains('dark');
   const weekEnd = getWeekEnd(weekStart);
@@ -54,7 +54,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   function renderItemCard(entry) {
     const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
     return (
-      <div key={entry.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+      <div key={entry.id} className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
         <div className="flex items-center justify-between">
           <span
             className={`font-medium ${entry.duration > 0 ? 'text-gray-800 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}
@@ -74,7 +74,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
           </div>
         </div>
         {entry.duration > 0 && grandTotal > 0 && (
-          <div className="mt-2 bg-gray-100 dark:bg-slate-700 rounded-full h-1.5">
+          <div className={`${compactMode ? 'mt-1' : 'mt-2'} bg-gray-100 dark:bg-slate-700 rounded-full h-1.5`}>
             <div
               className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
               style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
@@ -102,17 +102,17 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   const LABEL_TOP = 16; // space above bars for minute labels
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
       {/* Week navigation */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => onWeekChange(shiftDate(weekStart, -7))}
-          className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors"
+          className={`${compactMode ? 'p-1' : 'p-2'} text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors`}
           aria-label="Previous week"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -125,13 +125,13 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
             />
           </svg>
         </button>
-        <span className="text-lg font-semibold text-gray-800 dark:text-slate-100">
+        <span className={`${compactMode ? 'text-base' : 'text-lg'} font-semibold text-gray-800 dark:text-slate-100`}>
           {formatShortDate(weekStart)} – {formatShortDate(weekEnd)}
         </span>
         <button
           onClick={() => onWeekChange(shiftDate(weekStart, 7))}
           disabled={isCurrentWeek}
-          className={`p-2 transition-colors ${
+          className={`${compactMode ? 'p-1' : 'p-2'} transition-colors ${
             isCurrentWeek
               ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
               : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
@@ -140,7 +140,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -156,11 +156,11 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
       </div>
 
       {/* Grand total card */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 text-center">
+      <div className={`bg-white dark:bg-slate-800 shadow-sm text-center ${compactMode ? 'rounded-md p-3' : 'rounded-lg p-6'}`}>
         <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
           {t('analytics.totalThisWeek')}
         </p>
-        <p className="text-3xl font-mono text-gray-800 dark:text-slate-100 mt-1">
+        <p className={`${compactMode ? 'text-2xl' : 'text-3xl'} font-mono text-gray-800 dark:text-slate-100 mt-1`}>
           {formatDuration(grandTotal, timeUnit)} {t(timeUnit)}
         </p>
         {grandTotal === 0 && (
@@ -172,7 +172,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
 
       {/* Bar chart */}
       {grandTotal > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
+        <div className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
           <svg
             viewBox={`0 0 ${CHART_W} ${LABEL_TOP + CHART_H + 24}`}
             className="w-full"

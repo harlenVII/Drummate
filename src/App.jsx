@@ -1698,6 +1698,7 @@ function App() {
                   setSoundType={setMetronomeSoundType}
                   accentFirstBeat={metronomeAccentFirstBeat}
                   setAccentFirstBeat={setMetronomeAccentFirstBeat}
+                  compactMode={compactMode}
                 />
               ) : metronomeSubpage === 'sequencer' ? (
                 <SequencerPage
@@ -1714,6 +1715,7 @@ function App() {
                   playingSlot={sequencerPlayingSlot}
                   setPlayingSlot={setSequencerPlayingSlot}
                   nextIdRef={sequencerNextIdRef}
+                  compactMode={compactMode}
                 />
               ) : metronomeSubpage === 'multiMeter' ? (
                 <MultiMeterPage
@@ -1731,6 +1733,7 @@ function App() {
                   setPlayingSlot={setMultiMeterPlayingSlot}
                   currentBeat={metronomeCurrentBeat}
                   setCurrentBeat={setMetronomeCurrentBeat}
+                  compactMode={compactMode}
                 />
               ) : (
                 <PracticePage
@@ -1752,6 +1755,7 @@ function App() {
                   setRunBarIndex={setPracticeRunBarIndex}
                   setRunIsPlaying={setPracticeRunIsPlaying}
                   setRunComplete={setPracticeRunComplete}
+                  compactMode={compactMode}
                 />
               )}
             </>
@@ -1788,6 +1792,7 @@ function App() {
                   onMergeToYesterday={handleMergeToYesterday}
                   timeUnit={timeUnit}
                   groupByCategory={groupByCategory}
+                  compactMode={compactMode}
                 />
               )}
 
@@ -1800,6 +1805,7 @@ function App() {
                   onDayClick={handleDayClick}
                   timeUnit={timeUnit}
                   groupByCategory={groupByCategory}
+                  compactMode={compactMode}
                 />
               )}
 
@@ -1812,6 +1818,7 @@ function App() {
                   onDayClick={handleDayClick}
                   timeUnit={timeUnit}
                   groupByCategory={groupByCategory}
+                  compactMode={compactMode}
                 />
               )}
 
@@ -1824,6 +1831,7 @@ function App() {
                   onDayClick={handleDayClick}
                   timeUnit={timeUnit}
                   groupByCategory={groupByCategory}
+                  compactMode={compactMode}
                 />
               )}
 
@@ -1831,6 +1839,7 @@ function App() {
                 <StatsReport
                   items={items.filter(i => !i.trashed)}
                   timeUnit={timeUnit}
+                  compactMode={compactMode}
                 />
               )}
             </>
@@ -1850,6 +1859,7 @@ function App() {
               onSubpageChange={setNotesSubpage}
               notesRefreshKey={notesRefreshKey}
               onNotesRefresh={bumpNotesRefresh}
+              compactMode={compactMode}
             />
           )}
         </div>
