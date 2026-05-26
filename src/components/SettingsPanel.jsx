@@ -366,7 +366,7 @@ function SettingsPanel({
                     setPriorHoursInput(String(val));
                     setPriorHours(val, firebaseBackend, userId).catch(console.error);
                   }}
-                  className="w-20 text-right bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm"
+                  className="w-20 text-right bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
                 <span className="text-xs text-gray-400 dark:text-slate-500">hrs</span>
               </div>
