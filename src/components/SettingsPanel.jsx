@@ -134,6 +134,8 @@ function SettingsPanel({
   onEnterOfflineMode,
   onGoOnline,
   onShowPending,
+  compactMode,
+  onToggleCompactMode,
 }) {
   const { t } = useLanguage();
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
@@ -309,6 +311,11 @@ function SettingsPanel({
                 onSelect={() => onToggleTimeUnit()}
               />
             }
+          />
+
+          <Row
+            label={t('compactList')}
+            control={<Toggle checked={compactMode} onChange={onToggleCompactMode} />}
           />
 
           {/* === REPORTS === */}
