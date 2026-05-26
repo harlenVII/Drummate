@@ -356,6 +356,7 @@ function SettingsPanel({
               <div className="flex items-center gap-1">
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   step="1"
                   value={priorHoursInput}
