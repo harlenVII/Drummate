@@ -46,7 +46,7 @@ const translations = {
     groupByCategory: 'Group by Category',
     compactList: 'Compact List',
     priorPractice: 'Prior Practice',
-    priorPracticeHint: 'Hours practiced before Drummate',
+    priorPracticeHint: 'Before Drummate',
     noPracticeRecorded: 'No practice recorded',
     noPracticeItems: 'No practice items configured. Go to Practice to add some!',
     selectCategory: 'Select category',
