@@ -7,6 +7,7 @@ import {
   getWeekStart,
   getDaysInRange,
   getTodayString,
+  shiftDate,
 } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -142,6 +143,40 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   const practiceDayCount = allDays.filter((d) => (dayTotals[d] || 0) > 0).length;
   const totalDaysInYear = allDays.length;
 
+  // Best streak: longest run of consecutive practice days within the year
+  let bestStreak = 0;
+  let runLen = 0;
+  for (const d of allDays) {
+    if ((dayTotals[d] || 0) > 0) {
+      runLen += 1;
+      if (runLen > bestStreak) bestStreak = runLen;
+    } else {
+      runLen = 0;
+    }
+  }
+
+  // Current streak (current year only): walk backward from today, or yesterday
+  // if today has no practice yet. Capped at year start.
+  let currentStreak = 0;
+  if (isCurrentYear) {
+    let anchor = null;
+    if ((dayTotals[today] || 0) > 0) {
+      anchor = today;
+    } else {
+      const yesterday = shiftDate(today, -1);
+      if (yesterday >= yearStart && (dayTotals[yesterday] || 0) > 0) {
+        anchor = yesterday;
+      }
+    }
+    if (anchor) {
+      let cursor = anchor;
+      while (cursor >= yearStart && (dayTotals[cursor] || 0) > 0) {
+        currentStreak += 1;
+        cursor = shiftDate(cursor, -1);
+      }
+    }
+  }
+
   // Navigation
   const handlePrevYear = () => {
     const prevYear = String(Number(year) - 1);
@@ -269,10 +304,10 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
               x={LABEL_W + i * (CELL + GAP) + CELL / 2}
               y={10}
               textAnchor="middle"
-              fontSize="6"
+              fontSize="7"
               fill="#9ca3af"
             >
-              {t(`analytics.weekdays.${key}`)}
+              {t(`analytics.weekdaysShort.${key}`)}
             </text>
           ))}
           {/* Month labels (rows, left side) */}
@@ -315,9 +350,20 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
         <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">
           {t('analytics.practiceDays')}
         </p>
-        <p className="text-xl font-mono text-gray-800 dark:text-slate-100 mt-1">
-          {practiceDayCount} / {totalDaysInYear}
-        </p>
+        <div className="mt-1 flex flex-col sm:flex-row sm:flex-wrap items-center justify-center gap-x-2 gap-y-1 font-mono">
+          <span className="text-xl text-gray-800 dark:text-slate-100">
+            {practiceDayCount}/{totalDaysInYear} {t('analytics.days')}
+          </span>
+          <span className="flex items-baseline gap-x-2 text-sm text-gray-500 dark:text-slate-400">
+            {isCurrentYear && (
+              <>
+                <span>{t('analytics.currentStreak')} {currentStreak}</span>
+                <span aria-hidden="true">·</span>
+              </>
+            )}
+            <span>{t('analytics.bestStreak')} {bestStreak}</span>
+          </span>
+        </div>
       </div>
 
       {/* Monthly bar chart */}
