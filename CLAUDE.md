@@ -62,7 +62,7 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 | `drummate_goal` | JSON `{startDate,endDate,targetHours}` | absent | practice goal |
 | `drummate_timezone` | IANA tz string | `'America/Los_Angeles'` | home timezone |
 | `drummate_pending_log` | JSON log | absent | crash-recovery log |
-| `drummate_compact_mode` | `'true'` \| `'false'` | `'false'` | compact practice list |
+| `drummate_compact_mode` | `'true'` \| `'false'` | `'false'` | compact mode (tightens padding, gaps, and radii across all major screens) |
 | `drummate_prior_hours` | integer string | `'0'` | prior practice hours offset added to lifetime total |
 
 **AI / Voice features** (on-device, no server):
