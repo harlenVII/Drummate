@@ -4,7 +4,6 @@ import { getTodayString, shiftDate } from '../utils/dateHelpers';
 import { getAllLogs } from '../services/database';
 import { useLanguage } from '../contexts/LanguageContext';
 import ReportGeneratorModal from './ReportGeneratorModal';
-import GoalCard from './GoalCard';
 import { getPriorHours } from '../services/priorPracticeService';
 
 function StatsReport({ items, timeUnit, compactMode = false }) {
@@ -79,12 +78,6 @@ function StatsReport({ items, timeUnit, compactMode = false }) {
           </p>
         )}
 
-        <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
-          <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">
-            {t('goal.title')}
-          </h3>
-          <GoalCard />
-        </div>
       </div>
 
       <button

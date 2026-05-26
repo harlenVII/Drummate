@@ -23,6 +23,7 @@ import EncouragementButton from './components/EncouragementButton';
 import EncouragementModal from './components/EncouragementModal';
 import EditTimeModal from './components/EditTimeModal';
 import NotesPage from './components/NotesPage';
+import GoalsPage from './components/GoalsPage';
 import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from './services/offlineService';
 import { getTheme, setTheme as setThemeService } from './services/themeService';
 import OfflineBanner from './components/OfflineBanner';
@@ -55,7 +56,11 @@ import {
   updatePractice as dbUpdatePractice,
   deletePractice as dbDeletePractice,
   updatePracticeOrder,
+  insertGoalRecord,
+  archiveGoal,
+  getGoalByUid,
 } from './services/database';
+import { shouldMigrateLegacy, buildMigratedGoal, selectExpiredForArchive } from './utils/goalStatus';
 import { initTimezone } from './services/timezoneService';
 import { initPriorHours } from './services/priorPracticeService';
 import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
@@ -470,10 +475,22 @@ function App() {
           firebaseBackend.pullAll(user.id),
           firebaseBackend.pullAllNotes(user.id),
           firebaseBackend.pullAllPractices(user.id),
+          firebaseBackend.pullAllGoals(user.id),
         ]);
         if (getOfflineMode()) {
           return;
         }
+        // One-shot legacy migration: if Dexie has no goals AND localStorage
+        // has a single goal from the pre-v15 schema, promote it.
+        const dexieGoalCount = await db.goals.count();
+        const legacyGoalRaw = localStorage.getItem('drummate_goal');
+        if (shouldMigrateLegacy(dexieGoalCount, legacyGoalRaw)) {
+          const record = buildMigratedGoal(legacyGoalRaw, Date.now(), () => crypto.randomUUID());
+          if (record) {
+            await insertGoalRecord(record);
+          }
+        }
+        if (legacyGoalRaw) localStorage.removeItem('drummate_goal');
         // flushSyncQueue replays queued offline edits to cloud AND restores
         // local Dexie to match payload, so loadData below reads the final
         // post-merge state. Keep the sync overlay up until this is done —
@@ -481,6 +498,15 @@ function App() {
         // queue-applied new state.
         await firebaseBackend.flushSyncQueue(user.id);
         await firebaseBackend.pushAllLocal(user.id);
+        // Auto-archive any goals whose endDate has passed.
+        const todayStr = getTodayString();
+        const allGoalsForArchive = await db.goals.toArray();
+        const expiredGoals = selectExpiredForArchive(allGoalsForArchive, todayStr);
+        for (const g of expiredGoals) {
+          await archiveGoal(g.uid);
+          const fresh = await getGoalByUid(g.uid);
+          if (fresh) await firebaseBackend.pushGoal(fresh, user.id);
+        }
       } catch (err) {
         console.error('Sync init failed:', err);
       } finally {
@@ -1496,7 +1522,7 @@ function App() {
           handleSubpageChange(next);
         } else if (activeTabRef.current === 'report') {
           e.preventDefault();
-          const pages = ['daily', 'weekly', 'monthly', 'yearly', 'stats'];
+          const pages = ['daily', 'weekly', 'monthly', 'yearly', 'stats', 'goals'];
           const idx = pages.indexOf(reportSubpageRef.current);
           const next = e.shiftKey
             ? pages[(idx - 1 + pages.length) % pages.length]
@@ -1769,7 +1795,7 @@ function App() {
             <>
               {/* Report subpage toggle */}
               <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
-                {['daily', 'weekly', 'monthly', 'yearly', 'stats'].map((page) => (
+                {['daily', 'weekly', 'monthly', 'yearly', 'stats', 'goals'].map((page) => (
                   <button
                     key={page}
                     onClick={() => setReportSubpage(page)}
@@ -1843,6 +1869,14 @@ function App() {
                 <StatsReport
                   items={items.filter(i => !i.trashed)}
                   timeUnit={timeUnit}
+                  compactMode={compactMode}
+                />
+              )}
+
+              {reportSubpage === 'goals' && (
+                <GoalsPage
+                  user={user}
+                  firebaseBackend={firebaseBackend}
                   compactMode={compactMode}
                 />
               )}
