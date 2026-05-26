@@ -56,7 +56,7 @@ function NotesByItem({ items, refreshKey, onEdit }) {
           onClick={() => toggle(item.uid)}
           className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
         >
-          <span className="font-medium text-gray-800 dark:text-slate-100">{item.name}</span>
+          <span className="font-medium text-gray-800 dark:text-slate-100 text-left">{item.name}</span>
           <span className="text-xs text-gray-500 dark:text-slate-400">
             {itemNotes.length}
           </span>
