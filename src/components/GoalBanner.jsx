@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTodayString } from '../utils/dateHelpers';
-import { getLogsByDateRange } from '../services/database';
-
-const GOAL_KEY = 'drummate_goal';
+import { db, getLogsByDateRange } from '../services/database';
+import { computeGoalStatus } from '../utils/goalStatus';
 
 function dateDiffDays(a, b) {
   return Math.round(
@@ -11,45 +11,37 @@ function dateDiffDays(a, b) {
   );
 }
 
-function readGoal() {
-  try {
-    const raw = localStorage.getItem(GOAL_KEY);
-    if (!raw) return null;
-    const g = JSON.parse(raw);
-    if (!g.startDate || !g.endDate || !g.targetHours || g.targetHours <= 0) return null;
-    if (g.startDate >= g.endDate) return null;
-    return g;
-  } catch {
-    return null;
-  }
-}
-
-function GoalBanner({ refreshKey = 0 }) {
+function GoalBanner() {
   const { t } = useLanguage();
-  const [goal] = useState(readGoal);
-  const [practicedSeconds, setPracticedSeconds] = useState(0);
+  const [goal, setGoal] = useState(null);
+  const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    if (!goal) return;
+    const sub = liveQuery(() => db.goals.toArray()).subscribe({
+      next: (all) => setGoal(all.find(g => g.pinned) || null),
+      error: (err) => console.error('GoalBanner liveQuery error:', err),
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!goal) { setLogs([]); return; }
     let cancelled = false;
     (async () => {
-      const logs = await getLogsByDateRange(goal.startDate, goal.endDate);
-      if (cancelled) return;
-      setPracticedSeconds(logs.reduce((sum, l) => sum + l.duration, 0));
+      const rangeLogs = await getLogsByDateRange(goal.startDate, goal.endDate);
+      if (!cancelled) setLogs(rangeLogs);
     })();
     return () => { cancelled = true; };
-  }, [goal, refreshKey]);
+  }, [goal]);
 
   if (!goal) return null;
 
   const today = getTodayString();
   const expired = today > goal.endDate;
-  const practicedHours = practicedSeconds / 3600;
-  const progressPercent = Math.min(100, (practicedHours / goal.targetHours) * 100);
-  const goalMet = practicedHours >= goal.targetHours;
+  const { practicedHours, progressPercent, met } = computeGoalStatus(goal, logs);
 
   let rightText = '';
-  if (goalMet) {
+  if (met) {
     rightText = t('goal.met');
   } else if (expired) {
     rightText = t('goal.missed');
@@ -63,19 +55,21 @@ function GoalBanner({ refreshKey = 0 }) {
     rightText = t('goal.needPerDay', { amount });
   }
 
+  const headerLabel = goal.name?.trim() || t('goal.title');
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm px-4 py-2.5 flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-xs text-gray-600 dark:text-slate-400">
-        <span>
-          {t('goal.title')}: {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')} ({progressPercent.toFixed(2)}%)
+        <span className="truncate">
+          {headerLabel}: {practicedHours.toFixed(1)} / {goal.targetHours} {t('hours')} ({progressPercent.toFixed(2)}%)
         </span>
-        <span className={goalMet ? 'text-green-600 font-medium' : ''}>
+        <span className={met ? 'text-green-600 font-medium shrink-0 ml-2' : 'shrink-0 ml-2'}>
           {rightText}
         </span>
       </div>
       <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1">
         <div
-          className={`h-1 rounded-full transition-all ${goalMet ? 'bg-green-500' : 'bg-blue-500 dark:bg-indigo-500'}`}
+          className={`h-1 rounded-full transition-all ${met ? 'bg-green-500' : 'bg-blue-500 dark:bg-indigo-500'}`}
           style={{ width: `${progressPercent}%` }}
         />
       </div>
