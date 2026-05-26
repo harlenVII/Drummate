@@ -183,23 +183,6 @@ function SettingsPanel({
             </div>
           </div>
 
-          {/* Timezone */}
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('timezone')}</span>
-            <select
-              value={currentTz}
-              onChange={handleTimezoneChange}
-              className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 dark:text-slate-200 max-w-[60%]"
-            >
-              {!currentTzInList && (
-                <option value={currentTz}>{currentTz}</option>
-              )}
-              {TIMEZONE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
           {/* Time Unit */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('timeUnit')}</span>
@@ -218,6 +201,23 @@ function SettingsPanel({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Timezone */}
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('timezone')}</span>
+            <select
+              value={currentTz}
+              onChange={handleTimezoneChange}
+              className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 dark:text-slate-200 max-w-[60%]"
+            >
+              {!currentTzInList && (
+                <option value={currentTz}>{currentTz}</option>
+              )}
+              {TIMEZONE_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
 
           {/* Group by Category */}
