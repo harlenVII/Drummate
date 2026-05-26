@@ -212,6 +212,14 @@ const translations = {
     theme: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
+    settingsSection: {
+      display: 'Display',
+      reports: 'Reports',
+      aiVoice: 'AI & Voice',
+      sync: 'Sync',
+    },
+    timeUnitMin: 'min',
+    timeUnitHr: 'hr',
     handsFree: {
       title: 'Hands-Free Mode',
       description: 'Say "Drummate" to activate',
@@ -566,6 +574,14 @@ const translations = {
     theme: '主题',
     themeLight: '浅色',
     themeDark: '深色',
+    settingsSection: {
+      display: '显示',
+      reports: '报告',
+      aiVoice: 'AI 与语音',
+      sync: '同步',
+    },
+    timeUnitMin: '分',
+    timeUnitHr: '时',
     handsFree: {
       title: '免提模式',
       description: '说 "Drummate" 来激活',
