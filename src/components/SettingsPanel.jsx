@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTimezone, setTimezone } from '../services/timezoneService';
+import { getPriorHours, setPriorHours } from '../services/priorPracticeService';
 import firebaseBackend from '../services/backends/firebaseBackend';
 import { db } from '../services/database';
 
@@ -158,6 +159,7 @@ function SettingsPanel({
   const kokoroEffective = kokoroEnabled && !kokoroLangUnsupported;
 
   const [pendingCount, setPendingCount] = useState(0);
+  const [priorHoursInput, setPriorHoursInput] = useState(() => String(getPriorHours()));
 
   useEffect(() => {
     if (!isOpen) return;
@@ -345,6 +347,29 @@ function SettingsPanel({
           <Row
             label={t('groupByCategory')}
             control={<Toggle checked={groupByCategory} onChange={onToggleGroupByCategory} />}
+          />
+
+          <Row
+            label={t('priorPractice')}
+            subtitle={t('priorPracticeHint')}
+            control={
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={priorHoursInput}
+                  onChange={(e) => setPriorHoursInput(e.target.value)}
+                  onBlur={() => {
+                    const val = Math.floor(Math.max(0, Number(priorHoursInput) || 0));
+                    setPriorHoursInput(String(val));
+                    setPriorHours(val, firebaseBackend, userId).catch(console.error);
+                  }}
+                  className="w-20 text-right bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm"
+                />
+                <span className="text-xs text-gray-400 dark:text-slate-500">hrs</span>
+              </div>
+            }
           />
 
           {/* === AI & VOICE === */}
