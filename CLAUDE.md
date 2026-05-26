@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code working in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -15,7 +15,12 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # always run after changes
 npm run lint
+npm run test                              # run all tests once (Vitest)
+npm run test:watch                        # watch mode
+npx vitest run tests/dateHelpers.test.js  # run a single test file
 ```
+
+Tests live in `tests/` (not `src/`). Covered: `dateHelpers`, `tzDateHelpers`, `timezoneService`, `offlineService`, `pendingActionFormatter`, `practicePage`, and a smoke test.
 
 ## Environment Variables
 
@@ -47,6 +52,28 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 **Daily report "Merge to yesterday"** (edit mode, when `isToday && grandTotal > 0`): re-stamps every log in `reportLogs` to noon yesterday in home TZ via `reattributeLogsToDate`, preserves per-item breakdown, pushes via `pushLog` upsert.
 
 **i18n** ([src/contexts/LanguageContext.jsx](src/contexts/LanguageContext.jsx)): `t(key)` with nested keys and `{param}` interpolation. `en` / `zh`. Persisted to `localStorage['drummate_language']`.
+
+**UI preferences in localStorage** (boolean/string, read at init, persisted in `useEffect`):
+
+| Key | Values | Default | Controls |
+|-----|--------|---------|---------|
+| `drummate_language` | `'en'` \| `'zh'` | `'en'` | language |
+| `drummate_group_by_category` | `'true'` \| `'false'` | `'true'` | report grouping |
+| `drummate_goal` | JSON `{startDate,endDate,targetHours}` | absent | practice goal |
+| `drummate_timezone` | IANA tz string | `'America/Los_Angeles'` | home timezone |
+| `drummate_pending_log` | JSON log | absent | crash-recovery log |
+
+**AI / Voice features** (on-device, no server):
+- `llmService.js` — Qwen 2.5-0.5B via `@wllama/wllama`; generates post-session encouragement text. WASM models fetched from CDN on first use. Has hardcoded fallback strings for both languages so the feature works offline.
+- `sttService.js` — thin promise wrapper around the browser `SpeechRecognition` API; returns `null` when unsupported. Used for voice command input.
+- `ttsService.js` — Text-to-speech via `kokoro-js`; reads aloud feedback messages.
+- `wakeWordEngine.js` — detects a wake phrase via `openwakeword-wasm-browser` + ONNX (~5 MB download). Call `engine.load()` then `engine.start()` from a user gesture; fires `onDetected` callback.
+- `intentParser.js` — maps STT transcript → structured intent for voice commands.
+- `voiceFeedback.js` — orchestrates STT → intent → action → TTS response.
+- `FloatingVoiceIndicator.jsx` — overlay showing voice-listening state.
+- `EncouragementButton.jsx` / `EncouragementModal.jsx` — UI entry point that triggers the LLM encouragement flow; modal shows generated text with a copy action.
+
+**Backend abstraction**: `src/services/backends/firebaseBackend.js` is the sole concrete backend. New sync operations must be added here. The file is statically imported (always bundled — no dynamic loading).
 
 **Practice goal**: single goal at `localStorage['drummate_goal']` as `{ startDate, endDate, targetHours }`. Three self-contained components (`GoalSetupModal`, `GoalCard` in Stats, `GoalBanner` on Practice top) — `readGoal()` / `dateDiffDays()` are intentionally duplicated to keep components decoupled from App.jsx props. `daysLeft = dateDiffDays(today, endDate) + 1` (includes today; avoids divide-by-zero on last day).
 
