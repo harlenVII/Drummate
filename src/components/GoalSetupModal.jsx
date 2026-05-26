@@ -12,10 +12,9 @@ const fromPickerDate = (d) => {
   return `${y}-${m}-${day}`;
 };
 
-const GOAL_KEY = 'drummate_goal';
-
 function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
   const { t } = useLanguage();
+  const [name, setName] = useState('');
   const [startDate, setStartDate] = useState(getTodayString());
   const [endDate, setEndDate] = useState('');
   const [targetHours, setTargetHours] = useState('');
@@ -24,10 +23,12 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
   useEffect(() => {
     if (!isOpen) return;
     if (goal) {
+      setName(goal.name || '');
       setStartDate(goal.startDate);
       setEndDate(goal.endDate);
       setTargetHours(String(goal.targetHours));
     } else {
+      setName('');
       setStartDate(getTodayString());
       setEndDate('');
       setTargetHours('');
@@ -44,20 +45,43 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!startDate || !endDate) { setError(t('goal.errorDates')); return; }
     if (startDate >= endDate) { setError(t('goal.errorDateOrder')); return; }
     const hours = parseFloat(targetHours);
     if (isNaN(hours) || hours <= 0) { setError(t('goal.errorHours')); return; }
-    localStorage.setItem(GOAL_KEY, JSON.stringify({ startDate, endDate, targetHours: hours }));
-    onSave();
-    onClose();
+    const trimmedName = name.trim();
+    try {
+      await onSave({
+        uid: goal?.uid,
+        name: trimmedName,
+        startDate,
+        endDate,
+        targetHours: hours,
+      });
+      onClose();
+    } catch (err) {
+      console.error('GoalSetupModal save failed:', err);
+      setError(String(err?.message || err));
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{t('goal.title')}</h2>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.optionalName')}</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('goal.namePlaceholder')}
+            maxLength={80}
+            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+          />
+        </label>
 
         <label className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.startDate')}</span>
