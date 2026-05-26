@@ -62,6 +62,7 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 | `drummate_goal` | JSON `{startDate,endDate,targetHours}` | absent | practice goal |
 | `drummate_timezone` | IANA tz string | `'America/Los_Angeles'` | home timezone |
 | `drummate_pending_log` | JSON log | absent | crash-recovery log |
+| `drummate_compact_mode` | `'true'` \| `'false'` | `'false'` | compact practice list |
 
 **AI / Voice features** (on-device, no server):
 - `llmService.js` — Qwen 2.5-0.5B via `@wllama/wllama`; generates post-session encouragement text. WASM models fetched from CDN on first use. Has hardcoded fallback strings for both languages so the feature works offline.
