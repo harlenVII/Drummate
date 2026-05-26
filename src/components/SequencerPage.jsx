@@ -384,26 +384,6 @@ function SequencerPage({
         </>
       )}
 
-      {/* === Sound Type Selector === */}
-      <div className="flex gap-2 flex-wrap justify-center">
-        {SOUND_TYPES.map((key) => (
-          <button
-            key={key}
-            onClick={() => setSoundType(key)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              soundType === key
-                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
-                : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
-            }`}
-          >
-            {t(`soundTypes.${key}`)}
-          </button>
-        ))}
-      </div>
-
-      {/* === BPM Dial === */}
-      <BpmDial bpm={bpm} onBpmChange={setBpm} />
-
       {/* === Play/Stop button === */}
       <button
         onClick={handleTogglePlay}
@@ -427,6 +407,26 @@ function SequencerPage({
           </svg>
         )}
       </button>
+
+      {/* === BPM Dial === */}
+      <BpmDial bpm={bpm} onBpmChange={setBpm} />
+
+      {/* === Sound Type Selector === */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {SOUND_TYPES.map((key) => (
+          <button
+            key={key}
+            onClick={() => setSoundType(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              soundType === key
+                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
+                : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
+            }`}
+          >
+            {t(`soundTypes.${key}`)}
+          </button>
+        ))}
+      </div>
 
       {/* === Edit / Done button === */}
       {!isPlaying && (
