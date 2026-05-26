@@ -314,7 +314,7 @@ export default function PracticeRunView({
 
           <div className="w-full max-w-sm flex flex-col gap-1">
             <div className="flex justify-end">
-              <span className="text-sm font-semibold text-blue-600 dark:text-indigo-600">{Math.round(progressPct)}%</span>
+              <span className="text-sm font-semibold text-blue-600 dark:text-slate-200">{Math.round(progressPct)}%</span>
             </div>
             <div className="h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
