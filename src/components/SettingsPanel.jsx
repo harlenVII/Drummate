@@ -35,6 +35,73 @@ const TIMEZONE_OPTIONS = [
   { value: 'Pacific/Auckland',       label: 'Auckland (UTC+12)' },
 ];
 
+function SectionLabel({ children, first = false }) {
+  return (
+    <h3
+      className={`text-xs font-bold tracking-wider uppercase text-gray-400 dark:text-slate-500 px-5 pb-2 ${
+        first ? 'pt-3' : 'pt-5'
+      }`}
+    >
+      {children}
+    </h3>
+  );
+}
+
+function Row({ label, subtitle, control }) {
+  return (
+    <div className="flex items-center justify-between px-5 py-2.5 min-h-[40px] gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-gray-700 dark:text-slate-200">{label}</p>
+        {subtitle && (
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 line-clamp-1">{subtitle}</p>
+        )}
+      </div>
+      <div className="shrink-0">{control}</div>
+    </div>
+  );
+}
+
+function PillGroup({ options, value, onSelect }) {
+  return (
+    <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => value !== opt.value && onSelect(opt.value)}
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+            value === opt.value
+              ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
+              : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Toggle({ checked, onChange, disabled = false, tone = 'indigo' }) {
+  const onBg = tone === 'amber' ? 'bg-amber-500' : 'bg-blue-600 dark:bg-indigo-600';
+  return (
+    <button
+      onClick={onChange}
+      disabled={disabled}
+      role="switch"
+      aria-checked={checked}
+      className={`relative w-11 h-6 rounded-full transition-colors ${
+        checked ? onBg : 'bg-gray-300 dark:bg-slate-600'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+          checked ? 'translate-x-5' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
+}
+
 function SettingsPanel({
   isOpen,
   onClose,
@@ -72,7 +139,7 @@ function SettingsPanel({
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
 
   const currentTz = getTimezone();
-  const currentTzInList = TIMEZONE_OPTIONS.some(o => o.value === currentTz);
+  const currentTzInList = TIMEZONE_OPTIONS.some((o) => o.value === currentTz);
 
   const handleTimezoneChange = async (e) => {
     const newTz = e.target.value;
@@ -83,8 +150,9 @@ function SettingsPanel({
       console.error('Failed to set timezone', err);
     }
   };
+
   const kokoroLangUnsupported = language === 'zh';
-  const kokoroDisabled = !aiCoachEnabled && !handsFreeMode || kokoroLangUnsupported;
+  const kokoroDisabled = (!aiCoachEnabled && !handsFreeMode) || kokoroLangUnsupported;
   const kokoroEffective = kokoroEnabled && !kokoroLangUnsupported;
 
   const [pendingCount, setPendingCount] = useState(0);
@@ -97,6 +165,61 @@ function SettingsPanel({
     });
     return () => sub.unsubscribe();
   }, [isOpen]);
+
+  // Natural Voice subtitle: status-aware, falls back to description.
+  let naturalVoiceSubtitle = kokoroEffective ? null : t('naturalVoice.description');
+  let naturalVoiceMessage = null;
+  let naturalVoiceMessageTone = '';
+  if (kokoroLangUnsupported) {
+    naturalVoiceSubtitle = t('naturalVoice.unsupportedLang');
+  } else if (kokoroDisabled) {
+    naturalVoiceSubtitle = t('naturalVoice.requires');
+  } else if (kokoroStatus === 'downloading') {
+    naturalVoiceMessage = t('naturalVoice.downloading');
+    naturalVoiceMessageTone = 'text-blue-500 dark:text-indigo-500';
+  } else if (kokoroStatus === 'ready' && kokoroEffective) {
+    naturalVoiceMessage = t('naturalVoice.ready');
+    naturalVoiceMessageTone = 'text-green-600';
+  } else if (kokoroStatus === 'error') {
+    naturalVoiceMessage = t('naturalVoice.error');
+    naturalVoiceMessageTone = 'text-red-500';
+  }
+
+  // Hands-Free subtitle: status-aware, falls back to description.
+  let handsFreeSubtitle = t('handsFree.description');
+  let handsFreeMessage = null;
+  let handsFreeMessageTone = '';
+  if (!isChrome) {
+    handsFreeSubtitle = t('handsFree.unsupportedBrowser');
+  } else if (wakeWordError === 'mic_permission') {
+    handsFreeMessage = t('handsFree.micPermission');
+    handsFreeMessageTone = 'text-red-500';
+  } else if (wakeWordError) {
+    handsFreeMessage = t('handsFree.error');
+    handsFreeMessageTone = 'text-red-500';
+  } else if (wakeWordLoading) {
+    handsFreeMessage = t('handsFree.loading');
+    handsFreeMessageTone = 'text-blue-500 dark:text-indigo-500';
+  } else if (listeningState === 'error') {
+    handsFreeMessage = t('handsFree.commandError');
+    handsFreeMessageTone = 'text-red-500';
+  } else if (listeningState === 'processing' && voiceTranscript) {
+    handsFreeMessage = `"${voiceTranscript}"`;
+    handsFreeMessageTone = 'text-blue-600 dark:text-indigo-600 font-medium';
+  } else if (wakeWordDetected && listeningState === 'listening') {
+    handsFreeMessage = t('handsFree.listening');
+    handsFreeMessageTone = 'text-green-600 font-medium';
+  } else if (wakeWordDetected && listeningState === 'idle') {
+    handsFreeMessage = t('handsFree.detected');
+    handsFreeMessageTone = 'text-green-600 font-medium';
+  }
+
+  const handsFreeBadge = handsFreeMode ? (
+    <span className="relative inline-flex h-2 w-2 ml-2">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+    </span>
+  ) : null;
 
   return (
     <>
@@ -128,9 +251,9 @@ function SettingsPanel({
           </button>
         </div>
 
-        {/* Profile card */}
-        <div className="px-5 py-5 flex items-center gap-4 border-b border-gray-100 dark:border-slate-800">
-          <div className="w-12 h-12 rounded-full bg-blue-600 dark:bg-indigo-600 flex items-center justify-center text-white text-lg font-semibold shrink-0">
+        {/* Profile */}
+        <div className="px-5 py-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-base font-semibold shrink-0">
             {(user?.name || user?.email || '?')[0].toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -141,297 +264,173 @@ function SettingsPanel({
           </div>
         </div>
 
-        {/* Settings content */}
-        <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-6">
-          {/* Language */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('language')}</span>
-            <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
-              {['en', 'zh'].map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => language !== lang && toggleLanguage()}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    language === lang
-                      ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
-                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {lang === 'en' ? 'EN' : '中文'}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto pb-2">
+          {/* === DISPLAY === */}
+          <SectionLabel first>{t('settingsSection.display')}</SectionLabel>
 
-          {/* Theme */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('theme')}</span>
-            <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
-              {['light', 'dark'].map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => onThemeChange(mode)}
-                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                    theme === mode
-                      ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
-                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {t(mode === 'light' ? 'themeLight' : 'themeDark')}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Time Unit */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('timeUnit')}</span>
-            <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
-              {['minutes', 'hours'].map((unit) => (
-                <button
-                  key={unit}
-                  onClick={() => timeUnit !== unit && onToggleTimeUnit()}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    timeUnit === unit
-                      ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
-                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {t(unit)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Timezone */}
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('timezone')}</span>
-            <select
-              value={currentTz}
-              onChange={handleTimezoneChange}
-              className="border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 dark:text-slate-200 max-w-[60%]"
-            >
-              {!currentTzInList && (
-                <option value={currentTz}>{currentTz}</option>
-              )}
-              {TIMEZONE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Group by Category */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('groupByCategory')}</span>
-            <button
-              onClick={onToggleGroupByCategory}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                groupByCategory ? 'bg-blue-600 dark:bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
-              } cursor-pointer`}
-              role="switch"
-              aria-checked={groupByCategory}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                  groupByCategory ? 'translate-x-5' : 'translate-x-0'
-                }`}
+          <Row
+            label={t('language')}
+            control={
+              <PillGroup
+                options={[
+                  { value: 'en', label: 'EN' },
+                  { value: 'zh', label: '中文' },
+                ]}
+                value={language}
+                onSelect={() => toggleLanguage()}
               />
-            </button>
-          </div>
+            }
+          />
 
-          {/* AI Coach */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('aiCoach.title')}</span>
-              <button
-                onClick={onToggleAiCoach}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
-                  aiCoachEnabled ? 'bg-blue-600 dark:bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
-                } cursor-pointer`}
-                role="switch"
-                aria-checked={aiCoachEnabled}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                    aiCoachEnabled ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-            {!aiCoachEnabled && (
-              <p className="text-xs text-gray-400 dark:text-slate-500">{t('aiCoach.description')}</p>
-            )}
-          </div>
+          <Row
+            label={t('theme')}
+            control={
+              <PillGroup
+                options={[
+                  { value: 'light', label: t('themeLight') },
+                  { value: 'dark', label: t('themeDark') },
+                ]}
+                value={theme}
+                onSelect={(v) => onThemeChange(v)}
+              />
+            }
+          />
 
-          {/* Natural Voice (AI) */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('naturalVoice.title')}</span>
-              <button
-                onClick={onToggleKokoro}
+          <Row
+            label={t('timeUnit')}
+            control={
+              <PillGroup
+                options={[
+                  { value: 'minutes', label: t('timeUnitMin') },
+                  { value: 'hours', label: t('timeUnitHr') },
+                ]}
+                value={timeUnit}
+                onSelect={() => onToggleTimeUnit()}
+              />
+            }
+          />
+
+          {/* === REPORTS === */}
+          <SectionLabel>{t('settingsSection.reports')}</SectionLabel>
+
+          <Row
+            label={t('timezone')}
+            control={
+              <div className="relative flex items-center">
+                <select
+                  value={currentTz}
+                  onChange={handleTimezoneChange}
+                  className="appearance-none bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 pr-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm"
+                >
+                  {!currentTzInList && <option value={currentTz}>{currentTz}</option>}
+                  {TIMEZONE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="absolute right-0 text-gray-400 dark:text-slate-500 pointer-events-none text-xs">▾</span>
+              </div>
+            }
+          />
+
+          <Row
+            label={t('groupByCategory')}
+            control={<Toggle checked={groupByCategory} onChange={onToggleGroupByCategory} />}
+          />
+
+          {/* === AI & VOICE === */}
+          <SectionLabel>{t('settingsSection.aiVoice')}</SectionLabel>
+
+          <Row
+            label={t('aiCoach.title')}
+            subtitle={!aiCoachEnabled ? t('aiCoach.description') : undefined}
+            control={<Toggle checked={aiCoachEnabled} onChange={onToggleAiCoach} />}
+          />
+
+          <Row
+            label={t('naturalVoice.title')}
+            subtitle={naturalVoiceSubtitle}
+            control={
+              <Toggle
+                checked={kokoroEffective}
+                onChange={onToggleKokoro}
                 disabled={kokoroStatus === 'downloading' || kokoroDisabled}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
-                  kokoroEffective ? 'bg-blue-600 dark:bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
-                } ${kokoroStatus === 'downloading' || kokoroDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                role="switch"
-                aria-checked={kokoroEffective}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                    kokoroEffective ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {kokoroStatus === 'downloading' && (
-              <div className="flex flex-col gap-1">
-                <p className="text-xs text-blue-500 dark:text-indigo-500">{t('naturalVoice.downloading')}</p>
-                <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 dark:bg-indigo-500 rounded-full transition-all duration-300"
-                    style={{ width: `${kokoroProgress.percentage}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {kokoroStatus === 'ready' && kokoroEffective && (
-              <p className="text-xs text-green-600">{t('naturalVoice.ready')}</p>
-            )}
-
-            {kokoroStatus === 'error' && (
-              <p className="text-xs text-red-500">{t('naturalVoice.error')}</p>
-            )}
-
-            {kokoroDisabled && (
-              <p className="text-xs text-gray-400 dark:text-slate-500">
-                {kokoroLangUnsupported ? t('naturalVoice.unsupportedLang') : t('naturalVoice.requires')}
-              </p>
-            )}
-
-            {!kokoroDisabled && kokoroStatus === 'idle' && !kokoroEnabled && (
-              <p className="text-xs text-gray-400 dark:text-slate-500">{t('naturalVoice.description')}</p>
-            )}
-
-            {!kokoroDisabled && kokoroStatus === 'idle' && !kokoroEnabled && (
-              <p className="text-xs text-gray-400 dark:text-slate-500">{t('naturalVoice.size')}</p>
-            )}
-          </div>
-
-          {/* Hands-Free Mode */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">{t('handsFree.title')}</span>
-                {handsFreeMode && (
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={onToggleHandsFree}
-                disabled={wakeWordLoading || !isChrome}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
-                  handsFreeMode ? 'bg-blue-600 dark:bg-indigo-600' : 'bg-gray-300 dark:bg-slate-600'
-                } ${wakeWordLoading || !isChrome ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                role="switch"
-                aria-checked={handsFreeMode}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                    handsFreeMode ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {!isChrome ? (
-              <p className="text-xs text-red-500">{t('handsFree.unsupportedBrowser')}</p>
-            ) : (
-              <>
-                {wakeWordLoading && (
-                  <p className="text-xs text-blue-500 dark:text-indigo-500">{t('handsFree.loading')}</p>
-                )}
-
-                {wakeWordDetected && listeningState === 'listening' && (
-                  <p className="text-xs text-green-600 font-medium">{t('handsFree.listening')}</p>
-                )}
-
-                {listeningState === 'processing' && voiceTranscript && (
-                  <p className="text-xs text-blue-600 dark:text-indigo-600 font-medium">&ldquo;{voiceTranscript}&rdquo;</p>
-                )}
-
-                {wakeWordDetected && listeningState === 'idle' && (
-                  <p className="text-xs text-green-600 font-medium">{t('handsFree.detected')}</p>
-                )}
-
-                {listeningState === 'error' && (
-                  <p className="text-xs text-red-500">{t('handsFree.commandError')}</p>
-                )}
-
-                {wakeWordError === 'mic_permission' && (
-                  <p className="text-xs text-red-500">{t('handsFree.micPermission')}</p>
-                )}
-
-                {wakeWordError && wakeWordError !== 'mic_permission' && (
-                  <p className="text-xs text-red-500">{t('handsFree.error')}</p>
-                )}
-
-                {!wakeWordLoading && !wakeWordError && (
-                  <p className="text-xs text-gray-400 dark:text-slate-500">{t('handsFree.description')}</p>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Offline mode */}
-        <div className="px-5 py-4 border-t border-gray-200 dark:border-slate-700 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-800 dark:text-slate-100">
-              {t('offline.settingsRow')}
-            </span>
-            <button
-              onClick={() => {
-                if (offlineMode) {
-                  onGoOnline();
-                } else {
-                  onEnterOfflineMode();
-                  onClose();
-                }
-              }}
-              role="switch"
-              aria-checked={offlineMode}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                offlineMode ? 'bg-amber-500' : 'bg-gray-300 dark:bg-slate-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                  offlineMode ? 'translate-x-5' : 'translate-x-0.5'
-                }`}
               />
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-slate-400">{t('offline.settingsHint')}</p>
-          {offlineMode && (
+            }
+          />
+          {kokoroStatus === 'downloading' && (
+            <div className="px-5 pb-2 flex flex-col gap-1">
+              <p className={`text-xs ${naturalVoiceMessageTone}`}>{naturalVoiceMessage}</p>
+              <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 dark:bg-indigo-500 rounded-full transition-all duration-300"
+                  style={{ width: `${kokoroProgress.percentage}%` }}
+                />
+              </div>
+            </div>
+          )}
+          {naturalVoiceMessage && kokoroStatus !== 'downloading' && (
+            <p className={`px-5 pb-2 text-xs ${naturalVoiceMessageTone}`}>{naturalVoiceMessage}</p>
+          )}
+
+          <Row
+            label={
+              <span className="inline-flex items-center">
+                {t('handsFree.title')}
+                {handsFreeBadge}
+              </span>
+            }
+            subtitle={handsFreeSubtitle}
+            control={
+              <Toggle
+                checked={handsFreeMode}
+                onChange={onToggleHandsFree}
+                disabled={wakeWordLoading || !isChrome}
+              />
+            }
+          />
+          {handsFreeMessage && (
+            <p className={`px-5 pb-2 text-xs ${handsFreeMessageTone}`}>{handsFreeMessage}</p>
+          )}
+
+          {/* === SYNC === */}
+          <SectionLabel>{t('settingsSection.sync')}</SectionLabel>
+
+          <Row
+            label={t('offline.settingsRow')}
+            subtitle={t('offline.settingsHint')}
+            control={
+              <Toggle
+                checked={offlineMode}
+                tone="amber"
+                onChange={() => {
+                  if (offlineMode) {
+                    onGoOnline();
+                  } else {
+                    onEnterOfflineMode();
+                    onClose();
+                  }
+                }}
+              />
+            }
+          />
+          {offlineMode && pendingCount > 0 && (
             <button
               onClick={onShowPending}
-              className="text-left text-sm text-blue-600 dark:text-indigo-600 hover:underline"
+              className="block w-full px-5 pb-2 text-right text-xs text-blue-600 dark:text-indigo-400 hover:underline"
             >
-              {t('offline.settingsPendingRow', { count: pendingCount })}
+              {t('offline.settingsPendingRow', { count: pendingCount })} →
             </button>
           )}
         </div>
 
-        {/* Sign out at bottom */}
-        <div className="px-5 py-6 border-t border-gray-200 dark:border-slate-700">
+        {/* Sign Out footer */}
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-800 text-center">
           <button
             onClick={signOut}
-            className="w-full py-2.5 text-sm font-medium text-red-500 bg-white dark:bg-slate-800 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+            className="text-sm font-medium text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
           >
             {t('auth.signOut')}
           </button>
