@@ -50,6 +50,12 @@ function practicesRef(userId) {
   return collection(firestore, 'users', userId, 'metronomePractices');
 }
 
+function goalsRef(userId) {
+  if (!userId) throw new Error('goalsRef requires userId');
+  const { db: firestore } = getFirebaseApp();
+  return collection(firestore, 'users', userId, 'goals');
+}
+
 // --- Offline sync queue (reuses Dexie syncQueue table) ---
 
 async function queueSync(action, payload) {
@@ -316,6 +322,68 @@ const firebaseBackend = {
     } catch (err) {
       if (!navigator.onLine) {
         await queueSync('push_practice', enrichedPracticePayload());
+      } else {
+        throw err;
+      }
+    }
+  },
+
+  async pushGoal(localGoal, userId) {
+    if (!localGoal.uid) {
+      console.error('pushGoal: missing uid', localGoal);
+      return;
+    }
+    const enrichedGoalPayload = () => ({
+      uid: localGoal.uid,
+      name: localGoal.name ?? '',
+      startDate: localGoal.startDate,
+      endDate: localGoal.endDate,
+      targetHours: localGoal.targetHours,
+      archived: !!localGoal.archived,
+      archivedAt: localGoal.archivedAt ?? null,
+      pinned: !!localGoal.pinned,
+      createdAt: localGoal.createdAt || 0,
+    });
+    if (getOfflineMode()) {
+      await queueSync('push_goal', enrichedGoalPayload());
+      return;
+    }
+    try {
+      await setDoc(doc(goalsRef(userId), localGoal.uid), {
+        uid: localGoal.uid,
+        name: localGoal.name ?? '',
+        start_date: localGoal.startDate,
+        end_date: localGoal.endDate,
+        target_hours: localGoal.targetHours,
+        archived: !!localGoal.archived,
+        archived_at: localGoal.archivedAt ?? null,
+        pinned: !!localGoal.pinned,
+        created_at: localGoal.createdAt || 0,
+        updated_at: serverTimestamp(),
+      }, { merge: true });
+
+      if (localGoal.id != null && !localGoal.syncedOnce) {
+        await db.goals.update(localGoal.id, { syncedOnce: true });
+      }
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('push_goal', enrichedGoalPayload());
+      } else {
+        throw err;
+      }
+    }
+  },
+
+  async deleteGoalRemote(goalUid, userId) {
+    if (getOfflineMode()) {
+      await queueSync('delete_goal_permanent', { uid: goalUid });
+      return;
+    }
+    try {
+      await deleteDoc(doc(goalsRef(userId), goalUid));
+    } catch (err) {
+      if (!navigator.onLine) {
+        await queueSync('delete_goal_permanent', { uid: goalUid });
       } else {
         throw err;
       }
@@ -869,6 +937,58 @@ const firebaseBackend = {
     }
   },
 
+  async pullAllGoals(userId) {
+    const snap = await getDocs(goalsRef(userId));
+    if (snap.metadata.fromCache) {
+      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
+      return;
+    }
+    const remoteUids = new Set();
+
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      if (!data.uid) continue;
+      remoteUids.add(data.uid);
+
+      const fields = {
+        uid: data.uid,
+        name: data.name ?? '',
+        startDate: data.start_date,
+        endDate: data.end_date,
+        targetHours: data.target_hours,
+        archived: !!data.archived,
+        archivedAt: data.archived_at ?? null,
+        pinned: !!data.pinned,
+        createdAt: data.created_at || 0,
+        syncedOnce: true,
+      };
+
+      const local = await db.goals.where('uid').equals(data.uid).first();
+      if (!local) {
+        await db.goals.add(fields);
+      } else {
+        const updates = {};
+        for (const k of ['name', 'startDate', 'endDate', 'targetHours',
+                         'archived', 'archivedAt', 'pinned', 'createdAt']) {
+          if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
+        }
+        if (!local.syncedOnce) updates.syncedOnce = true;
+        if (Object.keys(updates).length > 0) {
+          await db.goals.update(local.id, updates);
+        }
+      }
+    }
+
+    // Reconcile deletes: a local goal that synced before but is missing
+    // remotely was deleted on another device.
+    const allLocal = await db.goals.toArray();
+    for (const local of allLocal) {
+      if (local.syncedOnce && !remoteUids.has(local.uid)) {
+        await db.goals.delete(local.id);
+      }
+    }
+  },
+
   async pushAllLocalNotes(userId) {
     if (getOfflineMode()) return;
     // Only push notes that have never reached the cloud. Already-synced
@@ -894,6 +1014,16 @@ const firebaseBackend = {
     );
   },
 
+  async pushAllLocalGoals(userId) {
+    if (getOfflineMode()) return;
+    const goals = await db.goals.toArray();
+    await Promise.all(
+      goals
+        .filter((g) => g.uid && !g.syncedOnce)
+        .map((g) => firebaseBackend.pushGoal(g, userId)),
+    );
+  },
+
   async pushAllLocal(userId) {
     if (getOfflineMode()) return;
     // Items must finish first — logs and notes reference itemUid and would
@@ -916,6 +1046,7 @@ const firebaseBackend = {
       Promise.all(logs.filter((l) => !l.syncedOnce).map((log) => firebaseBackend.pushLog(log, userId))),
       firebaseBackend.pushAllLocalNotes(userId),
       firebaseBackend.pushAllLocalPractices(userId),
+      firebaseBackend.pushAllLocalGoals(userId),
     ]);
   },
 
@@ -1066,6 +1197,47 @@ const firebaseBackend = {
               await db.metronomePractices.update(local.id, { sortOrder: p.sortOrder });
             }
           }
+        } else if (entry.action === 'push_goal') {
+          // Push from payload (not from local Dexie) — pullAllGoals earlier
+          // in init may have overwritten the offline edit back to cloud's
+          // prior state. The payload carries the user's actual intent.
+          const p = entry.payload;
+          if (p.uid && p.startDate && p.endDate && p.targetHours !== undefined) {
+            await setDoc(doc(goalsRef(userId), p.uid), {
+              uid: p.uid,
+              name: p.name ?? '',
+              start_date: p.startDate,
+              end_date: p.endDate,
+              target_hours: p.targetHours,
+              archived: !!p.archived,
+              archived_at: p.archivedAt ?? null,
+              pinned: !!p.pinned,
+              created_at: p.createdAt || 0,
+              updated_at: serverTimestamp(),
+            }, { merge: true });
+            const localGoal = await db.goals.where('uid').equals(p.uid).first();
+            if (localGoal) {
+              await db.goals.update(localGoal.id, {
+                name: p.name ?? '',
+                startDate: p.startDate,
+                endDate: p.endDate,
+                targetHours: p.targetHours,
+                archived: !!p.archived,
+                archivedAt: p.archivedAt ?? null,
+                pinned: !!p.pinned,
+                createdAt: p.createdAt || localGoal.createdAt || 0,
+                syncedOnce: true,
+              });
+            }
+          } else {
+            // Legacy minimal payload — fall back to re-reading local.
+            const local = await db.goals.where('uid').equals(p.uid).first();
+            if (local) await firebaseBackend.pushGoal(local, userId);
+          }
+        } else if (entry.action === 'delete_goal_permanent') {
+          await firebaseBackend.deleteGoalRemote(entry.payload.uid, userId);
+          const local = await db.goals.where('uid').equals(entry.payload.uid).first();
+          if (local) await db.goals.delete(local.id);
         }
         await db.syncQueue.delete(entry.id);
       } catch (err) {
@@ -1314,11 +1486,61 @@ const firebaseBackend = {
       }
     });
 
+    const unsubGoals = onSnapshot(goalsRef(userId), async (snap) => {
+      for (const change of snap.docChanges()) {
+        const data = change.doc.data();
+        if (!data.uid) continue;
+
+        const buildFields = () => ({
+          uid: data.uid,
+          name: data.name ?? '',
+          startDate: data.start_date,
+          endDate: data.end_date,
+          targetHours: data.target_hours,
+          archived: !!data.archived,
+          archivedAt: data.archived_at ?? null,
+          pinned: !!data.pinned,
+          createdAt: data.created_at || 0,
+          syncedOnce: true,
+        });
+
+        // Combined added/modified handling — Firestore's initial snapshot
+        // reports our own writes as 'added', so a separate 'added' branch
+        // would skip reconciling field updates from queued push_goal replays.
+        if (change.type === 'added' || change.type === 'modified') {
+          const local = await db.goals.where('uid').equals(data.uid).first();
+          if (!local) {
+            await db.goals.add(buildFields());
+            onDataChanged();
+          } else {
+            const fields = buildFields();
+            const updates = {};
+            for (const k of ['name', 'startDate', 'endDate', 'targetHours',
+                             'archived', 'archivedAt', 'pinned', 'createdAt']) {
+              if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
+            }
+            if (!local.syncedOnce) updates.syncedOnce = true;
+            if (Object.keys(updates).length > 0) {
+              await db.goals.update(local.id, updates);
+              onDataChanged();
+            }
+          }
+        } else if (change.type === 'removed') {
+          const existing = await db.goals.where('uid').equals(data.uid).first();
+          if (existing) {
+            await db.goals.delete(existing.id);
+            onDataChanged();
+          }
+        }
+      }
+    });
+
     return () => {
       unsubItems();
       unsubLogs();
       unsubNotes();
       unsubPractices();
+      unsubGoals();
     };
   },
 };
