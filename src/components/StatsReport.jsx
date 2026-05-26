@@ -36,7 +36,7 @@ function StatsReport({ items, timeUnit }) {
       title: t('stats.streaks'),
       items: [
         { label: t('stats.currentStreak'), value: `${stats.currentStreak} ${t('stats.days')}` },
-        { label: t('stats.longestStreak'), value: `${stats.longestStreak} ${t('stats.days')}` },
+        { label: t('stats.longestStreak'), value: `${stats.longestStreak} ${t('stats.days')}`, sub: stats.longestStreakStart ? `${formatDisplayDate(stats.longestStreakStart)} – ${formatDisplayDate(stats.longestStreakEnd)}` : null },
       ],
     },
     {
@@ -122,6 +122,8 @@ function computeStats(allLogs, items) {
       totalSessions: 0,
       currentStreak: 0,
       longestStreak: 0,
+      longestStreakStart: null,
+      longestStreakEnd: null,
       longestDay: null,
       topItem: null,
       bestMonth: null,
@@ -155,17 +157,29 @@ function computeStats(allLogs, items) {
 
   // Longest streak
   let longestStreak = 0;
+  let longestStreakStart = null;
+  let longestStreakEnd = null;
   let streak = 1;
+  let streakStart = practiceDays[0] ?? null;
   for (let i = 1; i < practiceDays.length; i++) {
     const expected = shiftDate(practiceDays[i - 1], 1);
     if (practiceDays[i] === expected) {
       streak++;
     } else {
-      if (streak > longestStreak) longestStreak = streak;
+      if (streak > longestStreak) {
+        longestStreak = streak;
+        longestStreakStart = streakStart;
+        longestStreakEnd = practiceDays[i - 1];
+      }
       streak = 1;
+      streakStart = practiceDays[i];
     }
   }
-  if (streak > longestStreak) longestStreak = streak;
+  if (streak > longestStreak) {
+    longestStreak = streak;
+    longestStreakStart = streakStart;
+    longestStreakEnd = practiceDays[practiceDays.length - 1];
+  }
   if (practiceDays.length === 0) longestStreak = 0;
 
   // Longest day
@@ -219,6 +233,8 @@ function computeStats(allLogs, items) {
     totalSessions,
     currentStreak,
     longestStreak,
+    longestStreakStart,
+    longestStreakEnd,
     longestDay,
     topItem,
     topItemDuration,
