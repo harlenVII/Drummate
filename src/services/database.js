@@ -598,7 +598,9 @@ export const insertGoalRecord = async (record) => {
 export const updateGoal = async (uid, patch) => {
   const local = await db.goals.where('uid').equals(uid).first();
   if (!local) return null;
-  const updates = { ...patch, syncedOnce: false };
+  // Strip identity fields the caller should never overwrite.
+  const { uid: _uid, id: _id, syncedOnce: _sc, ...safePatch } = patch;
+  const updates = { ...safePatch, syncedOnce: false };
   // Un-archive on Edit if endDate moves back into the future.
   if (patch.endDate !== undefined) {
     const today = new Date().toISOString().slice(0, 10);
@@ -614,12 +616,9 @@ export const updateGoal = async (uid, patch) => {
 export const archiveGoal = async (uid) => {
   const local = await db.goals.where('uid').equals(uid).first();
   if (!local) return null;
-  await db.goals.update(local.id, {
-    archived: true,
-    archivedAt: Date.now(),
-    syncedOnce: false,
-  });
-  return { ...local, archived: true, archivedAt: Date.now(), syncedOnce: false };
+  const archivedAt = Date.now();
+  await db.goals.update(local.id, { archived: true, archivedAt, syncedOnce: false });
+  return { ...local, archived: true, archivedAt, syncedOnce: false };
 };
 
 export const setGoalPinned = async (uid) => {
