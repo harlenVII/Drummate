@@ -5,9 +5,11 @@ import { getAllLogs } from '../services/database';
 import { useLanguage } from '../contexts/LanguageContext';
 import ReportGeneratorModal from './ReportGeneratorModal';
 import GoalCard from './GoalCard';
+import { getPriorHours } from '../services/priorPracticeService';
 
 function StatsReport({ items, timeUnit }) {
   const { t } = useLanguage();
+  const priorHours = getPriorHours();
   const [showModal, setShowModal] = useState(false);
   const [stats, setStats] = useState(null);
 
@@ -27,7 +29,7 @@ function StatsReport({ items, timeUnit }) {
     {
       title: t('stats.overview'),
       items: [
-        { label: t('stats.totalPracticeTime'), value: `${formatDuration(stats.totalTime, timeUnit)} ${t(timeUnit)}` },
+        { label: t('stats.totalPracticeTime'), value: `${formatDuration(stats.totalTime + priorHours * 3600, timeUnit)} ${t(timeUnit)}`, sub: priorHours > 0 ? t('stats.priorIncluded', { hours: priorHours }) : null },
         { label: t('stats.totalPracticeDays'), value: String(stats.totalDays) },
         { label: t('stats.avgDailyTime'), value: stats.totalDays > 0 ? `${formatDuration(Math.round(stats.totalTime / stats.totalDays), timeUnit)} ${t(timeUnit)}` : '-' },
       ],
