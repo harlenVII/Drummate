@@ -321,7 +321,7 @@ function SettingsPanel({
                 <select
                   value={currentTz}
                   onChange={handleTimezoneChange}
-                  className="appearance-none bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 pr-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm"
+                  className="appearance-none bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 pr-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm text-right"
                 >
                   {!currentTzInList && <option value={currentTz}>{currentTz}</option>}
                   {TIMEZONE_OPTIONS.map((o) => (
