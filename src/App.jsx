@@ -67,7 +67,7 @@ import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, get
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
-  const { user, authReady, signOut, isVisitor } = useAuth();
+  const { user, authReady, signOut, isVisitor, fromVisitorIntent } = useAuth();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -441,6 +441,22 @@ function App() {
   }, [loadData]);
 
   const subscriptionRef = useRef(null);
+
+  const prevIsVisitorRef = useRef(isVisitor);
+  useEffect(() => {
+    const wasVisitor = prevIsVisitorRef.current;
+    prevIsVisitorRef.current = isVisitor;
+    // Visitor logged off: isVisitor went true→false, no user, no pending auth intent
+    if (wasVisitor && !isVisitor && !user && !fromVisitorIntent) {
+      setSequencerBpm(120);
+      setSequencerSoundType('click');
+      setSequencerSlots([]);
+      sequencerNextIdRef.current = 1;
+      setMultiMeterBpm(120);
+      setMultiMeterSoundType('click');
+      setMultiMeterSlots([]);
+    }
+  }, [isVisitor, user, fromVisitorIntent]);
 
   const prevUserRef = useRef(null);
 
