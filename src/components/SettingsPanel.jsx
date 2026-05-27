@@ -473,19 +473,10 @@ function SettingsPanel({
               </div>
               <button
                 onClick={() => {
-                  exitVisitorModeForAuth('signIn');
+                  exitVisitorModeForAuth();
                   onClose();
                 }}
                 className="w-full py-2 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600 transition-colors"
-              >
-                {t('settings.guestSignIn')}
-              </button>
-              <button
-                onClick={() => {
-                  exitVisitorModeForAuth('signUp');
-                  onClose();
-                }}
-                className="w-full py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-100 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
               >
                 {t('settings.guestSignUp')}
               </button>

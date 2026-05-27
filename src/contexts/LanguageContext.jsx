@@ -222,7 +222,6 @@ const translations = {
     settings: {
       title: 'Settings',
       guestBadge: 'Guest',
-      guestSignIn: 'Sign in',
       guestSignUp: 'Create account',
       guestLogOff: 'Log off',
       guestLogOffConfirm:
@@ -637,7 +636,6 @@ const translations = {
     settings: {
       title: '设置',
       guestBadge: '访客',
-      guestSignIn: '登录',
       guestSignUp: '注册',
       guestLogOff: '退出',
       guestLogOffConfirm: '退出后将删除本地练习数据。要保留数据请改为注册账户。',

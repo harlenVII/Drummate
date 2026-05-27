@@ -64,20 +64,14 @@ export function AuthProvider({ children }) {
     setIsVisitor(true);
   }, []);
 
-  const exitVisitorModeForAuth = useCallback(async (intent) => {
-    // For sign-in: wipe visitor data now, before Firebase auth fires onAuthChange
-    // and triggers the sync init effect. Deferring the wipe to after signIn() resolves
-    // is too late — onAuthStateChanged can run between signIn() and the wipe.
-    if (intent === 'signIn') {
-      await wipeAllLocalData();
-    }
+  const exitVisitorModeForAuth = useCallback(async () => {
     try {
       globalThis.localStorage?.removeItem(VISITOR_KEY);
     } catch {
       // ignore
     }
     setIsVisitor(false);
-    setFromVisitorIntent(intent);
+    setFromVisitorIntent('signUp');
   }, []);
 
   const exitVisitorModeLogOff = useCallback(async () => {

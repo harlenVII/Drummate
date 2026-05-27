@@ -15,7 +15,6 @@ export default function AuthScreen() {
 
   useEffect(() => {
     if (fromVisitorIntent === 'signUp') setIsSignUp(true);
-    if (fromVisitorIntent === 'signIn') setIsSignUp(false);
   }, [fromVisitorIntent]);
 
   const handleConfirmGuest = async () => {
