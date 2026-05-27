@@ -41,7 +41,7 @@ export default function AuthScreen() {
         {/* Brand header */}
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-3">
-            <span className="text-4xl">🥁</span>
+            <img src="/icons/icon-192x192.png" alt="Drummate" className="w-10 h-10 rounded-xl" />
             <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">{t('appName')}</h1>
           </div>
           <button
