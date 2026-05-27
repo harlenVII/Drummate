@@ -447,6 +447,7 @@ function App() {
       setItems([]);
       setTotals({});
       setMetronomePractices([]);
+      setIsSyncing(false);
       setSettingsOpen(false);
       setActiveTab('practice');
       prevUserRef.current = null;
@@ -550,8 +551,14 @@ function App() {
       } finally {
         // loadData is the single source of truth for UI state. Run it
         // whether sync succeeded, failed, or short-circuited (offline).
-        await loadData();
-        if (!cancelled) setIsSyncing(false);
+        // Guard with !cancelled: if sign-out fired the cleanup, the !user
+        // useEffect already cleared state. Calling loadData() here after
+        // that clear (but before wipeAllLocalData finishes) would repopulate
+        // React state with the previous user's Dexie rows.
+        if (!cancelled) {
+          await loadData();
+          setIsSyncing(false);
+        }
       }
       // Subscribe AFTER local state is reconciled — its initial snapshot
       // will see local == cloud and won't trigger a flicker. Stored in a
