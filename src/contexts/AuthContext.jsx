@@ -119,8 +119,9 @@ export function AuthProvider({ children }) {
     setUser(newUser);
   }, [fromVisitorIntent]);
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
     firebaseBackend.signOut();
+    await wipeAllLocalData();
     setUser(null);
   }, []);
 

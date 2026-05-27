@@ -442,6 +442,13 @@ function App() {
 
   const subscriptionRef = useRef(null);
 
+  useEffect(() => {
+    if (!user) {
+      setItems([]);
+      setTotals({});
+    }
+  }, [user]);
+
   const prevIsVisitorRef = useRef(isVisitor);
   useEffect(() => {
     const wasVisitor = prevIsVisitorRef.current;
