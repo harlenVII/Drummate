@@ -118,7 +118,7 @@ function NoteEditModal({
               selected={toPickerDate(date)}
               onChange={(d) => setDate(fromPickerDate(d))}
               maxDate={new Date()}
-              dateFormat="MM/dd/yyyy"
+              dateFormat="yyyy/MM/dd"
               className="w-full px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md"
               wrapperClassName="w-full mb-3"
               popperProps={{ strategy: 'fixed' }}

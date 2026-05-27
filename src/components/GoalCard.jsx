@@ -65,7 +65,7 @@ function GoalCard({
   const canArchiveNow = variant === 'current' && !goal.archived && today >= goal.startDate;
   const headerLabel = goal.name?.trim()
     ? goal.name.trim()
-    : `${goal.startDate} – ${goal.endDate}`;
+    : `${goal.startDate.replace(/-/g, '/')} – ${goal.endDate.replace(/-/g, '/')}`;
 
   return (
     <div className={`bg-white dark:bg-slate-800 ${radius} shadow-sm ${padding} flex flex-col ${gap}`}>
@@ -92,7 +92,7 @@ function GoalCard({
             </span>
             {goal.name?.trim() && (
               <span className="text-xs text-gray-400 dark:text-slate-500">
-                {goal.startDate} – {goal.endDate}
+                {goal.startDate.replace(/-/g, '/')} – {goal.endDate.replace(/-/g, '/')}
               </span>
             )}
           </div>

@@ -83,7 +83,7 @@ function NotesByItem({ items, refreshKey, onEdit, compactMode = false }) {
                   onClick={() => onEdit(note)}
                   className="text-left rounded p-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-0.5">{note.date}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-0.5">{note.date.replace(/-/g, '/')}</p>
                   <p className="text-sm text-gray-800 dark:text-slate-100 whitespace-pre-wrap break-words">
                     {note.body}
                   </p>

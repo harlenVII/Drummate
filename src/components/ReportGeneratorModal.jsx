@@ -123,7 +123,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               selected={toPickerDate(startDate)}
               onChange={(d) => handleStartDateChange(fromPickerDate(d))}
               maxDate={new Date()}
-              dateFormat="MM/dd/yyyy"
+              dateFormat="yyyy/MM/dd"
               className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
               wrapperClassName="flex-1"
               popperProps={{ strategy: 'fixed' }}
@@ -139,7 +139,7 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
               onChange={(d) => handleEndDateChange(fromPickerDate(d))}
               minDate={toPickerDate(startDate)}
               maxDate={new Date()}
-              dateFormat="MM/dd/yyyy"
+              dateFormat="yyyy/MM/dd"
               className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
               wrapperClassName="flex-1"
               popperProps={{ strategy: 'fixed' }}

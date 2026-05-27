@@ -54,11 +54,8 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
 
   // Month label
   const monthLabel = (() => {
-    const date = new Date(monthStart + 'T12:00:00');
-    return date.toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-    });
+    const [y, m] = monthStart.split('-');
+    return `${y}/${m}`;
   })();
 
   // --- Heatmap ---

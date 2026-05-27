@@ -45,14 +45,7 @@ export function formatDateLabel(dateString, t) {
   const yesterday = shiftDate(today, -1);
   if (dateString === yesterday) return t ? t('yesterday') : 'Yesterday';
 
-  const [y, m, d] = dateString.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString(undefined, {
-    timeZone: 'UTC',
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return dateString.replace(/-/g, '/');
 }
 
 /**

@@ -161,7 +161,7 @@ function NotesPage({
                   <div key={note.id} className={`bg-white dark:bg-slate-800 shadow-sm flex items-center opacity-50 ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
                     <div className="flex-1 flex items-center justify-between gap-2">
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs text-gray-500 dark:text-slate-400">{note.date} · {itemName}</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">{note.date.replace(/-/g, '/')} · {itemName}</span>
                         <span className="text-sm text-gray-700 dark:text-slate-200 truncate">{preview}</span>
                         <span className="text-xs text-red-400">{t('daysLeft', { days: daysLeft })}</span>
                       </div>

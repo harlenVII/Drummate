@@ -88,7 +88,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
           <DatePicker
             selected={toPickerDate(startDate)}
             onChange={(d) => { setStartDate(fromPickerDate(d)); setError(''); }}
-            dateFormat="MM/dd/yyyy"
+            dateFormat="yyyy/MM/dd"
             className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
             wrapperClassName="w-full"
             popperProps={{ strategy: 'fixed' }}
@@ -100,7 +100,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
           <DatePicker
             selected={toPickerDate(endDate)}
             onChange={(d) => { setEndDate(fromPickerDate(d)); setError(''); }}
-            dateFormat="MM/dd/yyyy"
+            dateFormat="yyyy/MM/dd"
             className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
             wrapperClassName="w-full"
             popperProps={{ strategy: 'fixed' }}

@@ -98,12 +98,7 @@ function StatsReport({ items, timeUnit, compactMode = false }) {
 }
 
 function formatDisplayDate(dateString) {
-  const date = new Date(dateString + 'T12:00:00');
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return dateString.replace(/-/g, '/');
 }
 
 function computeStats(allLogs, items) {
@@ -239,10 +234,7 @@ function computeStats(allLogs, items) {
 }
 
 function formatMonthLabel(monthKey) {
-  // monthKey is "YYYY-MM"
-  const [year, month] = monthKey.split('-');
-  const date = new Date(`${year}-${month}-01T12:00:00`);
-  return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  return monthKey.replace('-', '/');
 }
 
 export default StatsReport;

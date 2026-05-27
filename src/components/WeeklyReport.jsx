@@ -86,13 +86,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   }
 
   // Format date range label
-  const formatShortDate = (dateString) => {
-    const date = new Date(dateString + 'T12:00:00');
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const formatShortDate = (dateString) => dateString.replace(/-/g, '/');
 
   // Bar chart dimensions
   const BAR_W = 24;
