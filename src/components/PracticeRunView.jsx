@@ -267,18 +267,22 @@ export default function PracticeRunView({
     };
   }, [engineRef]);
 
-  // Space bar: toggle play/pause while practice is active
+  // Space bar: toggle play/pause during practice; dismiss when complete
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.code === 'Space' && !complete) {
+      if (e.code === 'Space') {
         e.preventDefault();
-        handleTogglePlay();
+        if (complete) {
+          handleEnd();
+        } else {
+          handleTogglePlay();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTogglePlay, complete]);
+  }, [handleTogglePlay, handleEnd, complete]);
 
   const currentBpm = complete ? steps[steps.length - 1] : steps[stepIndex];
   // Time-based progress: weight each bar by 1/bpm so slower tempos contribute
