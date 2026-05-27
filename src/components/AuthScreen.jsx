@@ -1,16 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function AuthScreen() {
-  const { signIn, signUp, sessionExpired } = useAuth();
+  const { signIn, signUp, sessionExpired, enterVisitorMode, fromVisitorIntent } = useAuth();
   const { t, language, toggleLanguage } = useLanguage();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(fromVisitorIntent === 'signUp');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showGuestConfirm, setShowGuestConfirm] = useState(false);
+
+  useEffect(() => {
+    if (fromVisitorIntent === 'signUp') setIsSignUp(true);
+    if (fromVisitorIntent === 'signIn') setIsSignUp(false);
+  }, [fromVisitorIntent]);
+
+  const handleConfirmGuest = async () => {
+    setShowGuestConfirm(false);
+    await enterVisitorMode();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,6 +67,14 @@ export default function AuthScreen() {
           <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-6">
             {isSignUp ? t('auth.signUp') : t('auth.signIn')}
           </h2>
+
+          {fromVisitorIntent && (
+            <div className="mb-4 px-4 py-3 bg-blue-50 dark:bg-indigo-900/30 border border-blue-200 dark:border-indigo-700 rounded-xl text-blue-700 dark:text-indigo-200 text-sm">
+              {fromVisitorIntent === 'signUp'
+                ? t('auth.upgradeBannerSignUp')
+                : t('auth.upgradeBannerSignIn')}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {isSignUp && (
@@ -116,8 +135,50 @@ export default function AuthScreen() {
               {isSignUp ? t('auth.signIn') : t('auth.signUp')}
             </button>
           </p>
+
+          <div className="mt-6 flex items-center gap-3">
+            <span className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+            <span className="text-xs uppercase tracking-wider text-gray-400 dark:text-slate-500">
+              {t('auth.dividerOr')}
+            </span>
+            <span className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowGuestConfirm(true)}
+            className="mt-4 w-full py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-100 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+          >
+            {t('auth.continueAsGuest')}
+          </button>
         </div>
       </div>
+
+      {showGuestConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl">
+            <p className="text-sm text-gray-700 dark:text-slate-200 mb-6">
+              {t('auth.guestWipeWarning')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowGuestConfirm(false)}
+                className="flex-1 py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-100 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600"
+              >
+                {t('auth.guestCancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmGuest}
+                className="flex-1 py-3 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600"
+              >
+                {t('auth.guestConfirmButton')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
