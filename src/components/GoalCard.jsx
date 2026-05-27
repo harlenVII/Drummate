@@ -22,6 +22,7 @@ function GoalCard({
   onPin,
   onArchive,
   onDelete,
+  onUnarchive,
   compactMode = false,
 }) {
   const { t } = useLanguage();
@@ -99,6 +100,11 @@ function GoalCard({
           {canArchiveNow && onArchive && (
             <button onClick={() => onArchive(goal)} className="text-xs text-amber-600 hover:underline">
               {t('goal.archiveNow')}
+            </button>
+          )}
+          {variant === 'history' && onUnarchive && (
+            <button onClick={() => onUnarchive(goal)} className="text-xs text-green-600 hover:underline">
+              {t('goal.restore')}
             </button>
           )}
           {onDelete && (

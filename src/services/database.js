@@ -655,3 +655,10 @@ export const deleteGoalLocal = async (uid) => {
   await db.goals.delete(local.id);
   return local;
 };
+
+export const unarchiveGoal = async (uid) => {
+  const local = await db.goals.where('uid').equals(uid).first();
+  if (!local) return null;
+  await db.goals.update(local.id, { archived: false, archivedAt: null, syncedOnce: false });
+  return { ...local, archived: false, archivedAt: null, syncedOnce: false };
+};

@@ -10,6 +10,7 @@ import {
   setGoalPinned,
   deleteGoalLocal,
   getGoalByUid,
+  unarchiveGoal,
 } from '../services/database';
 import { isCurrentGoal, isHistoryGoal } from '../utils/goalStatus';
 import GoalCard from './GoalCard';
@@ -109,6 +110,11 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
     if (user) await firebaseBackend.deleteGoalRemote(goal.uid, user.id);
   };
 
+  const handleUnarchive = async (goal) => {
+    await unarchiveGoal(goal.uid);
+    await pushOne(goal.uid);
+  };
+
   const sectionGap = compactMode ? 'gap-2' : 'gap-3';
   const wrapperGap = compactMode ? 'gap-3' : 'gap-4';
 
@@ -160,6 +166,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
               variant="history"
               onEdit={handleEdit}
               onPin={handlePin}
+              onUnarchive={handleUnarchive}
               onDelete={handleDelete}
               compactMode={compactMode}
             />

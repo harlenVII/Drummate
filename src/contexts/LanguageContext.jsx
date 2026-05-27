@@ -368,6 +368,7 @@ const translations = {
       emptyHistory: 'No past goals yet.',
       statusMet: 'Met',
       statusMissed: 'Missed',
+      restore: 'Restore',
     },
     notes: {
       tabLabel: 'Notes',
@@ -763,6 +764,7 @@ const translations = {
       emptyHistory: '尚无历史目标。',
       statusMet: '已达成',
       statusMissed: '未达成',
+      restore: '恢复',
     },
     notes: {
       tabLabel: '笔记',
