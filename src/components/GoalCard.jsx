@@ -86,17 +86,6 @@ function GoalCard({
               </svg>
             </button>
           )}
-          {onPin && (
-            <button
-              type="button"
-              onClick={() => onPin(goal)}
-              title={goal.pinned ? t('goal.unpin') : t('goal.pin')}
-              aria-label={goal.pinned ? t('goal.unpin') : t('goal.pin')}
-              className={`text-base shrink-0 ${goal.pinned ? 'opacity-100' : 'opacity-40 hover:opacity-80'}`}
-            >
-              {goal.pinned ? '📌' : '📍'}
-            </button>
-          )}
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium text-gray-800 dark:text-slate-100 truncate">
               {headerLabel}
@@ -109,6 +98,15 @@ function GoalCard({
           </div>
         </div>
         <div className="flex gap-3 shrink-0">
+          {onPin && (
+            <button
+              type="button"
+              onClick={() => onPin(goal)}
+              className={`text-xs hover:underline ${goal.pinned ? 'text-blue-600 dark:text-indigo-400 font-medium' : 'text-gray-400 dark:text-slate-500'}`}
+            >
+              {goal.pinned ? t('goal.pinned') : t('goal.pinAction')}
+            </button>
+          )}
           {onEdit && (
             <button onClick={() => onEdit(goal)} className="text-xs text-blue-600 dark:text-indigo-600 hover:underline">
               {t('goal.editGoal')}

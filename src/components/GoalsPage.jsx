@@ -13,7 +13,7 @@ import {
   unarchiveGoal,
   updateGoalOrder,
 } from '../services/database';
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { isCurrentGoal, isHistoryGoal } from '../utils/goalStatus';
@@ -55,6 +55,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
   const [logs, setLogs] = useState([]);
   const [editingGoal, setEditingGoal] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [activeDragId, setActiveDragId] = useState(null);
 
   useEffect(() => {
     const sub = liveQuery(() => db.goals.toArray()).subscribe({
@@ -94,6 +95,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
   );
 
   const handleDragEnd = async ({ active, over }) => {
+    setActiveDragId(null);
     if (!over || active.id === over.id) return;
     const uids = currentGoals.map(g => g.uid);
     const oldIndex = uids.indexOf(active.id);
@@ -182,7 +184,13 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
             {t('goal.emptyCurrent')}
           </div>
         ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={({ active }) => setActiveDragId(active.id)}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveDragId(null)}
+          >
             <SortableContext items={currentGoals.map(g => g.uid)} strategy={verticalListSortingStrategy}>
               {currentGoals.map(g => (
                 <SortableGoalCard
@@ -198,6 +206,19 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
                 />
               ))}
             </SortableContext>
+            <DragOverlay>
+              {activeDragId ? (() => {
+                const g = currentGoals.find(g => g.uid === activeDragId);
+                return g ? (
+                  <GoalCard
+                    goal={g}
+                    logs={logs}
+                    variant="current"
+                    compactMode={compactMode}
+                  />
+                ) : null;
+              })() : null}
+            </DragOverlay>
           </DndContext>
         )}
       </section>

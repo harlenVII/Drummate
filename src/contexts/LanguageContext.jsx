@@ -369,6 +369,7 @@ const translations = {
       statusMet: 'Met',
       statusMissed: 'Missed',
       restore: 'Restore',
+      pinAction: 'Pin',
     },
     notes: {
       tabLabel: 'Notes',
@@ -765,6 +766,7 @@ const translations = {
       statusMet: '已达成',
       statusMissed: '未达成',
       restore: '恢复',
+      pinAction: '固定',
     },
     notes: {
       tabLabel: '笔记',
