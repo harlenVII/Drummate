@@ -703,11 +703,10 @@ function App() {
         alert(t('duplicateItem'));
         return;
       }
-      const localId = await addItem(name, category);
+      const newItem = await addItem(name, category);
       await loadData();
       if (user) {
-        const item = await db.practiceItems.get(localId);
-        firebaseBackend.pushItem(item, user.id).catch(console.error);
+        firebaseBackend.pushItem(newItem, user.id).catch(console.error);
       }
     },
     [items, loadData, user, t],

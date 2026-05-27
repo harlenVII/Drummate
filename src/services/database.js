@@ -202,10 +202,11 @@ export const addItem = async (name, category) => {
   const maxOrder = await db.practiceItems.orderBy('sortOrder').last();
   const sortOrder = maxOrder ? maxOrder.sortOrder + 1 : 0;
   const uid = crypto.randomUUID();
-  return await db.practiceItems.add({
+  const id = await db.practiceItems.add({
     uid, name, category, sortOrder, archived: false, trashed: false, trashedAt: null,
     syncedOnce: false,
   });
+  return { id, uid, name, category, sortOrder, archived: false, trashed: false, trashedAt: null, syncedOnce: false };
 };
 
 export const renameItem = async (id, newName) => {
@@ -281,6 +282,24 @@ export const purgeExpiredTrash = async (daysOld = 30) => {
   });
 
   return { expiredItems, expiredNotes };
+};
+
+export const wipeAllLocalData = async () => {
+  await db.transaction(
+    'rw',
+    db.practiceItems,
+    db.practiceLogs,
+    db.notes,
+    db.metronomePractices,
+    db.syncQueue,
+    async () => {
+      await db.practiceItems.clear();
+      await db.practiceLogs.clear();
+      await db.notes.clear();
+      await db.metronomePractices.clear();
+      await db.syncQueue.clear();
+    }
+  );
 };
 
 export const mergeItem = async (sourceId, targetId) => {
