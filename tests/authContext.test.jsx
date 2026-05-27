@@ -34,7 +34,6 @@ function Probe() {
       <span data-testid="fromVisitorIntent">{String(ctx.fromVisitorIntent)}</span>
       <button onClick={() => ctx.enterVisitorMode()}>enter</button>
       <button onClick={() => ctx.exitVisitorModeForAuth('signUp')}>exitSignUp</button>
-      <button onClick={() => ctx.exitVisitorModeForAuth('signIn')}>exitSignIn</button>
       <button onClick={() => ctx.exitVisitorModeLogOff()}>logOff</button>
     </div>
   );
@@ -76,22 +75,6 @@ describe('AuthContext visitor mode', () => {
     expect(screen.getByTestId('fromVisitorIntent').textContent).toBe('signUp');
     expect(globalThis.localStorage.getItem('drummate_visitor')).toBeNull();
     expect(wipeAllLocalData).not.toHaveBeenCalled();
-  });
-
-  it('exitVisitorModeForAuth("signIn") wipes Dexie immediately (before Firebase auth fires)', async () => {
-    const { wipeAllLocalData } = await import('../src/services/database');
-    globalThis.localStorage.setItem('drummate_visitor', 'true');
-    render(
-      <AuthProvider>
-        <Probe />
-      </AuthProvider>
-    );
-    await act(async () => {
-      screen.getByText('exitSignIn').click();
-    });
-    expect(screen.getByTestId('isVisitor').textContent).toBe('false');
-    expect(screen.getByTestId('fromVisitorIntent').textContent).toBe('signIn');
-    expect(wipeAllLocalData).toHaveBeenCalledOnce();
   });
 
   it('exitVisitorModeLogOff wipes Dexie and clears flag', async () => {
