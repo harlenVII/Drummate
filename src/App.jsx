@@ -67,7 +67,7 @@ import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, get
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
-  const { user, authReady, signOut, isVisitor, fromVisitorIntent } = useAuth();
+  const { user, authReady, signOut, isVisitor } = useAuth();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -457,8 +457,8 @@ function App() {
   useEffect(() => {
     const wasVisitor = prevIsVisitorRef.current;
     prevIsVisitorRef.current = isVisitor;
-    // Visitor logged off: isVisitor went true→false, no user, no pending auth intent
-    if (wasVisitor && !isVisitor && !user && !fromVisitorIntent) {
+    // Visitor logged off: isVisitor went true→false, no user
+    if (wasVisitor && !isVisitor && !user) {
       setActiveTab('practice');
       setItems([]);
       setTotals({});
@@ -471,7 +471,7 @@ function App() {
       setMultiMeterSoundType('click');
       setMultiMeterSlots([]);
     }
-  }, [isVisitor, user, fromVisitorIntent]);
+  }, [isVisitor, user]);
 
   const prevUserRef = useRef(null);
 

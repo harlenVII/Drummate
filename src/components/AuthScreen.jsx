@@ -1,21 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function AuthScreen() {
-  const { signIn, signUp, sessionExpired, enterVisitorMode, fromVisitorIntent } = useAuth();
+  const { signIn, signUp, sessionExpired, enterVisitorMode } = useAuth();
   const { t, language, toggleLanguage } = useLanguage();
-  const [isSignUp, setIsSignUp] = useState(fromVisitorIntent === 'signUp');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showGuestConfirm, setShowGuestConfirm] = useState(false);
-
-  useEffect(() => {
-    if (fromVisitorIntent === 'signUp') setIsSignUp(true);
-  }, [fromVisitorIntent]);
 
   const handleConfirmGuest = async () => {
     setShowGuestConfirm(false);
@@ -66,14 +62,6 @@ export default function AuthScreen() {
           <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-6">
             {isSignUp ? t('auth.signUp') : t('auth.signIn')}
           </h2>
-
-          {fromVisitorIntent && (
-            <div className="mb-4 px-4 py-3 bg-blue-50 dark:bg-indigo-900/30 border border-blue-200 dark:border-indigo-700 rounded-xl text-blue-700 dark:text-indigo-200 text-sm">
-              {fromVisitorIntent === 'signUp'
-                ? t('auth.upgradeBannerSignUp')
-                : t('auth.upgradeBannerSignIn')}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {isSignUp && (

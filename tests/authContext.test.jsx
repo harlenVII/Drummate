@@ -31,9 +31,7 @@ function Probe() {
     <div>
       <span data-testid="user">{ctx.user ? ctx.user.id : 'null'}</span>
       <span data-testid="isVisitor">{String(ctx.isVisitor)}</span>
-      <span data-testid="fromVisitorIntent">{String(ctx.fromVisitorIntent)}</span>
       <button onClick={() => ctx.enterVisitorMode()}>enter</button>
-      <button onClick={() => ctx.exitVisitorModeForAuth('signUp')}>exitSignUp</button>
       <button onClick={() => ctx.exitVisitorModeLogOff()}>logOff</button>
     </div>
   );
@@ -60,23 +58,6 @@ describe('AuthContext visitor mode', () => {
     expect(wipeAllLocalData).toHaveBeenCalledOnce();
   });
 
-  it('exitVisitorModeForAuth("signUp") sets intent without wiping Dexie', async () => {
-    const { wipeAllLocalData } = await import('../src/services/database');
-    globalThis.localStorage.setItem('drummate_visitor', 'true');
-    render(
-      <AuthProvider>
-        <Probe />
-      </AuthProvider>
-    );
-    await act(async () => {
-      screen.getByText('exitSignUp').click();
-    });
-    expect(screen.getByTestId('isVisitor').textContent).toBe('false');
-    expect(screen.getByTestId('fromVisitorIntent').textContent).toBe('signUp');
-    expect(globalThis.localStorage.getItem('drummate_visitor')).toBeNull();
-    expect(wipeAllLocalData).not.toHaveBeenCalled();
-  });
-
   it('exitVisitorModeLogOff wipes Dexie and clears flag', async () => {
     const { wipeAllLocalData } = await import('../src/services/database');
     globalThis.localStorage.setItem('drummate_visitor', 'true');
@@ -89,7 +70,6 @@ describe('AuthContext visitor mode', () => {
       screen.getByText('logOff').click();
     });
     expect(screen.getByTestId('isVisitor').textContent).toBe('false');
-    expect(screen.getByTestId('fromVisitorIntent').textContent).toBe('null');
     expect(wipeAllLocalData).toHaveBeenCalledOnce();
   });
 

@@ -16,7 +16,6 @@ function readVisitorFlag() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => firebaseBackend.getUser());
   const [isVisitor, setIsVisitor] = useState(() => readVisitorFlag());
-  const [fromVisitorIntent, setFromVisitorIntent] = useState(null);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
@@ -64,16 +63,6 @@ export function AuthProvider({ children }) {
     setIsVisitor(true);
   }, []);
 
-  const exitVisitorModeForAuth = useCallback(async () => {
-    try {
-      globalThis.localStorage?.removeItem(VISITOR_KEY);
-    } catch {
-      // ignore
-    }
-    setIsVisitor(false);
-    setFromVisitorIntent('signUp');
-  }, []);
-
   const exitVisitorModeLogOff = useCallback(async () => {
     await wipeAllLocalData();
     try {
@@ -90,7 +79,6 @@ export function AuthProvider({ children }) {
       // ignore
     }
     setIsVisitor(false);
-    setFromVisitorIntent(null);
   }, []);
 
   const signUpAsVisitor = useCallback(async (email, password, name) => {
@@ -112,22 +100,13 @@ export function AuthProvider({ children }) {
   const signIn = useCallback(async (email, password) => {
     setSessionExpired(false);
     const newUser = await firebaseBackend.signIn(email, password);
-    setFromVisitorIntent(null);
     setUser(newUser);
   }, []);
 
   const signUp = useCallback(async (email, password, name) => {
     const newUser = await firebaseBackend.signUp(email, password, name);
-    if (fromVisitorIntent === 'signUp') {
-      try {
-        await firebaseBackend.pushAllLocal(newUser.id);
-      } catch (err) {
-        console.error('visitor migration push failed', err);
-      }
-    }
-    setFromVisitorIntent(null);
     setUser(newUser);
-  }, [fromVisitorIntent]);
+  }, []);
 
   const signOut = useCallback(async () => {
     firebaseBackend.signOut();
@@ -142,12 +121,10 @@ export function AuthProvider({ children }) {
         authReady,
         sessionExpired,
         isVisitor,
-        fromVisitorIntent,
         signIn,
         signUp,
         signOut,
         enterVisitorMode,
-        exitVisitorModeForAuth,
         exitVisitorModeLogOff,
         signUpAsVisitor,
       }}
