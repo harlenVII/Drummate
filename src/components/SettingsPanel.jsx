@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { getTimezone, setTimezone } from '../services/timezoneService';
 import { getPriorHours, setPriorHours } from '../services/priorPracticeService';
 import firebaseBackend from '../services/backends/firebaseBackend';
@@ -139,6 +140,8 @@ function SettingsPanel({
   onToggleCompactMode,
 }) {
   const { t } = useLanguage();
+  const { isVisitor, exitVisitorModeForAuth, exitVisitorModeLogOff } = useAuth();
+  const [showLogOffConfirm, setShowLogOffConfirm] = useState(false);
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
 
   const currentTz = getTimezone();
@@ -256,17 +259,19 @@ function SettingsPanel({
         </div>
 
         {/* Profile */}
-        <div className="px-5 py-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-base font-semibold shrink-0">
-            {(user?.name || user?.email || '?')[0].toUpperCase()}
+        {!isVisitor && (
+          <div className="px-5 py-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-base font-semibold shrink-0">
+              {(user?.name || user?.email || '?')[0].toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              {user?.name && (
+                <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">{user.name}</p>
+              )}
+              <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user?.email}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            {user?.name && (
-              <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">{user.name}</p>
-            )}
-            <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user?.email}</p>
-          </div>
-        </div>
+        )}
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto pb-2">
@@ -461,14 +466,75 @@ function SettingsPanel({
 
         {/* Sign Out footer */}
         <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-800 text-center">
-          <button
-            onClick={signOut}
-            className="text-sm font-medium text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-          >
-            {t('auth.signOut')}
-          </button>
+          {isVisitor ? (
+            <div className="flex flex-col gap-3">
+              <div className="text-xs uppercase tracking-wider text-gray-400 dark:text-slate-500">
+                {t('settings.guestBadge')}
+              </div>
+              <button
+                onClick={() => {
+                  exitVisitorModeForAuth('signIn');
+                  onClose();
+                }}
+                className="w-full py-2 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600 transition-colors"
+              >
+                {t('settings.guestSignIn')}
+              </button>
+              <button
+                onClick={() => {
+                  exitVisitorModeForAuth('signUp');
+                  onClose();
+                }}
+                className="w-full py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-100 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                {t('settings.guestSignUp')}
+              </button>
+              <button
+                onClick={() => setShowLogOffConfirm(true)}
+                className="text-sm font-medium text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              >
+                {t('settings.guestLogOff')}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={signOut}
+              className="text-sm font-medium text-red-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            >
+              {t('auth.signOut')}
+            </button>
+          )}
         </div>
       </div>
+      {showLogOffConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl">
+            <p className="text-sm text-gray-700 dark:text-slate-200 mb-6">
+              {t('settings.guestLogOffConfirm')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogOffConfirm(false)}
+                className="flex-1 py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-100 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600"
+              >
+                {t('settings.guestLogOffCancel')}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowLogOffConfirm(false);
+                  await exitVisitorModeLogOff();
+                  onClose();
+                }}
+                className="flex-1 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600"
+              >
+                {t('settings.guestLogOffConfirmButton')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
