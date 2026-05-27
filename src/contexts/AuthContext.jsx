@@ -84,6 +84,7 @@ export function AuthProvider({ children }) {
     await wipeAllLocalData();
     try {
       globalThis.localStorage?.removeItem(VISITOR_KEY);
+      globalThis.localStorage?.removeItem('drummate_prior_hours');
     } catch {
       // ignore
     }
