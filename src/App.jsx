@@ -447,6 +447,7 @@ function App() {
       setItems([]);
       setTotals({});
       setMetronomePractices([]);
+      setSettingsOpen(false);
     }
   }, [user]);
 
