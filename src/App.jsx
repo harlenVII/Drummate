@@ -448,6 +448,7 @@ function App() {
       setTotals({});
       setMetronomePractices([]);
       setSettingsOpen(false);
+      setActiveTab('practice');
       prevUserRef.current = null;
     }
   }, [user]);
