@@ -243,7 +243,7 @@ function SettingsPanel({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-gray-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{t('settings')}</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{t('settings.title')}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"

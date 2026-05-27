@@ -167,6 +167,16 @@ const translations = {
       syncing: 'Syncing...',
       sessionExpired: 'Session expired. Please sign in again.',
       enterOfflineMode: 'Enter offline mode',
+      continueAsGuest: 'Continue as guest',
+      guestWipeWarning:
+        'Continue as guest? This will clear any existing local data on this device. Your practice data will not be backed up to the cloud.',
+      guestConfirmButton: 'Continue as guest',
+      guestCancel: 'Cancel',
+      upgradeBannerSignUp:
+        'Your local practice data will be saved to your new account when you sign up.',
+      upgradeBannerSignIn:
+        'Signing into an existing account will replace your local data with your account data.',
+      dividerOr: 'or',
     },
     offline: {
       modeLabel: 'Offline mode',
@@ -209,7 +219,17 @@ const translations = {
         reorderPractices: 'Reordered {count} metronome practices',
       },
     },
-    settings: 'Settings',
+    settings: {
+      title: 'Settings',
+      guestBadge: 'Guest',
+      guestSignIn: 'Sign in',
+      guestSignUp: 'Create account',
+      guestLogOff: 'Log off',
+      guestLogOffConfirm:
+        'Log off? Your local practice data will be deleted. To keep it, sign up instead.',
+      guestLogOffConfirmButton: 'Log off',
+      guestLogOffCancel: 'Cancel',
+    },
     language: 'Language',
     timezone: 'Timezone',
     theme: 'Theme',
@@ -564,6 +584,14 @@ const translations = {
       syncing: '同步中...',
       sessionExpired: '会话已过期，请重新登录。',
       enterOfflineMode: '进入离线模式',
+      continueAsGuest: '以访客身份继续',
+      guestWipeWarning:
+        '以访客身份继续？这将清除此设备上的所有本地数据。您的练习数据不会备份到云端。',
+      guestConfirmButton: '以访客身份继续',
+      guestCancel: '取消',
+      upgradeBannerSignUp: '注册后，您的本地练习数据将保存到新账户。',
+      upgradeBannerSignIn: '登录现有账户将用账户数据替换本地数据。',
+      dividerOr: '或',
     },
     offline: {
       modeLabel: '离线模式',
@@ -606,7 +634,16 @@ const translations = {
         reorderPractices: '重排了 {count} 个节拍器练习',
       },
     },
-    settings: '设置',
+    settings: {
+      title: '设置',
+      guestBadge: '访客',
+      guestSignIn: '登录',
+      guestSignUp: '注册',
+      guestLogOff: '退出',
+      guestLogOffConfirm: '退出后将删除本地练习数据。要保留数据请改为注册账户。',
+      guestLogOffConfirmButton: '退出',
+      guestLogOffCancel: '取消',
+    },
     language: '语言',
     timezone: '时区',
     theme: '主题',
