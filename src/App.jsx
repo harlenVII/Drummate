@@ -442,8 +442,15 @@ function App() {
 
   const subscriptionRef = useRef(null);
 
+  const prevUserRef = useRef(null);
+
   useEffect(() => {
     if (!user || !authReady) return;
+
+    if (!prevUserRef.current) {
+      setActiveTab('practice');
+    }
+    prevUserRef.current = user;
 
     let cancelled = false;
 
