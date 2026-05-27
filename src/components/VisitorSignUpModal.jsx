@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -12,6 +12,12 @@ export default function VisitorSignUpModal({ onClose }) {
   const [submitting, setSubmitting] = useState(false);
   const [successName, setSuccessName] = useState(null);
 
+  useEffect(() => {
+    if (!successName) return;
+    const id = setTimeout(onClose, 2000);
+    return () => clearTimeout(id);
+  }, [successName, onClose]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -19,9 +25,8 @@ export default function VisitorSignUpModal({ onClose }) {
     try {
       await signUpAsVisitor(email, password, name);
       setSuccessName(name || t('auth.name'));
-      setTimeout(onClose, 2000);
     } catch (err) {
-      setError(err.message || t('auth.syncing'));
+      setError(err.message || 'Sign up failed');
       setSubmitting(false);
     }
   };
