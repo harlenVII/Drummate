@@ -343,6 +343,7 @@ const firebaseBackend = {
       archivedAt: localGoal.archivedAt ?? null,
       pinned: !!localGoal.pinned,
       createdAt: localGoal.createdAt || 0,
+      sortOrder: localGoal.sortOrder ?? 0,
     });
     if (getOfflineMode()) {
       await queueSync('push_goal', enrichedGoalPayload());
@@ -359,6 +360,7 @@ const firebaseBackend = {
         archived_at: localGoal.archivedAt ?? null,
         pinned: !!localGoal.pinned,
         created_at: localGoal.createdAt || 0,
+        sort_order: localGoal.sortOrder ?? 0,
         updated_at: serverTimestamp(),
       }, { merge: true });
 
@@ -960,6 +962,7 @@ const firebaseBackend = {
         archivedAt: data.archived_at ?? null,
         pinned: !!data.pinned,
         createdAt: data.created_at || 0,
+        sortOrder: data.sort_order ?? 0,
         syncedOnce: true,
       };
 
@@ -969,7 +972,7 @@ const firebaseBackend = {
       } else {
         const updates = {};
         for (const k of ['name', 'startDate', 'endDate', 'targetHours',
-                         'archived', 'archivedAt', 'pinned', 'createdAt']) {
+                         'archived', 'archivedAt', 'pinned', 'createdAt', 'sortOrder']) {
           if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
         }
         if (!local.syncedOnce) updates.syncedOnce = true;
@@ -1213,6 +1216,7 @@ const firebaseBackend = {
               archived_at: p.archivedAt ?? null,
               pinned: !!p.pinned,
               created_at: p.createdAt || 0,
+              sort_order: p.sortOrder ?? 0,
               updated_at: serverTimestamp(),
             }, { merge: true });
             const localGoal = await db.goals.where('uid').equals(p.uid).first();
@@ -1226,6 +1230,7 @@ const firebaseBackend = {
                 archivedAt: p.archivedAt ?? null,
                 pinned: !!p.pinned,
                 createdAt: p.createdAt || localGoal.createdAt || 0,
+                sortOrder: p.sortOrder ?? 0,
                 syncedOnce: true,
               });
             }
@@ -1501,6 +1506,7 @@ const firebaseBackend = {
           archivedAt: data.archived_at ?? null,
           pinned: !!data.pinned,
           createdAt: data.created_at || 0,
+          sortOrder: data.sort_order ?? 0,
           syncedOnce: true,
         });
 
@@ -1516,7 +1522,7 @@ const firebaseBackend = {
             const fields = buildFields();
             const updates = {};
             for (const k of ['name', 'startDate', 'endDate', 'targetHours',
-                             'archived', 'archivedAt', 'pinned', 'createdAt']) {
+                             'archived', 'archivedAt', 'pinned', 'createdAt', 'sortOrder']) {
               if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
             }
             if (!local.syncedOnce) updates.syncedOnce = true;

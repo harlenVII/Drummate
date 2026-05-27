@@ -173,6 +173,22 @@ db.version(15).stores({
   goals:              '++id, &uid, startDate, endDate, archived, pinned',
 });
 
+// v16 adds sortOrder to goals for manual drag-to-reorder ordering.
+db.version(16).stores({
+  practiceItems:      '++id, &uid, name, sortOrder, archived, trashed, category',
+  practiceLogs:       '++id, itemId, itemUid, date, duration, uid, loggedAt',
+  notes:              '++id, &uid, itemUid, date, trashed',
+  metronomePractices: '++id, &uid, sortOrder',
+  syncQueue:          '++id, action, collection, localId',
+  goals:              '++id, &uid, startDate, endDate, archived, pinned, sortOrder',
+}).upgrade(async tx => {
+  const goals = await tx.table('goals').toArray();
+  goals.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  for (let i = 0; i < goals.length; i++) {
+    await tx.table('goals').update(goals[i].id, { sortOrder: i });
+  }
+});
+
 // --- Practice Items ---
 
 export const getItems = async () => {
@@ -574,6 +590,7 @@ export const getPinnedGoal = async () => {
 export const addGoal = async ({ name = '', startDate, endDate, targetHours }) => {
   const uid = crypto.randomUUID();
   const now = Date.now();
+  const count = await db.goals.count();
   await db.goals.add({
     uid,
     name,
@@ -585,14 +602,19 @@ export const addGoal = async ({ name = '', startDate, endDate, targetHours }) =>
     pinned: false,
     createdAt: now,
     syncedOnce: false,
+    sortOrder: count,
   });
   return uid;
 };
 
 export const insertGoalRecord = async (record) => {
   // Used by legacy-migration to insert an already-built record verbatim.
-  await db.goals.add(record);
-  return record.uid;
+  const r = { ...record };
+  if (r.sortOrder === undefined || r.sortOrder === null) {
+    r.sortOrder = await db.goals.count();
+  }
+  await db.goals.add(r);
+  return r.uid;
 };
 
 export const updateGoal = async (uid, patch) => {
@@ -661,4 +683,15 @@ export const unarchiveGoal = async (uid) => {
   if (!local) return null;
   await db.goals.update(local.id, { archived: false, archivedAt: null, syncedOnce: false });
   return { ...local, archived: false, archivedAt: null, syncedOnce: false };
+};
+
+export const updateGoalOrder = async (orderedUids) => {
+  await db.transaction('rw', db.goals, async () => {
+    for (let i = 0; i < orderedUids.length; i++) {
+      const local = await db.goals.where('uid').equals(orderedUids[i]).first();
+      if (local) {
+        await db.goals.update(local.id, { sortOrder: i, syncedOnce: false });
+      }
+    }
+  });
 };
