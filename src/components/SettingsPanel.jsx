@@ -167,6 +167,10 @@ function SettingsPanel({
   const [priorHoursInput, setPriorHoursInput] = useState(() => String(getPriorHours()));
 
   useEffect(() => {
+    if (isOpen) setPriorHoursInput(String(getPriorHours()));
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!isOpen) return;
     const sub = liveQuery(() => db.syncQueue.count()).subscribe({
       next: (count) => setPendingCount(count),
