@@ -64,6 +64,7 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 | `drummate_timezone` | IANA tz string | `'America/Los_Angeles'` | home timezone |
 | `drummate_pending_log` | JSON log | absent | crash-recovery log |
 | `drummate_compact_mode` | `'true'` \| `'false'` | `'false'` | compact mode (tightens padding, gaps, and radii across all major screens) |
+| `drummate_visitor` | `'true'` \| absent | absent | visitor (anonymous) mode flag |
 | `drummate_prior_hours` | integer string | `'0'` | prior practice hours offset added to lifetime total |
 
 **AI / Voice features** (on-device, no server):
@@ -77,6 +78,8 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 - `EncouragementButton.jsx` / `EncouragementModal.jsx` — UI entry point that triggers the LLM encouragement flow; modal shows generated text with a copy action.
 
 **Backend abstraction**: `src/services/backends/firebaseBackend.js` is the sole concrete backend. New sync operations must be added here. The file is statically imported (always bundled — no dynamic loading).
+
+**Visitor mode** ([src/contexts/AuthContext.jsx](src/contexts/AuthContext.jsx)): users can skip auth via "Continue as guest" on AuthScreen. `isVisitor` flag in `AuthContext` persists to `localStorage['drummate_visitor']`. App gate is `!user && !isVisitor`. Every `firebaseBackend.push*` call in App.jsx is already guarded by `if (user)`, so cloud writes naturally short-circuit — no Firestore push site needed changes. `fromVisitorIntent` (React state, not persisted) tells `signUp` to migrate local Dexie via `pushAllLocal*` (which filters `syncedOnce: false` — exactly visitor rows), or tells `signIn` to wipe local before the normal cloud pull. Three Settings actions for visitors: Sign in / Create account (preserve Dexie, set intent) / Log off (wipe Dexie, no intent). `wipeAllLocalData()` in [src/services/database.js](src/services/database.js) atomically clears all five Dexie tables; localStorage UI prefs survive.
 
 **Goals system**: Multiple goals live in Dexie `goals` table. Pure status helpers are in `src/utils/goalStatus.js` (no side effects — safe to call anywhere). `GoalsPage` subscribes to `db.goals` and `db.practiceLogs` via `liveQuery`. `GoalBanner` on the Practice tab reads the single `pinned: true` goal via `liveQuery`. `GoalCard` is fully prop-driven (no localStorage reads). `user` and `firebaseBackend` are passed as props from `App.jsx` — there is no `useBackend` or `useAuth` hook to consume them.
 
