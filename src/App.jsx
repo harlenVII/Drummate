@@ -446,6 +446,7 @@ function App() {
     if (!user) {
       setItems([]);
       setTotals({});
+      setMetronomePractices([]);
     }
   }, [user]);
 
