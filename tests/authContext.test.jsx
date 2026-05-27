@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { render, act, screen } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
+import { useState } from 'react';
 
 vi.mock('../src/services/backends/firebaseBackend', () => ({
   default: {
@@ -117,5 +118,69 @@ describe('AuthContext visitor mode', () => {
       </AuthProvider>
     );
     expect(screen.getByTestId('isVisitor').textContent).toBe('true');
+  });
+});
+
+describe('signUpAsVisitor — success', () => {
+  beforeEach(() => {
+    globalThis.localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('transitions visitor→authenticated, migrates data, clears VISITOR_KEY', async () => {
+    const firebaseBackend = (await import('../src/services/backends/firebaseBackend')).default;
+    firebaseBackend.signUp.mockResolvedValue({ id: 'user-1', email: 'a@b.com', name: 'Alice' });
+    globalThis.localStorage.setItem('drummate_visitor', 'true');
+
+    function T() {
+      const ctx = useAuth();
+      return (
+        <div>
+          <span data-testid="isVisitor">{String(ctx.isVisitor)}</span>
+          <span data-testid="user">{ctx.user ? ctx.user.id : 'null'}</span>
+          <button onClick={() => ctx.signUpAsVisitor('a@b.com', 'pass', 'Alice')}>go</button>
+        </div>
+      );
+    }
+    render(<AuthProvider><T /></AuthProvider>);
+
+    await act(async () => { screen.getByText('go').click(); });
+
+    expect(screen.getByTestId('isVisitor').textContent).toBe('false');
+    expect(screen.getByTestId('user').textContent).toBe('user-1');
+    expect(globalThis.localStorage.getItem('drummate_visitor')).toBeNull();
+    expect(firebaseBackend.pushAllLocal).toHaveBeenCalledWith('user-1');
+  });
+});
+
+describe('signUpAsVisitor — failure', () => {
+  beforeEach(() => {
+    globalThis.localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  it('keeps visitor state intact when Firebase signUp throws', async () => {
+    const firebaseBackend = (await import('../src/services/backends/firebaseBackend')).default;
+    firebaseBackend.signUp.mockRejectedValue(new Error('Email already in use'));
+    globalThis.localStorage.setItem('drummate_visitor', 'true');
+
+    function T() {
+      const ctx = useAuth();
+      const [err, setErr] = useState('');
+      return (
+        <div>
+          <span data-testid="isVisitor">{String(ctx.isVisitor)}</span>
+          <button onClick={() => ctx.signUpAsVisitor('a@b.com', 'pass', 'Alice').catch(e => setErr(e.message))}>go</button>
+          <span data-testid="error">{err}</span>
+        </div>
+      );
+    }
+    render(<AuthProvider><T /></AuthProvider>);
+
+    await act(async () => { screen.getByText('go').click(); });
+
+    expect(screen.getByTestId('isVisitor').textContent).toBe('true');
+    expect(globalThis.localStorage.getItem('drummate_visitor')).toBe('true');
+    expect(screen.getByTestId('error').textContent).toBe('Email already in use');
   });
 });

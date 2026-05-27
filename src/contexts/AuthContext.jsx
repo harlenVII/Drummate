@@ -93,6 +93,22 @@ export function AuthProvider({ children }) {
     setFromVisitorIntent(null);
   }, []);
 
+  const signUpAsVisitor = useCallback(async (email, password, name) => {
+    const newUser = await firebaseBackend.signUp(email, password, name);
+    try {
+      await firebaseBackend.pushAllLocal(newUser.id);
+    } catch (err) {
+      console.error('visitor migration push failed', err);
+    }
+    try {
+      globalThis.localStorage?.removeItem(VISITOR_KEY);
+    } catch {
+      // ignore
+    }
+    setIsVisitor(false);
+    setUser(newUser);
+  }, []);
+
   const signIn = useCallback(async (email, password) => {
     setSessionExpired(false);
     const newUser = await firebaseBackend.signIn(email, password);
@@ -133,6 +149,7 @@ export function AuthProvider({ children }) {
         enterVisitorMode,
         exitVisitorModeForAuth,
         exitVisitorModeLogOff,
+        signUpAsVisitor,
       }}
     >
       {children}
