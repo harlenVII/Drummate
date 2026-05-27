@@ -172,10 +172,6 @@ const translations = {
         'Continue as guest? This will clear any existing local data on this device. Your practice data will not be backed up to the cloud.',
       guestConfirmButton: 'Continue as guest',
       guestCancel: 'Cancel',
-      upgradeBannerSignUp:
-        'Your local practice data will be saved to your new account when you sign up.',
-      upgradeBannerSignIn:
-        'Signing into an existing account will replace your local data with your account data.',
       dividerOr: 'or',
     },
     offline: {
@@ -228,6 +224,9 @@ const translations = {
         'Log off? Your local practice data will be deleted. To keep it, sign up instead.',
       guestLogOffConfirmButton: 'Log off',
       guestLogOffCancel: 'Cancel',
+      visitorSignUpNotice:
+        'Your local practice data will be saved to your new account when you sign up.',
+      visitorSignUpSuccess: 'Welcome, {name}! Your data is now synced across devices.',
     },
     language: 'Language',
     timezone: 'Timezone',
@@ -588,8 +587,6 @@ const translations = {
         '以访客身份继续？这将清除此设备上的所有本地数据。您的练习数据不会备份到云端。',
       guestConfirmButton: '以访客身份继续',
       guestCancel: '取消',
-      upgradeBannerSignUp: '注册后，您的本地练习数据将保存到新账户。',
-      upgradeBannerSignIn: '登录现有账户将用账户数据替换本地数据。',
       dividerOr: '或',
     },
     offline: {
@@ -641,6 +638,8 @@ const translations = {
       guestLogOffConfirm: '退出后将删除本地练习数据。要保留数据请改为注册账户。',
       guestLogOffConfirmButton: '退出',
       guestLogOffCancel: '取消',
+      visitorSignUpNotice: '注册后，您的本地练习数据将保存到新账户。',
+      visitorSignUpSuccess: '欢迎，{name}！您的数据已同步到所有设备。',
     },
     language: '语言',
     timezone: '时区',
