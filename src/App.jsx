@@ -459,6 +459,7 @@ function App() {
     prevIsVisitorRef.current = isVisitor;
     // Visitor logged off: isVisitor went true→false, no user, no pending auth intent
     if (wasVisitor && !isVisitor && !user && !fromVisitorIntent) {
+      setActiveTab('practice');
       setSequencerBpm(120);
       setSequencerSoundType('click');
       setSequencerSlots([]);
