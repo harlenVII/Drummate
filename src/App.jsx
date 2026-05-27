@@ -67,7 +67,7 @@ import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, get
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
-  const { user, authReady, signOut } = useAuth();
+  const { user, authReady, signOut, isVisitor } = useAuth();
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
@@ -1594,7 +1594,7 @@ function App() {
     setSyncTrigger((n) => n + 1);
   }, [setOfflineMode]);
 
-  if (!user) {
+  if (!user && !isVisitor) {
     return <AuthScreen />;
   }
 
