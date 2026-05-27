@@ -28,7 +28,7 @@
 
 ---
 
-## Task 1: Add `wipeAllLocalData` to database.js
+## Task 1: Add `wipeAllLocalData` to database.js `[model: haiku]`
 
 **Files:**
 - Modify: [src/services/database.js](../../../src/services/database.js)
@@ -121,7 +121,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 2: Make `setPriorHours` tolerate null userId
+## Task 2: Make `setPriorHours` tolerate null userId `[model: haiku]`
 
 **Files:**
 - Modify: [src/services/priorPracticeService.js](../../../src/services/priorPracticeService.js)
@@ -204,7 +204,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 3: Add visitor-mode i18n keys
+## Task 3: Add visitor-mode i18n keys `[model: haiku]`
 
 **Files:**
 - Modify: [src/contexts/LanguageContext.jsx](../../../src/contexts/LanguageContext.jsx)
@@ -284,7 +284,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 4: Extend `AuthContext` with visitor state + intent
+## Task 4: Extend `AuthContext` with visitor state + intent `[model: sonnet]`
 
 **Files:**
 - Modify: [src/contexts/AuthContext.jsx](../../../src/contexts/AuthContext.jsx)
@@ -585,7 +585,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 5: Update App.jsx gate + sync effect for visitors
+## Task 5: Update App.jsx gate + sync effect for visitors `[model: haiku]`
 
 **Files:**
 - Modify: [src/App.jsx](../../../src/App.jsx)
@@ -636,7 +636,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 6: Add "Continue as guest" to AuthScreen
+## Task 6: Add "Continue as guest" to AuthScreen `[model: sonnet]`
 
 **Files:**
 - Modify: [src/components/AuthScreen.jsx](../../../src/components/AuthScreen.jsx)
@@ -771,7 +771,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 7: Visitor UI in SettingsPanel
+## Task 7: Visitor UI in SettingsPanel `[model: sonnet]`
 
 **Files:**
 - Modify: [src/components/SettingsPanel.jsx](../../../src/components/SettingsPanel.jsx)
@@ -902,7 +902,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 8: End-to-end manual verification
+## Task 8: End-to-end manual verification `[model: sonnet]`
 
 **Files:** None modified. Pure verification.
 
@@ -948,7 +948,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 
 ---
 
-## Task 9: Update CLAUDE.md
+## Task 9: Update CLAUDE.md `[model: haiku]`
 
 **Files:**
 - Modify: [CLAUDE.md](../../../CLAUDE.md)
