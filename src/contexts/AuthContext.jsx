@@ -111,6 +111,18 @@ export function AuthProvider({ children }) {
   const signOut = useCallback(async () => {
     firebaseBackend.signOut();
     await wipeAllLocalData();
+    try {
+      globalThis.localStorage?.removeItem('drummate_prior_hours');
+      globalThis.localStorage?.removeItem('drummate_sequencer_bpm');
+      globalThis.localStorage?.removeItem('drummate_sequencer_sound_type');
+      globalThis.localStorage?.removeItem('drummate_sequencer_slots');
+      globalThis.localStorage?.removeItem('drummate_sequencer_next_id');
+      globalThis.localStorage?.removeItem('drummate_multimeter_bpm');
+      globalThis.localStorage?.removeItem('drummate_multimeter_sound_type');
+      globalThis.localStorage?.removeItem('drummate_multimeter_slots');
+    } catch {
+      // ignore
+    }
     setUser(null);
   }, []);
 
