@@ -9,20 +9,23 @@ describe('wipeAllLocalData', () => {
     await db.notes.clear();
     await db.metronomePractices.clear();
     await db.syncQueue.clear();
+    await db.goals.clear();
   });
 
-  it('clears all data tables', async () => {
+  it('clears all data tables including goals', async () => {
     const item = await addItem('Test Item', 'fundamentals');
     await addLog(item.id, 600);
     await db.notes.add({ uid: 'n1', itemUid: item.uid, date: '2026-05-27', body: 'note' });
     await db.metronomePractices.add({ uid: 'mp1', sortOrder: 0, name: 'practice' });
     await db.syncQueue.add({ action: 'push_item', collection: 'items', payload: {}, localId: 1 });
+    await db.goals.add({ uid: 'g1', startDate: '2026-05-01', endDate: '2026-05-31', archived: false, pinned: false, sortOrder: 0 });
 
     expect(await db.practiceItems.count()).toBe(1);
     expect(await db.practiceLogs.count()).toBe(1);
     expect(await db.notes.count()).toBe(1);
     expect(await db.metronomePractices.count()).toBe(1);
     expect(await db.syncQueue.count()).toBe(1);
+    expect(await db.goals.count()).toBe(1);
 
     await wipeAllLocalData();
 
@@ -31,6 +34,7 @@ describe('wipeAllLocalData', () => {
     expect(await db.notes.count()).toBe(0);
     expect(await db.metronomePractices.count()).toBe(0);
     expect(await db.syncQueue.count()).toBe(0);
+    expect(await db.goals.count()).toBe(0);
   });
 });
 

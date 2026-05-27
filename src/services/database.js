@@ -292,12 +292,14 @@ export const wipeAllLocalData = async () => {
     db.notes,
     db.metronomePractices,
     db.syncQueue,
+    db.goals,
     async () => {
       await db.practiceItems.clear();
       await db.practiceLogs.clear();
       await db.notes.clear();
       await db.metronomePractices.clear();
       await db.syncQueue.clear();
+      await db.goals.clear();
     }
   );
 };

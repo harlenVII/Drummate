@@ -77,6 +77,22 @@ describe('AuthContext visitor mode', () => {
     expect(wipeAllLocalData).not.toHaveBeenCalled();
   });
 
+  it('exitVisitorModeForAuth("signIn") wipes Dexie immediately (before Firebase auth fires)', async () => {
+    const { wipeAllLocalData } = await import('../src/services/database');
+    globalThis.localStorage.setItem('drummate_visitor', 'true');
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>
+    );
+    await act(async () => {
+      screen.getByText('exitSignIn').click();
+    });
+    expect(screen.getByTestId('isVisitor').textContent).toBe('false');
+    expect(screen.getByTestId('fromVisitorIntent').textContent).toBe('signIn');
+    expect(wipeAllLocalData).toHaveBeenCalledOnce();
+  });
+
   it('exitVisitorModeLogOff wipes Dexie and clears flag', async () => {
     const { wipeAllLocalData } = await import('../src/services/database');
     globalThis.localStorage.setItem('drummate_visitor', 'true');

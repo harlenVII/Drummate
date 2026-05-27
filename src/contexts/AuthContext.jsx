@@ -64,7 +64,13 @@ export function AuthProvider({ children }) {
     setIsVisitor(true);
   }, []);
 
-  const exitVisitorModeForAuth = useCallback((intent) => {
+  const exitVisitorModeForAuth = useCallback(async (intent) => {
+    // For sign-in: wipe visitor data now, before Firebase auth fires onAuthChange
+    // and triggers the sync init effect. Deferring the wipe to after signIn() resolves
+    // is too late — onAuthStateChanged can run between signIn() and the wipe.
+    if (intent === 'signIn') {
+      await wipeAllLocalData();
+    }
     try {
       globalThis.localStorage?.removeItem(VISITOR_KEY);
     } catch {
@@ -88,21 +94,15 @@ export function AuthProvider({ children }) {
   const signIn = useCallback(async (email, password) => {
     setSessionExpired(false);
     const newUser = await firebaseBackend.signIn(email, password);
-    if (fromVisitorIntent === 'signIn') {
-      await wipeAllLocalData();
-    }
     setFromVisitorIntent(null);
     setUser(newUser);
-  }, [fromVisitorIntent]);
+  }, []);
 
   const signUp = useCallback(async (email, password, name) => {
     const newUser = await firebaseBackend.signUp(email, password, name);
     if (fromVisitorIntent === 'signUp') {
       try {
         await firebaseBackend.pushAllLocal(newUser.id);
-        await firebaseBackend.pushAllLocalLogs?.(newUser.id);
-        await firebaseBackend.pushAllLocalNotes?.(newUser.id);
-        await firebaseBackend.pushAllLocalPractices?.(newUser.id);
       } catch (err) {
         console.error('visitor migration push failed', err);
       }
