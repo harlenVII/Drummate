@@ -33,3 +33,56 @@ describe('wipeAllLocalData', () => {
     expect(await db.syncQueue.count()).toBe(0);
   });
 });
+
+import { vi } from 'vitest';
+import { setPriorHours, getPriorHours } from '../src/services/priorPracticeService';
+
+describe('setPriorHours with null userId', () => {
+  beforeEach(() => {
+    // Mock localStorage for this test suite
+    const store = {};
+    global.localStorage = {
+      getItem: (key) => store[key] || null,
+      setItem: (key, value) => {
+        store[key] = String(value);
+      },
+      removeItem: (key) => {
+        delete store[key];
+      },
+      clear: () => {
+        Object.keys(store).forEach((key) => {
+          delete store[key];
+        });
+      },
+    };
+    global.localStorage.clear();
+  });
+
+  it('writes localStorage without calling backend when userId is null', async () => {
+    let backendCalled = false;
+    const fakeBackend = {
+      setUserSetting: async () => {
+        backendCalled = true;
+      },
+    };
+
+    await setPriorHours(5, fakeBackend, null);
+
+    expect(getPriorHours()).toBe(5);
+    expect(backendCalled).toBe(false);
+  });
+
+  it('still calls backend when userId is provided', async () => {
+    let receivedUserId = null;
+    const fakeBackend = {
+      setUserSetting: async (uid) => {
+        receivedUserId = uid;
+      },
+    };
+
+    await setPriorHours(3, fakeBackend, 'user-123');
+
+    expect(getPriorHours()).toBe(3);
+    expect(receivedUserId).toBe('user-123');
+  });
+});

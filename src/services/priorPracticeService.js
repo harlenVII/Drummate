@@ -7,7 +7,9 @@ export function getPriorHours() {
 export async function setPriorHours(hours, backend, userId) {
   const value = Math.floor(Math.max(0, hours));
   globalThis.localStorage.setItem(KEY, String(value));
-  await backend.setUserSetting(userId, 'priorPracticeHours', value);
+  if (backend && userId) {
+    await backend.setUserSetting(userId, 'priorPracticeHours', value);
+  }
 }
 
 export async function initPriorHours(backend, userId) {
