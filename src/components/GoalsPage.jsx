@@ -165,7 +165,6 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
   };
 
   const handleArchive = async (goal) => {
-    if (!window.confirm(t('goal.archiveConfirm'))) return;
     await archiveGoal(goal.uid);
     await pushOne(goal.uid);
   };
