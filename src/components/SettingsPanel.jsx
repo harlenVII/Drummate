@@ -6,6 +6,7 @@ import { getTimezone, setTimezone } from '../services/timezoneService';
 import { getPriorHours, setPriorHours } from '../services/priorPracticeService';
 import firebaseBackend from '../services/backends/firebaseBackend';
 import { db } from '../services/database';
+import VisitorSignUpModal from './VisitorSignUpModal';
 
 // Curated 24-city list: one common city per UTC offset (plus Kolkata at +5:30
 // for India's population). Offsets shown are standard time; actual offset
@@ -142,6 +143,7 @@ function SettingsPanel({
   const { t } = useLanguage();
   const { isVisitor, exitVisitorModeLogOff } = useAuth();
   const [showLogOffConfirm, setShowLogOffConfirm] = useState(false);
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
 
   const currentTz = getTimezone();
@@ -472,7 +474,7 @@ function SettingsPanel({
                 {t('settings.guestBadge')}
               </div>
               <button
-                onClick={() => {}}
+                onClick={() => setShowSignUpModal(true)}
                 className="w-full py-2 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600 transition-colors"
               >
                 {t('settings.guestSignUp')}
@@ -494,6 +496,14 @@ function SettingsPanel({
           )}
         </div>
       </div>
+      {showSignUpModal && (
+        <VisitorSignUpModal
+          onClose={() => {
+            setShowSignUpModal(false);
+            onClose();
+          }}
+        />
+      )}
       {showLogOffConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-xl">
