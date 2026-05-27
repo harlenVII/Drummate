@@ -26,12 +26,11 @@ function GoalBanner() {
 
   useEffect(() => {
     if (!goal) { setLogs([]); return; }
-    let cancelled = false;
-    (async () => {
-      const rangeLogs = await getLogsByDateRange(goal.startDate, goal.endDate);
-      if (!cancelled) setLogs(rangeLogs);
-    })();
-    return () => { cancelled = true; };
+    const sub = liveQuery(() => getLogsByDateRange(goal.startDate, goal.endDate)).subscribe({
+      next: (rows) => setLogs(rows),
+      error: (err) => console.error('GoalBanner logs liveQuery error:', err),
+    });
+    return () => sub.unsubscribe();
   }, [goal]);
 
   if (!goal) return null;
