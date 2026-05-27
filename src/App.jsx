@@ -447,6 +447,17 @@ function App() {
       setItems([]);
       setTotals({});
       setMetronomePractices([]);
+      setReportLogs([]);
+      setWeekLogs([]);
+      setMonthLogs([]);
+      setYearLogs([]);
+      setSequencerBpm(120);
+      setSequencerSoundType('click');
+      setSequencerSlots([]);
+      sequencerNextIdRef.current = 1;
+      setMultiMeterBpm(120);
+      setMultiMeterSoundType('click');
+      setMultiMeterSlots([]);
       setIsSyncing(false);
       setSettingsOpen(false);
       setActiveTab('practice');
