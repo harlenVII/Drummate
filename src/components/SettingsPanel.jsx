@@ -140,7 +140,7 @@ function SettingsPanel({
   onToggleCompactMode,
 }) {
   const { t } = useLanguage();
-  const { isVisitor, exitVisitorModeForAuth, exitVisitorModeLogOff } = useAuth();
+  const { isVisitor, exitVisitorModeLogOff } = useAuth();
   const [showLogOffConfirm, setShowLogOffConfirm] = useState(false);
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
 
@@ -472,10 +472,7 @@ function SettingsPanel({
                 {t('settings.guestBadge')}
               </div>
               <button
-                onClick={() => {
-                  exitVisitorModeForAuth();
-                  onClose();
-                }}
+                onClick={() => {}}
                 className="w-full py-2 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600 transition-colors"
               >
                 {t('settings.guestSignUp')}
