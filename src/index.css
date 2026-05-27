@@ -35,6 +35,11 @@ input, textarea {
   user-select: text;
 }
 
+/* Tone down number-input spinners in dark mode */
+.dark input[type="number"] {
+  color-scheme: dark;
+}
+
 /* Ensure popper floats above modal (z-50 = 50) */
 .react-datepicker-popper {
   z-index: 60;
