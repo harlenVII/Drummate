@@ -11,10 +11,43 @@ import {
   deleteGoalLocal,
   getGoalByUid,
   unarchiveGoal,
+  updateGoalOrder,
 } from '../services/database';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { isCurrentGoal, isHistoryGoal } from '../utils/goalStatus';
 import GoalCard from './GoalCard';
 import GoalSetupModal from './GoalSetupModal';
+
+function SortableGoalCard({ goal, logs, ...cardProps }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: goal.uid });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <GoalCard
+        goal={goal}
+        logs={logs}
+        dragHandleListeners={listeners}
+        dragHandleAttributes={attributes}
+        {...cardProps}
+      />
+    </div>
+  );
+}
 
 function GoalsPage({ user, firebaseBackend, compactMode = false }) {
   const { t } = useLanguage();
@@ -44,11 +77,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
   const { currentGoals, historyGoals } = useMemo(() => {
     const current = goals.filter(g => isCurrentGoal(g, today));
     const history = goals.filter(g => isHistoryGoal(g, today));
-    current.sort((a, b) => {
-      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-      if (a.endDate !== b.endDate) return a.endDate < b.endDate ? -1 : 1;
-      return (a.createdAt || 0) - (b.createdAt || 0);
-    });
+    current.sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
     history.sort((a, b) => (a.endDate < b.endDate ? 1 : a.endDate > b.endDate ? -1 : 0));
     return { currentGoals: current, historyGoals: history };
   }, [goals, today]);
@@ -57,6 +86,24 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
     if (!user) return;
     const fresh = await getGoalByUid(goalUid);
     if (fresh) await firebaseBackend.pushGoal(fresh, user.id);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = async ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const uids = currentGoals.map(g => g.uid);
+    const oldIndex = uids.indexOf(active.id);
+    const newIndex = uids.indexOf(over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newUids = arrayMove(uids, oldIndex, newIndex);
+    await updateGoalOrder(newUids);
+    for (const uid of newUids) {
+      await pushOne(uid);
+    }
   };
 
   const handleSave = async (payload) => {
@@ -135,19 +182,23 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
             {t('goal.emptyCurrent')}
           </div>
         ) : (
-          currentGoals.map(g => (
-            <GoalCard
-              key={g.uid}
-              goal={g}
-              logs={logs}
-              variant="current"
-              onEdit={handleEdit}
-              onPin={handlePin}
-              onArchive={handleArchive}
-              onDelete={handleDelete}
-              compactMode={compactMode}
-            />
-          ))
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={currentGoals.map(g => g.uid)} strategy={verticalListSortingStrategy}>
+              {currentGoals.map(g => (
+                <SortableGoalCard
+                  key={g.uid}
+                  goal={g}
+                  logs={logs}
+                  variant="current"
+                  onEdit={handleEdit}
+                  onPin={handlePin}
+                  onArchive={handleArchive}
+                  onDelete={handleDelete}
+                  compactMode={compactMode}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </section>
 

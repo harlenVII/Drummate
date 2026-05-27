@@ -24,6 +24,8 @@ function GoalCard({
   onDelete,
   onUnarchive,
   compactMode = false,
+  dragHandleListeners,
+  dragHandleAttributes,
 }) {
   const { t } = useLanguage();
   const today = getTodayString();
@@ -69,6 +71,21 @@ function GoalCard({
     <div className={`bg-white dark:bg-slate-800 ${radius} shadow-sm ${padding} flex flex-col ${gap}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
+          {dragHandleListeners && (
+            <button
+              type="button"
+              className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400"
+              aria-label="Drag to reorder"
+              {...dragHandleListeners}
+              {...dragHandleAttributes}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true">
+                <rect x="1" y="2" width="12" height="2" rx="1"/>
+                <rect x="1" y="6" width="12" height="2" rx="1"/>
+                <rect x="1" y="10" width="12" height="2" rx="1"/>
+              </svg>
+            </button>
+          )}
           {onPin && (
             <button
               type="button"
