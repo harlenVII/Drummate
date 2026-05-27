@@ -56,6 +56,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
   const [editingGoal, setEditingGoal] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [activeDragId, setActiveDragId] = useState(null);
+  const [localOrder, setLocalOrder] = useState(null);
 
   useEffect(() => {
     const sub = liveQuery(() => db.goals.toArray()).subscribe({
@@ -78,10 +79,18 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
   const { currentGoals, historyGoals } = useMemo(() => {
     const current = goals.filter(g => isCurrentGoal(g, today));
     const history = goals.filter(g => isHistoryGoal(g, today));
-    current.sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
+    if (localOrder) {
+      current.sort((a, b) => {
+        const ai = localOrder.indexOf(a.uid);
+        const bi = localOrder.indexOf(b.uid);
+        return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
+      });
+    } else {
+      current.sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
+    }
     history.sort((a, b) => (a.endDate < b.endDate ? 1 : a.endDate > b.endDate ? -1 : 0));
     return { currentGoals: current, historyGoals: history };
-  }, [goals, today]);
+  }, [goals, today, localOrder]);
 
   const pushOne = async (goalUid) => {
     if (!user) return;
@@ -96,16 +105,24 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
 
   const handleDragEnd = async ({ active, over }) => {
     setActiveDragId(null);
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      setLocalOrder(null);
+      return;
+    }
     const uids = currentGoals.map(g => g.uid);
     const oldIndex = uids.indexOf(active.id);
     const newIndex = uids.indexOf(over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-    const newUids = arrayMove(uids, oldIndex, newIndex);
-    await updateGoalOrder(newUids);
-    for (const uid of newUids) {
-      await pushOne(uid);
+    if (oldIndex === -1 || newIndex === -1) {
+      setLocalOrder(null);
+      return;
     }
+    const newUids = arrayMove(uids, oldIndex, newIndex);
+    // Apply new order synchronously so SortableContext sees it in the same
+    // render that clears activeDragId — prevents snap-back to old positions.
+    setLocalOrder(newUids);
+    await updateGoalOrder(newUids);
+    setLocalOrder(null);
+    await Promise.all(newUids.map(uid => pushOne(uid)));
   };
 
   const handleSave = async (payload) => {
@@ -189,7 +206,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
             collisionDetection={closestCenter}
             onDragStart={({ active }) => setActiveDragId(active.id)}
             onDragEnd={handleDragEnd}
-            onDragCancel={() => setActiveDragId(null)}
+            onDragCancel={() => { setActiveDragId(null); setLocalOrder(null); }}
           >
             <SortableContext items={currentGoals.map(g => g.uid)} strategy={verticalListSortingStrategy}>
               {currentGoals.map(g => (
@@ -206,16 +223,18 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
                 />
               ))}
             </SortableContext>
-            <DragOverlay>
+            <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
               {activeDragId ? (() => {
                 const g = currentGoals.find(g => g.uid === activeDragId);
                 return g ? (
-                  <GoalCard
-                    goal={g}
-                    logs={logs}
-                    variant="current"
-                    compactMode={compactMode}
-                  />
+                  <div className="shadow-2xl opacity-95 rotate-1">
+                    <GoalCard
+                      goal={g}
+                      logs={logs}
+                      variant="current"
+                      compactMode={compactMode}
+                    />
+                  </div>
                 ) : null;
               })() : null}
             </DragOverlay>
