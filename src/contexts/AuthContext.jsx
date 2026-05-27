@@ -85,6 +85,13 @@ export function AuthProvider({ children }) {
     try {
       globalThis.localStorage?.removeItem(VISITOR_KEY);
       globalThis.localStorage?.removeItem('drummate_prior_hours');
+      globalThis.localStorage?.removeItem('drummate_sequencer_bpm');
+      globalThis.localStorage?.removeItem('drummate_sequencer_sound_type');
+      globalThis.localStorage?.removeItem('drummate_sequencer_slots');
+      globalThis.localStorage?.removeItem('drummate_sequencer_next_id');
+      globalThis.localStorage?.removeItem('drummate_multimeter_bpm');
+      globalThis.localStorage?.removeItem('drummate_multimeter_sound_type');
+      globalThis.localStorage?.removeItem('drummate_multimeter_slots');
     } catch {
       // ignore
     }
