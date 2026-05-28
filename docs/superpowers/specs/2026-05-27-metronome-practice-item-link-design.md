@@ -85,6 +85,6 @@ In `handleEndPractice(wasComplete)`:
 |---|---|
 | `src/components/PracticeEditModal.jsx` | Add `items` prop + linked item dropdown |
 | `src/components/PracticeRunView.jsx` | `onEnd(complete)` instead of `onEnd()` |
-| `src/components/PracticePage.jsx` | Accept + forward `items` prop; update `onEndPractice` signature |
+| `src/components/PracticePage.jsx` | Accept + forward `items` prop to `PracticeEditModal`; `onEndPractice` is already forwarded as `onEnd` to `PracticeRunView` — no signature change needed |
 | `src/App.jsx` | Pass `items` to PracticePage; update `handleStartPractice`, `handleEndPractice` |
 | `src/contexts/LanguageContext.jsx` | Add i18n strings for the new dropdown section |
