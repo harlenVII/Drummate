@@ -144,8 +144,8 @@ export default function PracticeRunView({
     if (engine?.isPlaying) engine.stop();
     engine && (engine.onBeat = null);
     noSleepRef.current?.disable?.();
-    onEnd();
-  }, [engineRef, noSleepRef, onEnd]);
+    onEnd(complete);
+  }, [engineRef, noSleepRef, onEnd, complete]);
 
   const handleTogglePlay = useCallback(async () => {
     const engine = engineRef.current;
