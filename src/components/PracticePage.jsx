@@ -116,6 +116,7 @@ export default function PracticePage({
   setRunIsPlaying,
   setRunComplete,
   compactMode = false,
+  items = [],
 }) {
   const { t } = useLanguage();
   const [modalState, setModalState] = useState(null); // null | { mode: 'create' } | { mode: 'edit', practice }
@@ -233,6 +234,7 @@ export default function PracticePage({
       {modalState && (
         <PracticeEditModal
           practice={modalState.mode === 'edit' ? modalState.practice : null}
+          items={items}
           onSave={async (data) => {
             if (modalState.mode === 'edit') {
               await onUpdatePractice(modalState.practice.id, data);
