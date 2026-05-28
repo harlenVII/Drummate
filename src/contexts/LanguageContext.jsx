@@ -130,6 +130,9 @@ const translations = {
         positiveIncrement: 'Increment must be at least 1',
         positiveBars: 'Bars per step must be at least 1',
       },
+      linkedItem: 'Linked Practice Item',
+      linkedItemNone: '— None —',
+      linkedItemNotFound: '⚠ Item not found',
     },
     multiMeter: {
       emptyState: 'Tap a time signature below to add bars',
@@ -545,6 +548,9 @@ const translations = {
         positiveIncrement: '增量至少为 1',
         positiveBars: '每段小节数至少为 1',
       },
+      linkedItem: '关联练习项目',
+      linkedItemNone: '— 无 —',
+      linkedItemNotFound: '⚠ 找不到该项目',
     },
     multiMeter: {
       emptyState: '点击下方拍号以添加小节',
