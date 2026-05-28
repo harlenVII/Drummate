@@ -181,7 +181,7 @@ Pulls go first so device adopts remote truth (renames/deletes) before pushing lo
 - `category` (`'fundamentals' | 'songs'`) is orthogonal to `archived`. Both fields always persisted. Tolerant pull rule: treat absent remote `category` as "no change" to avoid clobbering old clients.
 - `purgeExpiredTrash` returns `{ expiredItems, expiredNotes }`; caller must propagate both to remote (`pushDeleteItem`, `deleteNoteRemote`).
 - Note soft-delete is a `pushNote` upsert with `trashed: true`, NOT a hard-delete. `deleteNoteRemote` is only called by `purgeExpiredTrash` (30 days) and the `deleteItem` cascade.
-- `notesRefreshKey` lives in `App.jsx`. `loadData` bumps it on every call (including remote sync events). Local note mutations call `bumpNotesRefresh` via `onNotesRefresh` prop.
+- `notes` live in `App.jsx` state (lifted from the subpages to prevent an empty-state flash on tab switch — `NotesPage` is conditionally mounted, so subpages can't own this state). `loadData` fetches them via `getAllNotes()` alongside items/practices. Local note mutations call `refreshNotes` via the `onNotesRefresh` prop, which re-fetches and updates the lifted state. Subpages (`NotesByDate`, `NotesByItem`) are pure prop-driven renderers — they no longer fetch.
 - Goal `delete_goal_permanent` in `flushSyncQueue` only calls `deleteGoalRemote` — the Dexie delete already ran at action time in the handler, so no second local delete.
 
 **Boot / setup**
