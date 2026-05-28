@@ -144,6 +144,10 @@ const fromPickerDate = (d) => {
 />
 ```
 
+## Manual Verification
+
+Do not use Playwright or any browser automation for verification. Instead, after implementing changes, provide the user with a numbered list of manual testing steps to verify the feature works correctly.
+
 ## Styling
 
 Tailwind v4 only — no CSS modules, no inline styles. Mobile-first. System font stack (see [src/index.css](src/index.css)).
