@@ -1844,7 +1844,7 @@ function App() {
                 <PracticePage
                   practices={metronomePractices}
                   runningPracticeUid={runningPracticeUid}
-                  items={items.filter(i => !i.trashed)}
+                  items={items.filter(i => !i.trashed && !i.archived)}
                   engineRef={metronomeEngineRef}
                   noSleepRef={noSleepRef}
                   onAddPractice={handleAddPractice}

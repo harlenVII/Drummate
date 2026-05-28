@@ -291,6 +291,7 @@ const firebaseBackend = {
       timeSignatureNoteValue: localPractice.timeSignature?.noteValue,
       subdivision: localPractice.subdivision,
       soundType: localPractice.soundType,
+      linkedItemUid: localPractice.linkedItemUid ?? null,
       sortOrder: localPractice.sortOrder ?? 0,
       createdAt: localPractice.createdAt || '',
       updatedAt: localPractice.updatedAt || '',
@@ -311,6 +312,7 @@ const firebaseBackend = {
         time_signature_note_value: localPractice.timeSignature.noteValue,
         subdivision: localPractice.subdivision,
         sound_type: localPractice.soundType,
+        linked_item_uid: localPractice.linkedItemUid ?? null,
         sort_order: localPractice.sortOrder ?? 0,
         created_at: localPractice.createdAt || '',
         updated_at: localPractice.updatedAt || '',
@@ -903,6 +905,7 @@ const firebaseBackend = {
         },
         subdivision: data.subdivision ?? 'quarter',
         soundType: data.sound_type ?? 'click',
+        linkedItemUid: data.linked_item_uid ?? null,
         sortOrder: data.sort_order ?? 0,
         createdAt: data.created_at || '',
         updatedAt: data.updated_at || '',
@@ -915,7 +918,7 @@ const firebaseBackend = {
       } else {
         const updates = {};
         for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
-                         'subdivision', 'soundType', 'sortOrder', 'createdAt', 'updatedAt']) {
+                         'subdivision', 'soundType', 'linkedItemUid', 'sortOrder', 'createdAt', 'updatedAt']) {
           if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
         }
         if (local.timeSignature?.beats !== fields.timeSignature.beats ||
@@ -1163,6 +1166,7 @@ const firebaseBackend = {
               time_signature_note_value: p.timeSignatureNoteValue,
               subdivision: p.subdivision,
               sound_type: p.soundType,
+              linked_item_uid: p.linkedItemUid ?? null,
               sort_order: p.sortOrder ?? 0,
               created_at: p.createdAt || '',
               updated_at: p.updatedAt || '',
@@ -1181,6 +1185,7 @@ const firebaseBackend = {
                 },
                 subdivision: p.subdivision,
                 soundType: p.soundType,
+                linkedItemUid: p.linkedItemUid ?? null,
                 sortOrder: p.sortOrder ?? 0,
                 syncedOnce: true,
               });
@@ -1451,6 +1456,7 @@ const firebaseBackend = {
           },
           subdivision: data.subdivision ?? 'quarter',
           soundType: data.sound_type ?? 'click',
+          linkedItemUid: data.linked_item_uid ?? null,
           sortOrder: data.sort_order ?? 0,
           createdAt: data.created_at || '',
           updatedAt: data.updated_at || '',
@@ -1468,7 +1474,7 @@ const firebaseBackend = {
             const fields = buildFields();
             const updates = {};
             for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
-                             'subdivision', 'soundType', 'sortOrder', 'createdAt', 'updatedAt']) {
+                             'subdivision', 'soundType', 'linkedItemUid', 'sortOrder', 'createdAt', 'updatedAt']) {
               if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
             }
             if (local.timeSignature?.beats !== fields.timeSignature.beats ||

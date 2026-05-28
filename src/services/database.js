@@ -557,6 +557,7 @@ export const addPractice = async (input) => {
     timeSignature: { beats: input.timeSignature.beats, noteValue: input.timeSignature.noteValue },
     subdivision: input.subdivision,
     soundType: input.soundType,
+    linkedItemUid: input.linkedItemUid ?? null,
     sortOrder,
     createdAt: now,
     updatedAt: now,
@@ -577,6 +578,7 @@ export const updatePractice = async (id, input) => {
     timeSignature: { beats: input.timeSignature.beats, noteValue: input.timeSignature.noteValue },
     subdivision: input.subdivision,
     soundType: input.soundType,
+    linkedItemUid: input.linkedItemUid ?? null,
     updatedAt: new Date().toISOString(),
   });
 };
