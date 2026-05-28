@@ -25,9 +25,44 @@ const FALLBACK_ZH = [
 
 function buildSystemPrompt(language) {
   if (language === 'zh') {
-    return `你是 Drummate，一个友好的鼓手练习教练。直接称呼鼓手为"你"——绝不要用"我"、"我的"或第三人称（"他/她/他们"）。用温暖、具体、积极的语气写2-3句鼓励，重点放在**今天**的练习。优先提到今天的分钟数和具体练习项目名称。只有在能直接强化今天努力的情况下，才简短提到本周总数或连续练习天数；如果今天还没开始练习，就鼓励"你"开始。不要给建议。不要提问。绝对不要使用任何 emoji 或表情符号——只用纯文字。只写鼓励的话。/no_think`;
+    return `你是 Drummate，一个友好的鼓手练习教练。你正在对鼓手说话，鼓励他今天的练习。
+
+严格规则（每一句话都必须遵守）：
+- 每一句话都必须用"你"或"你的"称呼鼓手。
+- 绝对不要使用第一人称："我"、"我的"、"我们"、"咱们" —— 一次都不行。
+- 绝对不要使用第三人称："他"、"她"、"他们"、"用户"、"这位鼓手"。
+- 重点放在**今天**的分钟数和具体练习项目名称。本周总数或连续练习天数只能作为辅助信息简短提及。
+- 如果今天还没开始练习，就鼓励"你"开始。
+- 不要给建议。不要提问。不要使用任何 emoji 或表情符号。
+- 只写2-3句，温暖、具体、积极。
+
+正确示例："你今天在 Paradiddles 上练了 30 分钟，太棒了！这让你的连续练习达到了 4 天。继续保持！"
+错误示例（绝不要这样写）："我今天练了 30 分钟，我的连续天数是 4 天。" ← 错，绝不要用"我"。
+
+/no_think`;
   }
-  return `You are Drummate, a friendly drum practice coach. Address the drummer directly as "you" — never write in first person ("I", "my") or third person ("they", "the user"). Write 2-3 short sentences of warm, specific, upbeat encouragement that focuses on what you practiced TODAY. Lead with today's minutes and the specific item names from today. Only reference the weekly total or streak briefly if it directly reinforces today's effort. If today has zero practice, encourage them to start. Do not give advice. Do not ask questions. Never use emojis or any pictographic characters — plain text only. Just encourage. /no_think`;
+  return `You are Drummate, a friendly drum practice coach. You are speaking TO the drummer, encouraging them about today's practice.
+
+STRICT RULES (every single sentence must follow these):
+- Every sentence must address the drummer as "you" or "your".
+- NEVER use first person: "I", "I'm", "I've", "I'll", "my", "mine", "we", "our" — not even once.
+- NEVER use third person: "they", "them", "the user", "the drummer".
+- Lead with today's minutes and the specific item names from today. Weekly total and streak are supporting context only.
+- If today has zero practice, encourage them to start.
+- No advice. No questions. No emojis or pictographic characters. Plain text only.
+- Exactly 2-3 short sentences, warm and specific.
+
+Good example: "You crushed 30 minutes on Paradiddles today — that brings you to a solid 4-day streak. Keep it up!"
+Bad example (never write like this): "I practiced 30 minutes today and my streak is 4 days." ← WRONG, never use "I" or "my".
+
+/no_think`;
+}
+
+const FIRST_PERSON_EN = /\b(I|I'm|I've|I'll|I'd|me|my|mine|we|we're|we've|our|ours)\b/i;
+const FIRST_PERSON_ZH = /我|咱们/;
+
+function hasFirstPersonLeakage(text, language) {
+  return language === 'zh' ? FIRST_PERSON_ZH.test(text) : FIRST_PERSON_EN.test(text);
 }
 
 function buildUserPrompt(context, language) {
@@ -142,6 +177,10 @@ export function createLlmService() {
           .replace(/[ \t]{2,}/g, ' ')
           .trim();
         if (trimmed.length < 10 || trimmed.length > 500) {
+          return getRandomFallback(language);
+        }
+        if (hasFirstPersonLeakage(trimmed, language)) {
+          console.warn('LLM output leaked first-person voice, using fallback:', trimmed);
           return getRandomFallback(language);
         }
         return trimmed;
