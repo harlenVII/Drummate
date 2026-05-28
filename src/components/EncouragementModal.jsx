@@ -1,7 +1,22 @@
+import { useEffect, useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 function EncouragementModal({ isOpen, status, progress, message, error, onClose, onDownload, onRegenerate }) {
   const { t } = useLanguage();
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (status !== 'generating') {
+      setElapsedSeconds(0);
+      return;
+    }
+    const start = Date.now();
+    setElapsedSeconds(0);
+    const id = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
+    }, 250);
+    return () => clearInterval(id);
+  }, [status]);
 
   if (!isOpen) return null;
 
@@ -79,7 +94,9 @@ function EncouragementModal({ isOpen, status, progress, message, error, onClose,
                 <span className="w-2.5 h-2.5 bg-blue-600 dark:bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
-            <p className="text-xs text-gray-400 dark:text-slate-500 text-center">{t('llmCoach.generating')}</p>
+            <p className="text-xs text-gray-400 dark:text-slate-500 text-center">
+              {t('llmCoach.generating')} · {elapsedSeconds}s
+            </p>
           </>
         )}
 
