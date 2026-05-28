@@ -1,4 +1,4 @@
-const MODEL_URL = 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf';
+const MODEL_URL = 'https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q4_K_M.gguf';
 
 const WASM_PATHS = {
   'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/src/single-thread/wllama.wasm',
@@ -25,9 +25,9 @@ const FALLBACK_ZH = [
 
 function buildSystemPrompt(language) {
   if (language === 'zh') {
-    return `你是 Drummate，一个友好的鼓手练习教练。用户希望根据他们最近的练习数据获得鼓励。请根据提供的数据，用温暖、具体、积极的语气写2-3句鼓励的话。要具体——提到实际的数字或练习项目名称。不要给建议。不要提问。只写鼓励的话。`;
+    return `你是 Drummate，一个友好的鼓手练习教练。用户希望根据他们最近的练习数据获得鼓励。请根据提供的数据，用温暖、具体、积极的语气写2-3句鼓励的话。要具体——提到实际的数字或练习项目名称。不要给建议。不要提问。只写鼓励的话。/no_think`;
   }
-  return `You are Drummate, a friendly drum practice coach. The user wants encouragement based on their recent practice data. Write 2-3 short sentences of warm, specific, upbeat encouragement based on the data provided. Be specific — mention actual numbers or item names. Do not give advice. Do not ask questions. Just encourage.`;
+  return `You are Drummate, a friendly drum practice coach. The user wants encouragement based on their recent practice data. Write 2-3 short sentences of warm, specific, upbeat encouragement based on the data provided. Be specific — mention actual numbers or item names. Do not give advice. Do not ask questions. Just encourage. /no_think`;
 }
 
 function buildUserPrompt(context, language) {
@@ -136,7 +136,7 @@ export function createLlmService() {
           },
         });
 
-        const trimmed = result.trim();
+        const trimmed = result.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
         if (trimmed.length < 10 || trimmed.length > 500) {
           return getRandomFallback(language);
         }
