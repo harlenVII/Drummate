@@ -25,36 +25,14 @@ const FALLBACK_ZH = [
 
 function buildSystemPrompt(language) {
   if (language === 'zh') {
-    return `你是 Drummate，一个友好的鼓手练习教练。你正在对鼓手说话，鼓励他今天的练习。
-
-严格规则（每一句话都必须遵守）：
-- 每一句话都必须用"你"或"你的"称呼鼓手。
-- 绝对不要使用第一人称："我"、"我的"、"我们"、"咱们" —— 一次都不行。
-- 绝对不要使用第三人称："他"、"她"、"他们"、"用户"、"这位鼓手"。
-- 重点放在**今天**的分钟数和具体练习项目名称。本周总数或连续练习天数只能作为辅助信息简短提及。
-- 如果今天还没开始练习，就鼓励"你"开始。
-- 不要给建议。不要提问。不要使用任何 emoji 或表情符号。
-- 只写2-3句，温暖、具体、积极。
-
-正确示例："你今天在 Paradiddles 上练了 30 分钟，太棒了！这让你的连续练习达到了 4 天。继续保持！"
-错误示例（绝不要这样写）："我今天练了 30 分钟，我的连续天数是 4 天。" ← 错，绝不要用"我"。
-
+    return `你是 Drummate，一个鼓手教练，正在和鼓手聊今天的练习。
+规则：只用"你"/"你的"，不要"我"/"我们"/第三人称。重点提今天的分钟数和练习项目，本周/连续天数只作辅助。今天没练就鼓励开始。2-3句温暖的话，不要建议、提问、emoji。
+示例："你今天在 Paradiddles 上练了 30 分钟，连续 4 天了，继续保持！"
 /no_think`;
   }
-  return `You are Drummate, a friendly drum practice coach. You are speaking TO the drummer, encouraging them about today's practice.
-
-STRICT RULES (every single sentence must follow these):
-- Every sentence must address the drummer as "you" or "your".
-- NEVER use first person: "I", "I'm", "I've", "I'll", "my", "mine", "we", "our" — not even once.
-- NEVER use third person: "they", "them", "the user", "the drummer".
-- Lead with today's minutes and the specific item names from today. Weekly total and streak are supporting context only.
-- If today has zero practice, encourage them to start.
-- No advice. No questions. No emojis or pictographic characters. Plain text only.
-- Exactly 2-3 short sentences, warm and specific.
-
-Good example: "You crushed 30 minutes on Paradiddles today — that brings you to a solid 4-day streak. Keep it up!"
-Bad example (never write like this): "I practiced 30 minutes today and my streak is 4 days." ← WRONG, never use "I" or "my".
-
+  return `You are Drummate, a drum coach talking to the drummer about today's practice.
+Rules: address as "you"/"your" only — never "I", "my", "we", or third person. Lead with today's minutes and item names; streak/weekly are context. If today is zero, encourage starting. 2-3 short sentences. No advice, questions, or emojis.
+Example: "You crushed 30 minutes on Paradiddles today — solid 4-day streak. Keep it up!"
 /no_think`;
 }
 
@@ -68,32 +46,28 @@ function hasFirstPersonLeakage(text, language) {
 function buildUserPrompt(context, language) {
   const lines = [];
   if (language === 'zh') {
-    lines.push('你的练习数据：');
-    lines.push(`- 今天：你练习了 ${context.todayTotalMinutes} 分钟`);
+    lines.push(`今天你练习了 ${context.todayTotalMinutes} 分钟：`);
     for (const item of context.todayTotals) {
       lines.push(`  - ${item.name}：${item.minutes} 分钟`);
     }
-    lines.push(`- 本周：你共练习了 ${context.weeklyMinutes} 分钟`);
-    lines.push(`- 你已连续练习 ${context.streak} 天`);
+    lines.push(`本周共 ${context.weeklyMinutes} 分钟，连续 ${context.streak} 天。`);
     if (context.activeName) {
-      lines.push(`- 你正在练习：${context.activeName}（已练 ${context.activeMinutes} 分钟）`);
+      lines.push(`正在练习：${context.activeName}（${context.activeMinutes} 分钟）`);
     }
     if (context.todayTotalMinutes === 0 && !context.activeName) {
-      lines.push('- 你今天还没有开始练习');
+      lines.push('你今天还没开始练习。');
     }
   } else {
-    lines.push('Your practice data:');
-    lines.push(`- Today: you practiced ${context.todayTotalMinutes} minutes total`);
+    lines.push(`Today you practiced ${context.todayTotalMinutes} min total:`);
     for (const item of context.todayTotals) {
       lines.push(`  - ${item.name}: ${item.minutes} min`);
     }
-    lines.push(`- This week: you practiced ${context.weeklyMinutes} minutes total`);
-    lines.push(`- You're on a ${context.streak}-day practice streak`);
+    lines.push(`This week: ${context.weeklyMinutes} min. Streak: ${context.streak} days.`);
     if (context.activeName) {
-      lines.push(`- You're currently practicing: ${context.activeName} (${context.activeMinutes} min into session)`);
+      lines.push(`Currently practicing: ${context.activeName} (${context.activeMinutes} min in)`);
     }
     if (context.todayTotalMinutes === 0 && !context.activeName) {
-      lines.push("- You haven't started practicing today yet");
+      lines.push("You haven't started practicing today yet.");
     }
   }
   return lines.join('\n');
