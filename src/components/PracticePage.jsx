@@ -169,7 +169,7 @@ export default function PracticePage({
     const practice = practices.find((p) => p.uid === runningPracticeUid);
     if (!practice) {
       // The practice was deleted/synced-away while running — just end.
-      onEndPractice();
+      onEndPractice(false);
       return null;
     }
     return (

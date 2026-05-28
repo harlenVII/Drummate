@@ -896,21 +896,41 @@ function App() {
     [loadData, user],
   );
 
-  const handleStartPractice = useCallback((uid) => {
+  const handleStartPractice = useCallback(async (uid) => {
     setPracticeRunStepIndex(0);
     setPracticeRunBarIndex(0);
     setPracticeRunIsPlaying(false);
     setPracticeRunComplete(false);
     setRunningPracticeUid(uid);
-  }, []);
 
-  const handleEndPractice = useCallback(() => {
+    const practice = metronomePractices.find(p => p.uid === uid);
+    if (practice?.linkedItemUid) {
+      const linkedItem = items.find(i => i.uid === practice.linkedItemUid && !i.trashed);
+      if (linkedItem) {
+        await handleStart(linkedItem.id);
+      }
+    }
+  }, [metronomePractices, items, handleStart]);
+
+  const handleEndPractice = useCallback(async (wasComplete) => {
+    const practiceUid = runningPracticeUid;
+
+    if (wasComplete && practiceUid) {
+      const practice = metronomePractices.find(p => p.uid === practiceUid);
+      if (practice?.linkedItemUid && activeItemId != null) {
+        const activeItem = items.find(i => i.id === activeItemId);
+        if (activeItem?.uid === practice.linkedItemUid) {
+          await saveAndStop();
+        }
+      }
+    }
+
     setRunningPracticeUid(null);
     setPracticeRunStepIndex(0);
     setPracticeRunBarIndex(0);
     setPracticeRunIsPlaying(false);
     setPracticeRunComplete(false);
-  }, []);
+  }, [runningPracticeUid, metronomePractices, activeItemId, items, saveAndStop]);
 
   const handleSetItemCategory = useCallback(
     async (id, category) => {
@@ -1824,6 +1844,7 @@ function App() {
                 <PracticePage
                   practices={metronomePractices}
                   runningPracticeUid={runningPracticeUid}
+                  items={items.filter(i => !i.trashed)}
                   engineRef={metronomeEngineRef}
                   noSleepRef={noSleepRef}
                   onAddPractice={handleAddPractice}
