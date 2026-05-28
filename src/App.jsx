@@ -905,7 +905,7 @@ function App() {
 
     const practice = metronomePractices.find(p => p.uid === uid);
     if (practice?.linkedItemUid) {
-      const linkedItem = items.find(i => i.uid === practice.linkedItemUid && !i.trashed);
+      const linkedItem = items.find(i => i.uid === practice.linkedItemUid && !i.trashed && !i.archived);
       if (linkedItem) {
         await handleStart(linkedItem.id);
       }
