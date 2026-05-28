@@ -20,7 +20,7 @@ npm run test:watch                        # watch mode
 npx vitest run tests/dateHelpers.test.js  # run a single test file
 ```
 
-Tests live in `tests/` (not `src/`). Covered: `dateHelpers`, `tzDateHelpers`, `timezoneService`, `offlineService`, `pendingActionFormatter`, `practicePage`, `goalStatus`, and a smoke test.
+Tests live in `tests/` (not `src/`). Covered: `dateHelpers`, `tzDateHelpers`, `timezoneService`, `offlineService`, `pendingActionFormatter`, `practicePage`, `practiceEditModal`, `goalStatus`, `authContext`, `visitorMode`, `priorPracticeService`, and a smoke test.
 
 ## Environment Variables
 
@@ -40,7 +40,7 @@ Tests live in `tests/` (not `src/`). Covered: `dateHelpers`, `tzDateHelpers`, `t
 - `practiceLogs` — `'++id, itemId, itemUid, date, duration, uid, loggedAt'` + `syncedOnce`. `loggedAt` (epoch ms) is the source of truth for date grouping; `date` is a denormalized cache kept for Firestore wire-format compat. `addLog` stamps `Date.now()`; `addAdjustmentLog` stamps `noonInHomeTz(dateStr)`. `reattributeLogsToDate` re-stamps existing logs.
 - `notes` — `'++id, &uid, itemUid, date, trashed'` + `syncedOnce`. Same soft-delete/30-day pattern as items.
 - `goals` — `'++id, &uid, startDate, endDate, archived, pinned, sortOrder'` + non-indexed `syncedOnce`, `name`, `targetHours`, `archivedAt`, `createdAt`. Multiple goals allowed. One goal can be `pinned: true` to show on the Practice tab banner (enforced by `setGoalPinned` transaction). Status (met/missed/progress) is always computed from logs at render time — never stored. Auto-archived when `endDate < today` at each init. Legacy `localStorage['drummate_goal']` is one-shot migrated to Dexie on first load after v15 and then removed.
-- `metronomePractices` — `'++id, &uid, sortOrder'`.
+- `metronomePractices` — `'++id, &uid, sortOrder'` + non-indexed `linkedItemUid` (nullable `uid` of a practice item). No Dexie version bump needed — unindexed fields are invisible to Dexie's schema but persisted in records.
 - `syncQueue` — `'++id, action, collection, localId'` (offline retry).
 
 All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its logs **and** notes in one transaction. `mergeItem(sourceId, targetId)` reassigns logs+notes and hard-deletes source. `purgeExpiredTrash` returns `{ expiredItems, expiredNotes }`.
@@ -96,6 +96,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 | `E` / `C` | Language English / Chinese |
 | `L` / `D` | Theme Light / Dark |
 | `S` | Stop active practice timer |
+| `Space` | Toggle play/pause during metronome practice; dismiss Practice Complete screen |
 | `?` | Toggle shortcuts help modal |
 
 ## Date Math Helpers
@@ -114,6 +115,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 - **Trash**: soft via `trashed: true` + `trashedAt`. `purgeExpiredTrash(30)` runs on app load. Restore clears `trashed` AND `archived`.
 - **NoSleep**: single global instance in `App.jsx`. Enable on start, disable on stop/tab switch. Never create multiple instances (iOS bugs).
 - **Floating practice widget**: top pill when `activeItemId != null && activeTab !== 'practice'`. Inner stop is a `role="button"` span (HTML disallows nested buttons).
+- **Metronome → practice item link**: A `metronomePractice` may carry `linkedItemUid`. `handleStartPractice` calls `handleStart(linkedItem.id)` when the linked item exists and is neither trashed nor archived (auto-saves any currently running item first, which `handleStart` handles internally). `handleEndPractice(wasComplete)` calls `saveAndStop()` only when `wasComplete === true` and the currently active item's `uid` matches `linkedItemUid`. `PracticeRunView.handleEnd` passes `complete` to `onEnd(complete)` so the natural-vs-manual distinction propagates. Navigating away via the subpage switcher calls the clearing logic directly (not `handleEndPractice`), leaving the timer running — intentional.
 
 ## Date Pickers
 
