@@ -22,9 +22,10 @@ const DEFAULTS = {
   timeSignature: { beats: 4, noteValue: 4 },
   subdivision: 'quarter',
   soundType: 'click',
+  linkedItemUid: null,
 };
 
-export default function PracticeEditModal({ practice, onSave, onDelete, onCancel }) {
+export default function PracticeEditModal({ practice, items = [], onSave, onDelete, onCancel }) {
   const { t } = useLanguage();
   const isEdit = !!practice;
   const [form, setForm] = useState(() => {
@@ -200,6 +201,50 @@ export default function PracticeEditModal({ practice, onSave, onDelete, onCancel
               ))}
             </div>
           </div>
+
+          {/* Linked practice item */}
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-gray-600 dark:text-slate-200">
+              {t('practiceMode.linkedItem')}
+            </span>
+            {(() => {
+              const isStale = form.linkedItemUid && !items.find(i => i.uid === form.linkedItemUid);
+              const fundamentals = items
+                .filter(i => i.category === 'fundamentals')
+                .sort((a, b) => a.name.localeCompare(b.name));
+              const songs = items
+                .filter(i => i.category === 'songs')
+                .sort((a, b) => a.name.localeCompare(b.name));
+              return (
+                <select
+                  value={form.linkedItemUid ?? ''}
+                  onChange={(e) => setField('linkedItemUid', e.target.value || null)}
+                  className="border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 dark:bg-slate-700 dark:text-slate-100"
+                >
+                  <option value="">{t('practiceMode.linkedItemNone')}</option>
+                  {isStale && (
+                    <option value={form.linkedItemUid} disabled>
+                      {t('practiceMode.linkedItemNotFound')}
+                    </option>
+                  )}
+                  {fundamentals.length > 0 && (
+                    <optgroup label={t('categories.fundamentals')}>
+                      {fundamentals.map(item => (
+                        <option key={item.uid} value={item.uid}>{item.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {songs.length > 0 && (
+                    <optgroup label={t('categories.songs')}>
+                      {songs.map(item => (
+                        <option key={item.uid} value={item.uid}>{item.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              );
+            })()}
+          </label>
 
           {error && (
             <div className="text-red-600 text-sm">{error}</div>
