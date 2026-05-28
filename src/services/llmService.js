@@ -25,40 +25,40 @@ const FALLBACK_ZH = [
 
 function buildSystemPrompt(language) {
   if (language === 'zh') {
-    return `你是 Drummate，一个友好的鼓手练习教练。用温暖、具体、积极的语气写2-3句鼓励，重点放在用户**今天**的练习。优先提到今天的分钟数和具体练习项目名称。只有在能直接强化今天努力的情况下，才简短提到本周总数或连续练习天数；如果今天还没开始练习，就鼓励用户开始。不要给建议。不要提问。绝对不要使用任何 emoji 或表情符号——只用纯文字。只写鼓励的话。/no_think`;
+    return `你是 Drummate，一个友好的鼓手练习教练。直接称呼鼓手为"你"——绝不要用"我"、"我的"或第三人称（"他/她/他们"）。用温暖、具体、积极的语气写2-3句鼓励，重点放在**今天**的练习。优先提到今天的分钟数和具体练习项目名称。只有在能直接强化今天努力的情况下，才简短提到本周总数或连续练习天数；如果今天还没开始练习，就鼓励"你"开始。不要给建议。不要提问。绝对不要使用任何 emoji 或表情符号——只用纯文字。只写鼓励的话。/no_think`;
   }
-  return `You are Drummate, a friendly drum practice coach. Write 2-3 short sentences of warm, specific, upbeat encouragement that focuses on what the user practiced TODAY. Lead with today's minutes and the specific item names from today. Only reference the weekly total or streak briefly if it directly reinforces today's effort. If today has zero practice, encourage them to start. Do not give advice. Do not ask questions. Never use emojis or any pictographic characters — plain text only. Just encourage. /no_think`;
+  return `You are Drummate, a friendly drum practice coach. Address the drummer directly as "you" — never write in first person ("I", "my") or third person ("they", "the user"). Write 2-3 short sentences of warm, specific, upbeat encouragement that focuses on what you practiced TODAY. Lead with today's minutes and the specific item names from today. Only reference the weekly total or streak briefly if it directly reinforces today's effort. If today has zero practice, encourage them to start. Do not give advice. Do not ask questions. Never use emojis or any pictographic characters — plain text only. Just encourage. /no_think`;
 }
 
 function buildUserPrompt(context, language) {
   const lines = [];
   if (language === 'zh') {
-    lines.push('我的练习数据：');
-    lines.push(`- 今天：共 ${context.todayTotalMinutes} 分钟`);
+    lines.push('你的练习数据：');
+    lines.push(`- 今天：你练习了 ${context.todayTotalMinutes} 分钟`);
     for (const item of context.todayTotals) {
       lines.push(`  - ${item.name}：${item.minutes} 分钟`);
     }
-    lines.push(`- 本周：共 ${context.weeklyMinutes} 分钟`);
-    lines.push(`- 连续练习天数：${context.streak} 天`);
+    lines.push(`- 本周：你共练习了 ${context.weeklyMinutes} 分钟`);
+    lines.push(`- 你已连续练习 ${context.streak} 天`);
     if (context.activeName) {
-      lines.push(`- 正在练习：${context.activeName}（已练 ${context.activeMinutes} 分钟）`);
+      lines.push(`- 你正在练习：${context.activeName}（已练 ${context.activeMinutes} 分钟）`);
     }
     if (context.todayTotalMinutes === 0 && !context.activeName) {
-      lines.push('- 今天还没有开始练习');
+      lines.push('- 你今天还没有开始练习');
     }
   } else {
-    lines.push('My practice data:');
-    lines.push(`- Today: ${context.todayTotalMinutes} minutes total`);
+    lines.push('Your practice data:');
+    lines.push(`- Today: you practiced ${context.todayTotalMinutes} minutes total`);
     for (const item of context.todayTotals) {
       lines.push(`  - ${item.name}: ${item.minutes} min`);
     }
-    lines.push(`- This week: ${context.weeklyMinutes} minutes total`);
-    lines.push(`- Practice streak: ${context.streak} days in a row`);
+    lines.push(`- This week: you practiced ${context.weeklyMinutes} minutes total`);
+    lines.push(`- You're on a ${context.streak}-day practice streak`);
     if (context.activeName) {
-      lines.push(`- Currently practicing: ${context.activeName} (${context.activeMinutes} min into session)`);
+      lines.push(`- You're currently practicing: ${context.activeName} (${context.activeMinutes} min into session)`);
     }
     if (context.todayTotalMinutes === 0 && !context.activeName) {
-      lines.push("- Haven't started practicing today yet");
+      lines.push("- You haven't started practicing today yet");
     }
   }
   return lines.join('\n');
