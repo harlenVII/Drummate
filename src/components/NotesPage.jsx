@@ -14,7 +14,7 @@ function NotesPage({
   defaultItemUid,
   notesSubpage,
   onSubpageChange,
-  notesRefreshKey,
+  notes,
   onNotesRefresh,
   compactMode = false,
 }) {
@@ -26,7 +26,7 @@ function NotesPage({
 
   useEffect(() => {
     getTrashedNotes().then(setTrashedNotes);
-  }, [showTrash, notesRefreshKey]);
+  }, [showTrash, notes]);
 
   const handleCreate = useCallback(async ({ itemUid, date, body }) => {
     const localId = await addNote(itemUid, body, date);
@@ -121,9 +121,9 @@ function NotesPage({
       </button>
 
       {notesSubpage === 'byDate' ? (
-        <NotesByDate items={items} refreshKey={notesRefreshKey} onEdit={openEdit} compactMode={compactMode} />
+        <NotesByDate items={items} notes={notes} onEdit={openEdit} compactMode={compactMode} />
       ) : (
-        <NotesByItem items={items} refreshKey={notesRefreshKey} onEdit={openEdit} compactMode={compactMode} />
+        <NotesByItem items={items} notes={notes} onEdit={openEdit} compactMode={compactMode} />
       )}
 
       {modalOpen && (

@@ -52,6 +52,7 @@ import {
   getLogsByDateRange,
   mergeItem,
   getPractices,
+  getAllNotes,
   addPractice as dbAddPractice,
   updatePractice as dbUpdatePractice,
   deletePractice as dbDeletePractice,
@@ -351,8 +352,10 @@ function App() {
     localStorage.setItem('drummate_sequencer_next_id', String(sequencerNextIdRef.current));
   }, [sequencerSlots]);
 
-  const [notesRefreshKey, setNotesRefreshKey] = useState(0);
-  const bumpNotesRefresh = useCallback(() => setNotesRefreshKey(k => k + 1), []);
+  const [notes, setNotes] = useState([]);
+  const refreshNotes = useCallback(async () => {
+    setNotes(await getAllNotes());
+  }, []);
   const [goalRefreshKey, setGoalRefreshKey] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [offlineMode, _setOfflineMode] = useState(false);
@@ -374,9 +377,12 @@ function App() {
   }, [goOnlineToast]);
 
   const loadData = useCallback(async () => {
-    const [allItems, logs, practices] = await Promise.all([getItems(), getTodaysLogs(), getPractices()]);
+    const [allItems, logs, practices, allNotes] = await Promise.all([
+      getItems(), getTodaysLogs(), getPractices(), getAllNotes(),
+    ]);
     setItems(allItems);
     setMetronomePractices(practices);
+    setNotes(allNotes);
     const trashedIds = new Set(allItems.filter(i => i.trashed).map(i => i.id));
     const totalsMap = {};
     for (const log of logs) {
@@ -385,7 +391,6 @@ function App() {
       }
     }
     setTotals(totalsMap);
-    setNotesRefreshKey(k => k + 1);
     setGoalRefreshKey(k => k + 1);
   }, []);
 
@@ -447,6 +452,7 @@ function App() {
       setItems([]);
       setTotals({});
       setMetronomePractices([]);
+      setNotes([]);
       setReportLogs([]);
       setWeekLogs([]);
       setMonthLogs([]);
@@ -475,6 +481,7 @@ function App() {
       setItems([]);
       setTotals({});
       setMetronomePractices([]);
+      setNotes([]);
       setSequencerBpm(120);
       setSequencerSoundType('click');
       setSequencerSlots([]);
@@ -1971,8 +1978,8 @@ function App() {
               }
               notesSubpage={notesSubpage}
               onSubpageChange={setNotesSubpage}
-              notesRefreshKey={notesRefreshKey}
-              onNotesRefresh={bumpNotesRefresh}
+              notes={notes}
+              onNotesRefresh={refreshNotes}
               compactMode={compactMode}
             />
           )}

@@ -1,24 +1,12 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getAllNotes } from '../services/database';
 import { getTodayString, shiftDate, formatDateLabel } from '../utils/dateHelpers';
 
 const PAGE_SIZE = 20; // note count threshold per page
 
-function NotesByDate({ items, refreshKey, onEdit, compactMode = false }) {
+function NotesByDate({ items, notes, onEdit, compactMode = false }) {
   const { t } = useLanguage();
-  const [notes, setNotes] = useState([]);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  useEffect(() => {
-    let cancelled = false;
-    setVisibleCount(PAGE_SIZE);
-    (async () => {
-      const all = await getAllNotes();
-      if (!cancelled) setNotes(all);
-    })();
-    return () => { cancelled = true; };
-  }, [refreshKey]);
 
   const itemNameByUid = useMemo(() => {
     const map = new Map();

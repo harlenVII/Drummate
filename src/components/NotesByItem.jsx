@@ -1,20 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getAllNotes } from '../services/database';
 
-function NotesByItem({ items, refreshKey, onEdit, compactMode = false }) {
+function NotesByItem({ items, notes, onEdit, compactMode = false }) {
   const { t } = useLanguage();
-  const [notes, setNotes] = useState([]);
   const [expanded, setExpanded] = useState(() => new Set());
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const all = await getAllNotes();
-      if (!cancelled) setNotes(all);
-    })();
-    return () => { cancelled = true; };
-  }, [refreshKey]);
 
   const notesByItemUid = useMemo(() => {
     const map = new Map();
