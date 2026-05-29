@@ -83,7 +83,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
           />
         </label>
 
-        <label className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.startDate')}</span>
           <DatePicker
             selected={toPickerDate(startDate)}
@@ -95,9 +95,9 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
             wrapperClassName="w-full"
             popperProps={{ strategy: 'fixed' }}
           />
-        </label>
+        </div>
 
-        <label className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.endDate')}</span>
           <DatePicker
             selected={toPickerDate(endDate)}
@@ -109,7 +109,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
             wrapperClassName="w-full"
             popperProps={{ strategy: 'fixed' }}
           />
-        </label>
+        </div>
 
         <label className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.targetHours')}</span>
