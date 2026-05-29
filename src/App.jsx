@@ -1743,6 +1743,7 @@ function App() {
               onFocusChange={setFocusedPracticeItemId}
               goalRefreshKey={goalRefreshKey}
               compactMode={compactMode}
+              timeUnit={timeUnit}
             />
           )}
 

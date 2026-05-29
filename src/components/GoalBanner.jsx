@@ -3,7 +3,7 @@ import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTodayString } from '../utils/dateHelpers';
 import { db, getLogsByDateRange } from '../services/database';
-import { computeGoalStatus } from '../utils/goalStatus';
+import { computeGoalStatus, formatRequired } from '../utils/goalStatus';
 
 function dateDiffDays(a, b) {
   return Math.round(
@@ -11,7 +11,7 @@ function dateDiffDays(a, b) {
   );
 }
 
-function GoalBanner() {
+function GoalBanner({ timeUnit }) {
   const { t } = useLanguage();
   const [goal, setGoal] = useState(null);
   const [logs, setLogs] = useState([]);
@@ -48,10 +48,7 @@ function GoalBanner() {
     const daysLeft = dateDiffDays(today, goal.endDate) + 1;
     const remainingHours = Math.max(0, goal.targetHours - practicedHours);
     const perDay = remainingHours / daysLeft;
-    const amount = perDay < 1
-      ? `${(perDay * 60).toFixed(2)} ${t('minutes')}`
-      : `${perDay.toFixed(1)} ${t('hours')}`;
-    rightText = t('goal.needPerDay', { amount });
+    rightText = t('goal.needPerDay', { amount: formatRequired(perDay, t, timeUnit) });
   }
 
   const headerLabel = goal.name?.trim() || t('goal.title');

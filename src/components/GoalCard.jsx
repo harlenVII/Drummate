@@ -1,20 +1,11 @@
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTodayString } from '../utils/dateHelpers';
-import { computeGoalStatus } from '../utils/goalStatus';
+import { computeGoalStatus, formatRequired } from '../utils/goalStatus';
 
 function dateDiffDays(a, b) {
   return Math.round(
     (new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000
   );
-}
-
-function formatRequired(hoursPerDay, t, timeUnit) {
-  if (hoursPerDay <= 0) return t('goal.met');
-  if (timeUnit === 'minutes') return `${(hoursPerDay * 60).toFixed(0)} ${t('minutes')}`;
-  if (timeUnit === 'hours') return `${hoursPerDay.toFixed(2)} ${t('hours')}`;
-  // fallback: auto-pick based on magnitude
-  if (hoursPerDay < 1) return `${(hoursPerDay * 60).toFixed(0)} ${t('minutes')}`;
-  return `${hoursPerDay.toFixed(2)} ${t('hours')}`;
 }
 
 function GoalCard({
