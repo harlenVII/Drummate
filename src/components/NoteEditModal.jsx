@@ -1,7 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTodayString } from '../utils/dateHelpers';
+
+const moveCursorToEnd = (el) => {
+  if (!el) return;
+  const len = el.value.length;
+  el.setSelectionRange(len, len);
+};
 
 function NoteEditModal({
   note,           // null for create, { id, itemUid, date, body } for edit
@@ -39,6 +45,7 @@ function NoteEditModal({
   const [date, setDate] = useState(isEdit ? note.date : getTodayString());
   const [body, setBody] = useState(isEdit ? note.body : '');
   const [saving, setSaving] = useState(false);
+  const datePickerRef = useRef(null);
 
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -115,10 +122,17 @@ function NoteEditModal({
               {t('notes.dateLabel')}
             </label>
             <DatePicker
+              ref={datePickerRef}
               selected={toPickerDate(date)}
-              onChange={(d) => setDate(fromPickerDate(d))}
+              onChange={(d) => {
+                setDate(fromPickerDate(d));
+                requestAnimationFrame(() => moveCursorToEnd(datePickerRef.current?.input));
+              }}
+              onFocus={(e) => moveCursorToEnd(e.target)}
               maxDate={new Date()}
               dateFormat="yyyy/MM/dd"
+              calendarStartDay={1}
+              shouldCloseOnSelect
               className="w-full px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md"
               wrapperClassName="w-full mb-3"
               popperProps={{ strategy: 'fixed' }}

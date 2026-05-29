@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import { getTodayString, shiftDate, getMonthStart } from '../utils/dateHelpers';
+
+const moveCursorToEnd = (el) => {
+  if (!el) return;
+  const len = el.value.length;
+  el.setSelectionRange(len, len);
+};
 
 const toPickerDate = (s) => (s ? new Date(s + 'T12:00:00') : null);
 const fromPickerDate = (d) => {
@@ -20,6 +26,8 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
   const [endDate, setEndDate] = useState(getTodayString);
   const [reportText, setReportText] = useState(null);
   const [copied, setCopied] = useState(false);
+  const startPickerRef = useRef(null);
+  const endPickerRef = useRef(null);
 
   // Reset to today whenever the modal opens
   useEffect(() => {
@@ -120,10 +128,17 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
             </label>
             <DatePicker
               id="report-start-date"
+              ref={startPickerRef}
               selected={toPickerDate(startDate)}
-              onChange={(d) => handleStartDateChange(fromPickerDate(d))}
+              onChange={(d) => {
+                handleStartDateChange(fromPickerDate(d));
+                requestAnimationFrame(() => moveCursorToEnd(startPickerRef.current?.input));
+              }}
+              onFocus={(e) => moveCursorToEnd(e.target)}
               maxDate={new Date()}
               dateFormat="yyyy/MM/dd"
+              calendarStartDay={1}
+              shouldCloseOnSelect
               className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
               wrapperClassName="flex-1"
               popperProps={{ strategy: 'fixed' }}
@@ -135,11 +150,18 @@ function ReportGeneratorModal({ isOpen, onClose, items, timeUnit }) {
             </label>
             <DatePicker
               id="report-end-date"
+              ref={endPickerRef}
               selected={toPickerDate(endDate)}
-              onChange={(d) => handleEndDateChange(fromPickerDate(d))}
+              onChange={(d) => {
+                handleEndDateChange(fromPickerDate(d));
+                requestAnimationFrame(() => moveCursorToEnd(endPickerRef.current?.input));
+              }}
+              onFocus={(e) => moveCursorToEnd(e.target)}
               minDate={toPickerDate(startDate)}
               maxDate={new Date()}
               dateFormat="yyyy/MM/dd"
+              calendarStartDay={1}
+              shouldCloseOnSelect
               className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
               wrapperClassName="flex-1"
               popperProps={{ strategy: 'fixed' }}
