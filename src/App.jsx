@@ -1961,6 +1961,7 @@ function App() {
                   user={user}
                   firebaseBackend={firebaseBackend}
                   compactMode={compactMode}
+                  timeUnit={timeUnit}
                 />
               )}
             </>

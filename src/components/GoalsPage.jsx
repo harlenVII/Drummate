@@ -49,7 +49,7 @@ function SortableGoalCard({ goal, logs, ...cardProps }) {
   );
 }
 
-function GoalsPage({ user, firebaseBackend, compactMode = false }) {
+function GoalsPage({ user, firebaseBackend, compactMode = false, timeUnit }) {
   const { t } = useLanguage();
   const [goals, setGoals] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -219,6 +219,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
                   onArchive={handleArchive}
                   onDelete={handleDelete}
                   compactMode={compactMode}
+                  timeUnit={timeUnit}
                 />
               ))}
             </SortableContext>
@@ -232,6 +233,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
                       logs={logs}
                       variant="current"
                       compactMode={compactMode}
+                      timeUnit={timeUnit}
                     />
                   </div>
                 ) : null;
@@ -259,6 +261,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false }) {
               onUnarchive={handleUnarchive}
               onDelete={handleDelete}
               compactMode={compactMode}
+              timeUnit={timeUnit}
             />
           ))
         )}

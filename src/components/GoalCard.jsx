@@ -8,10 +8,13 @@ function dateDiffDays(a, b) {
   );
 }
 
-function formatRequired(hoursPerDay, t) {
+function formatRequired(hoursPerDay, t, timeUnit) {
   if (hoursPerDay <= 0) return t('goal.met');
-  if (hoursPerDay < 1) return `${(hoursPerDay * 60).toFixed(2)} ${t('minutes')}`;
-  return `${hoursPerDay.toFixed(1)} ${t('hours')}`;
+  if (timeUnit === 'minutes') return `${(hoursPerDay * 60).toFixed(0)} ${t('minutes')}`;
+  if (timeUnit === 'hours') return `${hoursPerDay.toFixed(2)} ${t('hours')}`;
+  // fallback: auto-pick based on magnitude
+  if (hoursPerDay < 1) return `${(hoursPerDay * 60).toFixed(0)} ${t('minutes')}`;
+  return `${hoursPerDay.toFixed(2)} ${t('hours')}`;
 }
 
 function GoalCard({
@@ -24,6 +27,7 @@ function GoalCard({
   onDelete,
   onUnarchive,
   compactMode = false,
+  timeUnit,
   dragHandleListeners,
   dragHandleAttributes,
 }) {
@@ -44,7 +48,7 @@ function GoalCard({
     const daysUntilStart = dateDiffDays(today, goal.startDate);
     statusText = t('goal.startsIn', { days: daysUntilStart });
     const perDay = goal.targetHours / totalDays;
-    requiredText = t('goal.needPerDay', { amount: formatRequired(perDay, t) });
+    requiredText = t('goal.needPerDay', { amount: formatRequired(perDay, t, timeUnit) });
   } else if (expired || variant === 'history') {
     statusText = met ? t('goal.statusMet') : t('goal.statusMissed');
   } else {
@@ -54,7 +58,7 @@ function GoalCard({
       requiredText = t('goal.met');
     } else {
       const perDay = remainingHours / daysLeft;
-      requiredText = t('goal.needPerDay', { amount: formatRequired(perDay, t) });
+      requiredText = t('goal.needPerDay', { amount: formatRequired(perDay, t, timeUnit) });
     }
   }
 
