@@ -88,6 +88,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
           <DatePicker
             selected={toPickerDate(startDate)}
             onChange={(d) => { setStartDate(fromPickerDate(d)); setError(''); }}
+            onFocus={(e) => { const l = e.target.value.length; e.target.setSelectionRange(l, l); }}
             dateFormat="yyyy/MM/dd"
             calendarStartDay={1}
             shouldCloseOnSelect
@@ -102,6 +103,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
           <DatePicker
             selected={toPickerDate(endDate)}
             onChange={(d) => { setEndDate(fromPickerDate(d)); setError(''); }}
+            onFocus={(e) => { const l = e.target.value.length; e.target.setSelectionRange(l, l); }}
             dateFormat="yyyy/MM/dd"
             calendarStartDay={1}
             shouldCloseOnSelect
