@@ -24,10 +24,10 @@ export function computeGoalStatus(goal, logs) {
 // timeUnit is undefined. Pure given the injected `t` translator.
 export function formatRequired(hoursPerDay, t, timeUnit) {
   if (hoursPerDay <= 0) return t('goal.met');
-  if (timeUnit === 'minutes') return `${(hoursPerDay * 60).toFixed(0)} ${t('minutes')}`;
+  if (timeUnit === 'minutes') return `${(hoursPerDay * 60).toFixed(2)} ${t('minutes')}`;
   if (timeUnit === 'hours') return `${hoursPerDay.toFixed(2)} ${t('hours')}`;
   // fallback: auto-pick based on magnitude
-  if (hoursPerDay < 1) return `${(hoursPerDay * 60).toFixed(0)} ${t('minutes')}`;
+  if (hoursPerDay < 1) return `${(hoursPerDay * 60).toFixed(2)} ${t('minutes')}`;
   return `${hoursPerDay.toFixed(2)} ${t('hours')}`;
 }
 
