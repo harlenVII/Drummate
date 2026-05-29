@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getTodayString } from '../utils/dateHelpers';
+
+const moveCursorToEnd = (el) => {
+  if (!el) return;
+  const len = el.value.length;
+  el.setSelectionRange(len, len);
+};
 
 const toPickerDate = (s) => (s ? new Date(s + 'T12:00:00') : null);
 const fromPickerDate = (d) => {
@@ -19,6 +25,8 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
   const [endDate, setEndDate] = useState('');
   const [targetHours, setTargetHours] = useState('');
   const [error, setError] = useState('');
+  const startPickerRef = useRef(null);
+  const endPickerRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -86,9 +94,14 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
         <div className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.startDate')}</span>
           <DatePicker
+            ref={startPickerRef}
             selected={toPickerDate(startDate)}
-            onChange={(d) => { setStartDate(fromPickerDate(d)); setError(''); }}
-            onFocus={(e) => { const l = e.target.value.length; e.target.setSelectionRange(l, l); }}
+            onChange={(d) => {
+              setStartDate(fromPickerDate(d));
+              setError('');
+              requestAnimationFrame(() => moveCursorToEnd(startPickerRef.current?.input));
+            }}
+            onFocus={(e) => moveCursorToEnd(e.target)}
             dateFormat="yyyy/MM/dd"
             calendarStartDay={1}
             shouldCloseOnSelect
@@ -101,9 +114,14 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
         <div className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-slate-400">{t('goal.endDate')}</span>
           <DatePicker
+            ref={endPickerRef}
             selected={toPickerDate(endDate)}
-            onChange={(d) => { setEndDate(fromPickerDate(d)); setError(''); }}
-            onFocus={(e) => { const l = e.target.value.length; e.target.setSelectionRange(l, l); }}
+            onChange={(d) => {
+              setEndDate(fromPickerDate(d));
+              setError('');
+              requestAnimationFrame(() => moveCursorToEnd(endPickerRef.current?.input));
+            }}
+            onFocus={(e) => moveCursorToEnd(e.target)}
             dateFormat="yyyy/MM/dd"
             calendarStartDay={1}
             shouldCloseOnSelect
