@@ -51,13 +51,13 @@ export async function initTimezone(backend, userId) {
     const settings = await backend.getUserSettings(userId);
     if (settings?.timezone && isValidTz(settings.timezone)) {
       currentTz = settings.timezone;
-      try { globalThis.localStorage?.setItem(STORAGE_KEY, currentTz); } catch {}
+      try { globalThis.localStorage?.setItem(STORAGE_KEY, currentTz); } catch { /* localStorage unavailable */ }
       return;
     }
     // No remote value yet — backfill with the resolved current value (which
     // may be the default or a localStorage-cached value).
     await backend.setUserSetting(userId, 'timezone', currentTz);
-    try { globalThis.localStorage?.setItem(STORAGE_KEY, currentTz); } catch {}
+    try { globalThis.localStorage?.setItem(STORAGE_KEY, currentTz); } catch { /* localStorage unavailable */ }
     console.info('timezoneService: backfilled default for new user');
   } catch (err) {
     console.error('initTimezone failed; keeping cached value', err);

@@ -1230,7 +1230,7 @@ function App() {
         if (await isTtsCached()) {
           await loadKokoroTts();
         }
-      } catch {}
+      } catch { /* TTS preload is best-effort */ }
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2005,7 +2005,7 @@ function App() {
         onToggleAiCoach={() => {
           setAiCoachEnabled((prev) => {
             const next = !prev;
-            try { localStorage.setItem('drummate_ai_coach_enabled', String(next)); } catch {}
+            try { localStorage.setItem('drummate_ai_coach_enabled', String(next)); } catch { /* ignore */ }
             return next;
           });
         }}

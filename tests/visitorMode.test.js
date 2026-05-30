@@ -38,14 +38,13 @@ describe('wipeAllLocalData', () => {
   });
 });
 
-import { vi } from 'vitest';
 import { setPriorHours, getPriorHours } from '../src/services/priorPracticeService';
 
 describe('setPriorHours with null userId', () => {
   beforeEach(() => {
     // Mock localStorage for this test suite
     const store = {};
-    global.localStorage = {
+    globalThis.localStorage = {
       getItem: (key) => store[key] || null,
       setItem: (key, value) => {
         store[key] = String(value);
@@ -59,7 +58,7 @@ describe('setPriorHours with null userId', () => {
         });
       },
     };
-    global.localStorage.clear();
+    globalThis.localStorage.clear();
   });
 
   it('writes localStorage without calling backend when userId is null', async () => {

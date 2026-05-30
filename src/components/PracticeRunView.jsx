@@ -29,7 +29,6 @@ export default function PracticeRunView({
   const { t } = useLanguage();
   const steps = computeSteps(practice.startBpm, practice.endBpm, practice.bpmIncrement);
   const totalSteps = steps.length;
-  const totalBars = totalSteps * practice.barsPerStep;
 
   // Refs mirror state for use inside the onBeat callback (which closes over
   // its initial values).

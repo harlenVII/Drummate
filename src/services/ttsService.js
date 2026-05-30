@@ -111,7 +111,7 @@ export function createTtsService() {
       if (currentSource) {
         try {
           currentSource.stop();
-        } catch {}
+        } catch { /* already stopped */ }
         currentSource = null;
       }
     },
