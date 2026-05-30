@@ -209,12 +209,20 @@ export default function PracticeEditModal({ practice, items = [], onSave, onDele
             </span>
             {(() => {
               const isStale = form.linkedItemUid && !items.find(i => i.uid === form.linkedItemUid);
-              const fundamentals = items
+              // Match the Practice tab: active items only, ordered by sortOrder
+              // within each category (fundamentals then songs). Keep the
+              // currently-linked item visible even if archived/trashed so an
+              // existing link isn't silently dropped.
+              const visible = items.filter(
+                i => (!i.archived && !i.trashed) || i.uid === form.linkedItemUid
+              );
+              const bySortOrder = (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+              const fundamentals = visible
                 .filter(i => i.category === 'fundamentals')
-                .sort((a, b) => a.name.localeCompare(b.name));
-              const songs = items
+                .sort(bySortOrder);
+              const songs = visible
                 .filter(i => i.category === 'songs')
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort(bySortOrder);
               return (
                 <select
                   value={form.linkedItemUid ?? ''}
