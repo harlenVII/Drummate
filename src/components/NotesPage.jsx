@@ -152,8 +152,9 @@ function NotesPage({
                 <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-2">{t('notes.emptyTrash')}</p>
               )}
               {trashedNotes.map((note) => {
+                const now = Date.now(); // eslint-disable-line react-hooks/purity -- live "days until purge" countdown
                 const daysLeft = note.trashedAt
-                  ? Math.max(0, 30 - Math.floor((Date.now() - new Date(note.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
+                  ? Math.max(0, 30 - Math.floor((now - new Date(note.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
                   : 0;
                 const itemName = items.find(i => i.uid === note.itemUid)?.name ?? t('notes.itemDeleted');
                 const preview = note.body.length > 80 ? note.body.slice(0, 80) + '…' : note.body;

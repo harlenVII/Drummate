@@ -147,7 +147,7 @@ export function createLlmService() {
 
         const trimmed = result
           .replace(/<think>[\s\S]*?<\/think>/g, '')
-          .replace(/[\p{Extended_Pictographic}‍️]/gu, '')
+          .replace(/\p{Extended_Pictographic}|‍|️/gu, '')
           .replace(/[ \t]{2,}/g, ' ')
           .trim();
         if (trimmed.length < 10 || trimmed.length > 500) {

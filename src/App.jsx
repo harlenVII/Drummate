@@ -229,7 +229,6 @@ function App() {
   const sttServiceRef = useRef(null);
   const [handsFreeMode, setHandsFreeMode] = useState(false);
   const [wakeWordLoading, setWakeWordLoading] = useState(false);
-  const [wakeWordReady, setWakeWordReady] = useState(false);
   const [wakeWordDetected, setWakeWordDetected] = useState(false);
   const [wakeWordError, setWakeWordError] = useState(null);
   const [listeningState, setListeningState] = useState('idle'); // 'idle'|'listening'|'processing'|'feedback'|'error'
@@ -1470,7 +1469,6 @@ function App() {
       if (!wakeWordEngineRef.current.isLoaded) {
         setWakeWordLoading(true);
         await wakeWordEngineRef.current.load();
-        setWakeWordReady(true);
         setWakeWordLoading(false);
       }
 
