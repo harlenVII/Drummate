@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -122,7 +122,10 @@ function PracticeItemList({
   const [activeDragId, setActiveDragId] = useState(null);
   const [dragItems, setDragItems] = useState(null);
 
-  const activeItems = items.filter(item => !item.archived && !item.trashed);
+  const activeItems = useMemo(
+    () => items.filter(item => !item.archived && !item.trashed),
+    [items],
+  );
   const archivedItems = items.filter(item => item.archived && !item.trashed);
   const trashedItems = items.filter(item => item.trashed);
   const hasArchivedItems = archivedItems.length > 0;

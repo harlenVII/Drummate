@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -166,7 +166,7 @@ function MultiMeterPage({
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   );
 
-  const base = getBase(slots);
+  const base = useMemo(() => getBase(slots), [slots]);
 
   useEffect(() => {
     if (engineRef.current) engineRef.current.setBpm(bpm * base.divisor);
@@ -201,7 +201,7 @@ function MultiMeterPage({
       setPlayingSlot(0);
     }
   }, [engineRef, isPlaying, setIsPlaying, setPlayingSlot, setCurrentBeat,
-      noSleepRef, slots, soundType, bpm]);
+      noSleepRef, slots, soundType, bpm, base]);
 
   const handleAddSlot = useCallback((beats, noteValue) => {
     if (slots.length >= MAX_SLOTS) return;
