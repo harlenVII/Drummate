@@ -445,31 +445,27 @@ export const addNote = async (itemUid, body, date) => {
   });
 };
 
+export const compareNotes = (a, b) => {
+  if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+  // Within same date: newer createdAt first; fall back to id for legacy rows
+  if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
+    return a.createdAt < b.createdAt ? 1 : -1;
+  }
+  return b.id - a.id;
+};
+
 export const getAllNotes = async () => {
   const notes = await db.notes.toArray();
   return notes
     .filter(n => !n.trashed)
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      // Within same date: newer createdAt first; fall back to id for legacy rows
-      if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
-        return a.createdAt < b.createdAt ? 1 : -1;
-      }
-      return b.id - a.id;
-    });
+    .sort(compareNotes);
 };
 
 export const getNotesByItem = async (itemUid) => {
   const notes = await db.notes.where('itemUid').equals(itemUid).toArray();
   return notes
     .filter(n => !n.trashed)
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
-        return a.createdAt < b.createdAt ? 1 : -1;
-      }
-      return b.id - a.id;
-    });
+    .sort(compareNotes);
 };
 
 export const updateNote = async (id, body) => {
@@ -495,13 +491,7 @@ export const getTrashedNotes = async () => {
   const notes = await db.notes.toArray();
   return notes
     .filter(n => n.trashed)
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      if (a.createdAt && b.createdAt && a.createdAt !== b.createdAt) {
-        return a.createdAt < b.createdAt ? 1 : -1;
-      }
-      return b.id - a.id;
-    });
+    .sort(compareNotes);
 };
 
 export const purgeNote = async (id) => {
