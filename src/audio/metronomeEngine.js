@@ -107,8 +107,6 @@ export class MetronomeEngine {
     // Safari uses a non-standard "interrupted" state when the tab loses focus,
     // phone calls come in, etc. Listen for state changes and auto-resume.
     this.audioCtx.addEventListener('statechange', () => {
-      console.log('[Metronome] AudioContext statechange →', this.audioCtx.state,
-        'isPlaying:', this.isPlaying, 'currentTime:', this.audioCtx.currentTime);
       if (this.isPlaying && this.audioCtx.state !== 'running') {
         this.audioCtx.resume().catch(() => {});
       }
@@ -263,8 +261,6 @@ export class MetronomeEngine {
     // resources asynchronously; creating a new one immediately is fine
     // because they use separate audio graph instances.
     if (this.audioCtx) {
-      console.log('[Metronome] Closing old AudioContext — state:', this.audioCtx.state,
-        'currentTime:', this.audioCtx.currentTime);
       this.audioCtx.close().catch(() => {});
       this.audioCtx = null;
       this._analyser = null;
@@ -281,26 +277,16 @@ export class MetronomeEngine {
     // Resume the AudioContext — call (not await) must be in user gesture.
     const resumePromise = this.audioCtx.resume();
 
-    console.log('[Metronome] New AudioContext created — state:', this.audioCtx.state,
-      'sampleRate:', this.audioCtx.sampleRate, 'currentTime:', this.audioCtx.currentTime,
-      'dest.channels:', this.audioCtx.destination.channelCount + '/' + this.audioCtx.destination.maxChannelCount,
-      'baseLatency:', this.audioCtx.baseLatency,
-      'outputLatency:', this.audioCtx.outputLatency);
-
     // ----------------------------------------------------------------
     // ASYNC PHASE — user gesture may be consumed after first await.
     // ----------------------------------------------------------------
 
     await resumePromise;
-    console.log('[Metronome] After resume — state:', this.audioCtx.state,
-      'currentTime:', this.audioCtx.currentTime);
 
     // Verify the context is truly alive: currentTime must advance.
     const t0 = this.audioCtx.currentTime;
     await new Promise((r) => setTimeout(r, 60));
     const t1 = this.audioCtx.currentTime;
-    console.log('[Metronome] currentTime check — t0:', t0, 't1:', t1,
-      'delta:', (t1 - t0).toFixed(4), 'advancing:', t1 > t0);
 
     if (t1 === t0) {
       console.warn('[Metronome] currentTime stuck, recreating AudioContext');
@@ -313,8 +299,6 @@ export class MetronomeEngine {
       this._audioEl.srcObject = this._streamDest.stream;
       await this.audioCtx.resume();
       await new Promise((r) => setTimeout(r, 60));
-      console.log('[Metronome] Second context — state:', this.audioCtx.state,
-        'currentTime:', this.audioCtx.currentTime);
     }
 
     this.currentBeat = 0;
@@ -342,10 +326,6 @@ export class MetronomeEngine {
 
     this.nextNoteTime = this.audioCtx.currentTime + 0.05;
 
-    console.log('[Metronome] Scheduling start — nextNoteTime:', this.nextNoteTime.toFixed(4),
-      'ctxTime:', this.audioCtx.currentTime.toFixed(4),
-      'worker:', !!this.worker);
-
     if (this.worker) {
       this.worker.postMessage('start');
       this._workerFallbackID = setTimeout(() => {
@@ -360,26 +340,10 @@ export class MetronomeEngine {
       this.timerID = setInterval(() => this._scheduler(), this._lookaheadMs);
     }
 
-    // Diagnostic: health check at 1s
-    setTimeout(() => {
-      if (this.isPlaying) {
-        const amp = this._checkAudioFlowing();
-        console.log('[Metronome] Health check @1s — schedulerCalls:', this._schedulerCallCount,
-          'notesScheduled:', this._noteCount,
-          'ctxState:', this.audioCtx?.state,
-          'ctxTime:', this.audioCtx?.currentTime?.toFixed(4),
-          'amplitude:', amp?.toFixed(6));
-      }
-    }, 1000);
   }
 
   stop() {
     if (!this.isPlaying) return;
-
-    console.log('[Metronome] stop() — schedulerCalls:', this._schedulerCallCount,
-      'notesScheduled:', this._noteCount,
-      'ctxState:', this.audioCtx?.state,
-      'ctxTime:', this.audioCtx?.currentTime?.toFixed(4));
 
     clearTimeout(this._workerFallbackID);
 
@@ -506,12 +470,6 @@ export class MetronomeEngine {
     if (!this.audioCtx || !this.isPlaying) return;
 
     this._schedulerCallCount++;
-    if (this._schedulerCallCount <= 3) {
-      console.log('[Metronome] _scheduler #' + this._schedulerCallCount,
-        '— ctxTime:', this.audioCtx.currentTime.toFixed(4),
-        'nextNote:', this.nextNoteTime.toFixed(4),
-        'state:', this.audioCtx.state);
-    }
 
     while (this.nextNoteTime < this.audioCtx.currentTime + this._scheduleAhead) {
       this._scheduleNote(this.nextNoteTime, this.currentBeat, this.subdivisionIndex);
@@ -551,28 +509,11 @@ export class MetronomeEngine {
       buffer = this._clickBuffers.sub;
     }
 
-    if (this._noteCount <= 3) {
-      console.log('[Metronome] _scheduleNote #' + this._noteCount,
-        '— time:', time.toFixed(4), 'beat:', beat, 'sub:', subIndex,
-        'ctxTime:', this.audioCtx.currentTime.toFixed(4),
-        'ctxState:', this.audioCtx.state,
-        'bufferType:', isAccent ? 'accent' : isMainBeat ? 'normal' : 'sub');
-    }
 
     const source = this.audioCtx.createBufferSource();
     source.buffer = buffer;
     source.connect(this._analyser);
     source.start(time);
-
-    // Check analyser DURING the first note to verify audio is flowing
-    if (this._noteCount === 1) {
-      const checkDelay = Math.max(10, (time + 0.025 - this.audioCtx.currentTime) * 1000);
-      setTimeout(() => {
-        const amp = this._checkAudioFlowing();
-        console.log('[Metronome] During-note audio check — amplitude:', amp?.toFixed(6),
-          'audioFlowing:', amp > 0, 'ctxTime:', this.audioCtx?.currentTime?.toFixed(4));
-      }, checkDelay);
-    }
 
     const delay = Math.max(0, (time - this.audioCtx.currentTime) * 1000);
     setTimeout(() => {
