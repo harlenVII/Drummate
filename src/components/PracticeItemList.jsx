@@ -3,6 +3,7 @@ import { DndContext, DragOverlay, closestCenter, PointerSensor, TouchSensor, use
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTime } from '../utils/formatTime';
+import { daysUntilPurge } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 import MergeTargetPicker from './MergeTargetPicker';
 import GoalBanner from './GoalBanner';
@@ -501,9 +502,7 @@ function PracticeItemList({
             {showTrashed && (
               <div className="flex flex-col gap-2 mt-3">
                 {trashedItems.map((item) => {
-                  const daysLeft = item.trashedAt
-                    ? Math.max(0, 30 - Math.floor((now - new Date(item.trashedAt).getTime()) / (1000 * 60 * 60 * 24)))
-                    : 0;
+                  const daysLeft = daysUntilPurge(item.trashedAt, now);
                   return (
                     <div key={item.id} className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 flex items-center opacity-50">
                       <div className="flex-1 flex items-center justify-between">
