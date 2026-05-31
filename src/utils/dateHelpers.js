@@ -117,3 +117,11 @@ export function daysUntilPurge(trashedAt, now = Date.now()) {
   const elapsedDays = Math.floor((now - new Date(trashedAt).getTime()) / MS_PER_DAY);
   return Math.max(0, TRASH_RETENTION_DAYS - elapsedDays);
 }
+
+/**
+ * Whole-day difference (b - a) between two YYYY-MM-DD strings, noon-anchored to
+ * avoid DST/UTC off-by-one. Positive when b is later than a.
+ */
+export function dateDiffDays(a, b) {
+  return Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / MS_PER_DAY);
+}

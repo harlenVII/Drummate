@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react';
 import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getTodayString } from '../utils/dateHelpers';
+import { getTodayString, dateDiffDays } from '../utils/dateHelpers';
 import { db, getLogsByDateRange } from '../services/database';
 import { computeGoalStatus, formatRequired } from '../utils/goalStatus';
-
-function dateDiffDays(a, b) {
-  return Math.round(
-    (new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000
-  );
-}
 
 function GoalBanner({ timeUnit }) {
   const { t } = useLanguage();

@@ -8,6 +8,7 @@ import {
   getYearStart,
   getYearEnd,
   getDaysInRange,
+  dateDiffDays,
 } from '../src/utils/dateHelpers.js';
 
 // These helpers operate on calendar date strings and must be timezone-independent.
@@ -108,5 +109,18 @@ describe('getDaysInRange', () => {
   it('returns 366 days for a full leap year', () => {
     const days = getDaysInRange('2024-01-01', '2024-12-31');
     expect(days).toHaveLength(366);
+  });
+});
+
+describe('dateDiffDays', () => {
+  it('returns the whole-day difference between two YYYY-MM-DD dates', () => {
+    expect(dateDiffDays('2026-01-01', '2026-01-08')).toBe(7);
+    expect(dateDiffDays('2026-01-08', '2026-01-01')).toBe(-7);
+    expect(dateDiffDays('2026-01-01', '2026-01-01')).toBe(0);
+  });
+
+  it('is unaffected by DST (noon-anchored)', () => {
+    // US DST springs forward on 2026-03-08
+    expect(dateDiffDays('2026-03-07', '2026-03-09')).toBe(2);
   });
 });
