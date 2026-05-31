@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import ReportItemCard from '../src/components/ReportItemCard';
 
 vi.mock('../src/contexts/LanguageContext', () => ({
@@ -33,5 +34,21 @@ describe('ReportItemCard', () => {
     );
     expect(screen.getByText('Empty')).toBeInTheDocument();
     expect(screen.queryByText(/\(\d+%\)/)).not.toBeInTheDocument();
+  });
+
+  it('calls onEditTime with entry data when editMode is true and card is clicked', async () => {
+    const onEditTime = vi.fn();
+    const { container } = render(
+      <ReportItemCard
+        entry={{ id: 1, name: 'Paradiddle', duration: 1800 }}
+        grandTotal={3600}
+        timeUnit="minutes"
+        compactMode={false}
+        editMode
+        onEditTime={onEditTime}
+      />,
+    );
+    await userEvent.click(container.firstChild);
+    expect(onEditTime).toHaveBeenCalledWith(1, 'Paradiddle', 1800);
   });
 });
