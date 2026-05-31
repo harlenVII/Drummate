@@ -26,7 +26,9 @@ function NotesPage({
   const [trashedNotes, setTrashedNotes] = useState([]);
 
   useEffect(() => {
-    getTrashedNotes().then(setTrashedNotes);
+    getTrashedNotes()
+      .then(setTrashedNotes)
+      .catch((err) => console.error('getTrashedNotes failed:', err));
   }, [showTrash, notes]);
 
   const handleCreate = useCallback(async ({ itemUid, date, body }) => {

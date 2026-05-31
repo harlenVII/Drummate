@@ -637,7 +637,9 @@ function App() {
           ? parsed.loggedAt
           : (parsed.date ? Date.parse(parsed.date + 'T12:00:00') : Date.now());
         if (itemId != null && duration > 0) {
-          addLog(itemId, duration, { loggedAt }).then(() => loadData());
+          addLog(itemId, duration, { loggedAt })
+            .then(() => loadData())
+            .catch((err) => console.error('addLog failed:', err));
         }
       } catch {
         // ignore malformed data
