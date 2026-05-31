@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import { getTodayString } from '../utils/dateHelpers';
 import { SUBDIVISIONS } from '../constants/subdivisions';
+import { TRASH_RETENTION_DAYS } from '../constants/trash.js';
 import { legacyDateToLoggedAt, formatInTimezone, noonInHomeTz, getDateRangeUtc } from '../utils/tzDateHelpers.js';
 import { getTimezone } from './timezoneService.js';
 
@@ -258,7 +259,7 @@ export const restoreItem = async (id) => {
   });
 };
 
-export const purgeExpiredTrash = async (daysOld = 30) => {
+export const purgeExpiredTrash = async (daysOld = TRASH_RETENTION_DAYS) => {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - daysOld);
   const cutoffISO = cutoff.toISOString();
