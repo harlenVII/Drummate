@@ -48,8 +48,6 @@ export class MetronomeEngine {
     this._lookaheadMs = 25.0;
     this._scheduleAhead = 0.1;
     this._workerFallbackID = null;
-    this._schedulerCallCount = 0;
-    this._noteCount = 0;
 
     // Reusable <audio> element for MediaStream output (Safari workaround).
     // Created once to avoid accumulating elements across start/stop cycles.
@@ -239,9 +237,6 @@ export class MetronomeEngine {
 
   async start() {
     if (this.isPlaying) return;
-
-    this._schedulerCallCount = 0;
-    this._noteCount = 0;
 
     // ----------------------------------------------------------------
     // SYNCHRONOUS PHASE — everything here must stay within the user
@@ -461,8 +456,6 @@ export class MetronomeEngine {
   _scheduler() {
     if (!this.audioCtx || !this.isPlaying) return;
 
-    this._schedulerCallCount++;
-
     while (this.nextNoteTime < this.audioCtx.currentTime + this._scheduleAhead) {
       this._scheduleNote(this.nextNoteTime, this.currentBeat, this.subdivisionIndex);
       this._advanceBeat();
@@ -470,8 +463,6 @@ export class MetronomeEngine {
   }
 
   _scheduleNote(time, beat, subIndex) {
-    this._noteCount++;
-
     // Skip audio for rest beats or per-note rests (negative offsets), but still fire callback
     const isPerNoteRest = this.subdivisionPattern[subIndex] < 0;
     if (this._isRestBeat || isPerNoteRest) {
