@@ -65,6 +65,7 @@ import { shouldMigrateLegacy, buildMigratedGoal, selectExpiredForArchive } from 
 import { initTimezone } from './services/timezoneService';
 import { initPriorHours } from './services/priorPracticeService';
 import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
+import { setItem } from './utils/safeStorage';
 import { SUBDIVISIONS } from './constants/subdivisions';
 
 function App() {
@@ -294,59 +295,59 @@ function App() {
 
   // Persist metronome settings to localStorage
   useEffect(() => {
-    localStorage.setItem('drummate_metronome_bpm', String(metronomeBpm));
+    setItem('drummate_metronome_bpm', String(metronomeBpm));
   }, [metronomeBpm]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_metronome_sound_type', metronomeSoundType);
+    setItem('drummate_metronome_sound_type', metronomeSoundType);
   }, [metronomeSoundType]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_metronome_time_signature', JSON.stringify(metronomeTimeSignature));
+    setItem('drummate_metronome_time_signature', JSON.stringify(metronomeTimeSignature));
   }, [metronomeTimeSignature]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_metronome_subdivision', metronomeSubdivision);
+    setItem('drummate_metronome_subdivision', metronomeSubdivision);
   }, [metronomeSubdivision]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_metronome_accent_first_beat', String(metronomeAccentFirstBeat));
+    setItem('drummate_metronome_accent_first_beat', String(metronomeAccentFirstBeat));
   }, [metronomeAccentFirstBeat]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_multimeter_bpm', String(multiMeterBpm));
+    setItem('drummate_multimeter_bpm', String(multiMeterBpm));
   }, [multiMeterBpm]);
   useEffect(() => {
-    localStorage.setItem('drummate_multimeter_sound_type', multiMeterSoundType);
+    setItem('drummate_multimeter_sound_type', multiMeterSoundType);
   }, [multiMeterSoundType]);
   useEffect(() => {
-    localStorage.setItem('drummate_multimeter_slots', JSON.stringify(multiMeterSlots));
+    setItem('drummate_multimeter_slots', JSON.stringify(multiMeterSlots));
   }, [multiMeterSlots]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_time_unit', timeUnit);
+    setItem('drummate_time_unit', timeUnit);
   }, [timeUnit]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_group_by_category', String(groupByCategory));
+    setItem('drummate_group_by_category', String(groupByCategory));
   }, [groupByCategory]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_compact_mode', String(compactMode));
+    setItem('drummate_compact_mode', String(compactMode));
   }, [compactMode]);
 
   // Persist sequencer settings to localStorage
   useEffect(() => {
-    localStorage.setItem('drummate_sequencer_bpm', String(sequencerBpm));
+    setItem('drummate_sequencer_bpm', String(sequencerBpm));
   }, [sequencerBpm]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_sequencer_sound_type', sequencerSoundType);
+    setItem('drummate_sequencer_sound_type', sequencerSoundType);
   }, [sequencerSoundType]);
 
   useEffect(() => {
-    localStorage.setItem('drummate_sequencer_slots', JSON.stringify(sequencerSlots));
-    localStorage.setItem('drummate_sequencer_next_id', String(sequencerNextIdRef.current));
+    setItem('drummate_sequencer_slots', JSON.stringify(sequencerSlots));
+    setItem('drummate_sequencer_next_id', String(sequencerNextIdRef.current));
   }, [sequencerSlots]);
 
   const [notes, setNotes] = useState([]);
@@ -655,7 +656,7 @@ function App() {
         if (elapsed > 0) {
           clearInterval(intervalRef.current);
           // Synchronous localStorage write survives iOS page kill
-          localStorage.setItem(
+          setItem(
             'drummate_pending_log',
             JSON.stringify({ itemId, duration: elapsed, loggedAt: Date.now() }),
           );
@@ -1215,7 +1216,7 @@ function App() {
   useEffect(() => {
     if (!aiCoachEnabled && !handsFreeMode && kokoroEnabled) {
       setKokoroEnabled(false);
-      localStorage.setItem('drummate_kokoro_tts', 'false');
+      setItem('drummate_kokoro_tts', 'false');
     }
   }, [aiCoachEnabled, handsFreeMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
