@@ -21,4 +21,8 @@ describe('formatTime', () => {
     expect(formatTime(61)).toBe('00:01:01');
     expect(formatTime(3663)).toBe('01:01:03');
   });
+
+  it('floors fractional seconds', () => {
+    expect(formatTime(125.5)).toBe('00:02:05');
+  });
 });
