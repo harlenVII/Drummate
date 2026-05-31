@@ -1,3 +1,5 @@
+import '@testing-library/jest-dom';
+
 // Node 25 introduces a native `localStorage` getter on the global object that
 // conflicts with jsdom's localStorage in vitest. We redefine globalThis.localStorage
 // to point at jsdom's internal _localStorage so tests can call .clear() etc.

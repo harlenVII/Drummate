@@ -1,4 +1,5 @@
 import { formatDuration } from '../utils/formatTime';
+import ReportItemCard from './ReportItemCard';
 import {
   getYearStart,
   getYearEnd,
@@ -167,39 +168,16 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
     onYearChange(`${nextYear}-01-01`);
   };
 
-  function renderItemCard(entry) {
-    const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
-    return (
-      <div key={entry.id} className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
-        <div className="flex items-center justify-between">
-          <span
-            className={`font-medium ${entry.duration > 0 ? 'text-gray-800 dark:text-slate-100' : 'text-gray-400 dark:text-slate-500'}`}
-          >
-            {entry.name}
-          </span>
-          <div
-            className={`text-right ${entry.duration > 0 ? 'text-gray-600 dark:text-slate-400' : 'text-gray-400 dark:text-slate-500'}`}
-          >
-            <div>
-              {entry.duration > 0 ? formatDuration(entry.duration, timeUnit) : 0}{' '}
-              {t(timeUnit)}
-            </div>
-            {entry.duration > 0 && (
-              <div className="text-xs text-gray-500 dark:text-slate-400">({percentage}%)</div>
-            )}
-          </div>
-        </div>
-        {entry.duration > 0 && grandTotal > 0 && (
-          <div className={`${compactMode ? 'mt-1' : 'mt-2'} bg-gray-100 dark:bg-slate-700 rounded-full h-1.5`}>
-            <div
-              className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
-              style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
+  const renderItemCard = (entry) => (
+    <ReportItemCard
+      key={entry.id}
+      entry={entry}
+      grandTotal={grandTotal}
+      timeUnit={timeUnit}
+      compactMode={compactMode}
+      dimZero
+    />
+  );
 
   return (
     <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>

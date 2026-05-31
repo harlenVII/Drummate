@@ -3,6 +3,7 @@ import { formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 import { buildBreakdown } from '../utils/practiceStats';
+import ReportItemCard from './ReportItemCard';
 
 function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
@@ -40,36 +41,17 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
 
   const isToday = reportDate === getTodayString();
 
-  function renderItemCard(entry) {
-    const percentage = grandTotal > 0 ? Math.round((entry.duration / grandTotal) * 100) : 0;
-    return (
-      <div
-        key={entry.id}
-        className={`bg-white dark:bg-slate-800 shadow-sm transition-colors ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'} ${
-          editMode ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 active:bg-gray-100 dark:active:bg-slate-700' : ''
-        }`}
-        onClick={editMode ? () => onEditTime(entry.id, entry.name, entry.duration) : undefined}
-      >
-        <div className="flex items-center justify-between">
-          <span className="font-medium text-gray-800 dark:text-slate-100">{entry.name}</span>
-          <div className="text-right text-gray-600 dark:text-slate-400">
-            <div>{formatDuration(entry.duration, timeUnit)} {t(timeUnit)}</div>
-            {entry.duration > 0 && (
-              <div className="text-xs text-gray-500 dark:text-slate-400">({percentage}%)</div>
-            )}
-          </div>
-        </div>
-        {grandTotal > 0 && (
-          <div className={`${compactMode ? 'mt-1' : 'mt-2'} bg-gray-100 dark:bg-slate-700 rounded-full h-1.5`}>
-            <div
-              className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
-              style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
+  const renderItemCard = (entry) => (
+    <ReportItemCard
+      key={entry.id}
+      entry={entry}
+      grandTotal={grandTotal}
+      timeUnit={timeUnit}
+      compactMode={compactMode}
+      editMode={editMode}
+      onEditTime={onEditTime}
+    />
+  );
 
   return (
     <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
