@@ -65,6 +65,7 @@ import { shouldMigrateLegacy, buildMigratedGoal, selectExpiredForArchive } from 
 import { initTimezone } from './services/timezoneService';
 import { initPriorHours } from './services/priorPracticeService';
 import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
+import { SUBDIVISIONS } from './constants/subdivisions';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
@@ -156,10 +157,7 @@ function App() {
   const [metronomeSubdivision, setMetronomeSubdivision] = useState(() => {
     try {
       const saved = localStorage.getItem('drummate_metronome_subdivision');
-      const validSubdivisions = ['quarter', 'eighth', 'triplet', 'sixteenth',
-                                  'eighthTwoSixteenths', 'twoSixteenthsEighth',
-                                  'sixteenthEighthSixteenth', 'dottedEighth',
-                                  'quintuplet', 'sextuplet', 'offbeatSixteenths'];
+      const validSubdivisions = SUBDIVISIONS.map((s) => s.key);
       return saved && validSubdivisions.includes(saved) ? saved : 'quarter';
     } catch {
       return 'quarter';
