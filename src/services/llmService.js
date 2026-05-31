@@ -82,13 +82,18 @@ function getRandomFallback(language) {
  * Check if the model is already cached in OPFS (no full wllama init needed).
  */
 export async function isModelCached() {
+  let temp = null;
   try {
     const { Wllama, LoggerWithoutDebug } = await import('@wllama/wllama');
-    const temp = new Wllama(WASM_PATHS, { logger: LoggerWithoutDebug });
+    temp = new Wllama(WASM_PATHS, { logger: LoggerWithoutDebug });
     const blob = await temp.cacheManager.open(MODEL_URL);
     return blob !== null;
   } catch {
     return false;
+  } finally {
+    if (temp) {
+      await temp.exit().catch(() => {});
+    }
   }
 }
 
