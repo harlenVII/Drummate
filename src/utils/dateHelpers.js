@@ -1,5 +1,6 @@
 import { formatInTimezone } from './tzDateHelpers.js';
 import { getTimezone } from '../services/timezoneService.js';
+import { TRASH_RETENTION_DAYS } from '../constants/trash.js';
 
 /**
  * Returns today's date string in the user's configured timezone.
@@ -101,4 +102,18 @@ export function getDaysInRange(startDate, endDate) {
     current = shiftDate(current, 1);
   }
   return days;
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+/**
+ * Returns the number of days remaining before a trashed record is purged.
+ * @param {string|null|undefined} trashedAt - ISO string of when the record was trashed.
+ * @param {number} [now=Date.now()] - Current timestamp in ms (injectable for testing).
+ * @returns {number} Days remaining (0 if already past retention window or trashedAt missing).
+ */
+export function daysUntilPurge(trashedAt, now = Date.now()) {
+  if (!trashedAt) return 0;
+  const elapsedDays = Math.floor((now - new Date(trashedAt).getTime()) / MS_PER_DAY);
+  return Math.max(0, TRASH_RETENTION_DAYS - elapsedDays);
 }
