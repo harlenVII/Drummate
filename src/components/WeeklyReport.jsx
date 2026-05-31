@@ -6,6 +6,7 @@ import {
   getTodayString,
 } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
+import { buildBreakdown } from '../utils/practiceStats';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -19,12 +20,6 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   const activeItemIds = new Set(items.map(i => i.id));
   const activeLogs = weekLogs.filter(log => activeItemIds.has(log.itemId));
 
-  // Per-item totals
-  const itemTotals = {};
-  for (const log of activeLogs) {
-    itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
-  }
-
   // Per-day totals for bar chart
   const dayTotals = {};
   for (const log of activeLogs) {
@@ -32,22 +27,8 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   }
   const maxDay = Math.max(...weekDays.map((d) => dayTotals[d] || 0), 1);
 
-  // Sorted breakdown
-  const breakdown = items
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      duration: itemTotals[item.id] || 0,
-    }))
-    .filter((e) => e.duration > 0)
-    .sort((a, b) => b.duration - a.duration);
-
-  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
-  const songs = breakdown.filter((e) => e.category === 'songs');
-
-  // Derive total from breakdown so trashed items' logs don't inflate the count
-  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
+  // Build per-item breakdown (totals, split by category, grandTotal)
+  const { breakdown, fundamentals, songs, grandTotal } = buildBreakdown(items, activeLogs);
 
   const isCurrentWeek = weekEnd >= today;
 

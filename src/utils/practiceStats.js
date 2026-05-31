@@ -61,3 +61,35 @@ function computeStreak(logs, today) {
   }
   return streak;
 }
+
+/**
+ * Build the per-item breakdown used by all report components.
+ *
+ * Accepts already-filtered logs and active items (callers handle their own
+ * active/trashed filtering). Returns:
+ *   breakdown   – items with duration > 0, sorted by duration desc
+ *   fundamentals – subset where category === 'fundamentals' or category is absent
+ *   songs        – subset where category === 'songs'
+ *   grandTotal   – sum of breakdown durations (trashed items excluded upstream)
+ */
+export function buildBreakdown(items, logs) {
+  const itemTotals = {};
+  for (const log of logs) {
+    itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
+  }
+  const breakdown = items
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      duration: Math.max(0, itemTotals[item.id] || 0),
+    }))
+    .filter((e) => e.duration > 0)
+    .sort((a, b) => b.duration - a.duration);
+
+  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
+  const songs = breakdown.filter((e) => e.category === 'songs');
+  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
+
+  return { breakdown, fundamentals, songs, grandTotal };
+}

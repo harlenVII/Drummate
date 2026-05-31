@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
+import { buildBreakdown } from '../utils/practiceStats';
 
 function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
@@ -25,23 +26,8 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [showModal]);
-  // Build per-item totals from logs
-  const itemTotals = {};
-  for (const log of reportLogs) {
-    itemTotals[log.itemId] = (itemTotals[log.itemId] || 0) + log.duration;
-  }
-
-  // Create sorted list: items with data first (sorted by duration desc)
-  const breakdown = items
-    .map((item) => ({ id: item.id, name: item.name, category: item.category, duration: Math.max(0, itemTotals[item.id] || 0) }))
-    .filter((e) => e.duration > 0)
-    .sort((a, b) => b.duration - a.duration);
-
-  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
-  const songs = breakdown.filter((e) => e.category === 'songs');
-
-  // Derive total from breakdown so trashed items' logs don't inflate the count
-  const grandTotal = breakdown.reduce((sum, e) => sum + e.duration, 0);
+  // Build per-item breakdown (totals, split by category, grandTotal)
+  const { breakdown, fundamentals, songs, grandTotal } = buildBreakdown(items, reportLogs);
 
   // Items available for manual add (active + archived, excluding those already with logs today)
   const itemIdsWithLogs = new Set(breakdown.map(e => e.id));
