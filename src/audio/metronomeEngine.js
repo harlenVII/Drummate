@@ -237,14 +237,6 @@ export class MetronomeEngine {
     } catch { /* ignore */ }
   }
 
-  // Check AnalyserNode for non-zero audio data to verify output is alive.
-  _checkAudioFlowing() {
-    if (!this._analyser) return 0;
-    const data = new Float32Array(this._analyser.fftSize);
-    this._analyser.getFloatTimeDomainData(data);
-    return data.reduce((max, v) => Math.max(max, Math.abs(v)), 0);
-  }
-
   async start() {
     if (this.isPlaying) return;
 
