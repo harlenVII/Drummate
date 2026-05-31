@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { render, act, screen } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../src/contexts/AuthContext';
@@ -145,5 +145,97 @@ describe('signUpAsVisitor — failure', () => {
     expect(screen.getByTestId('isVisitor').textContent).toBe('true');
     expect(globalThis.localStorage.getItem('drummate_visitor')).toBe('true');
     expect(screen.getByTestId('error').textContent).toBe('Email already in use');
+  });
+});
+
+describe('AuthProvider bootstrap (auth-init effect)', () => {
+  let backend;
+  let origGetUser;
+  let origIsNetworkError;
+  const origOnLineDescriptor = Object.getOwnPropertyDescriptor(
+    Object.getPrototypeOf(navigator),
+    'onLine',
+  );
+
+  const setOnLine = (value) =>
+    Object.defineProperty(navigator, 'onLine', { value, configurable: true });
+
+  beforeEach(async () => {
+    globalThis.localStorage.clear();
+    vi.clearAllMocks();
+    backend = (await import('../src/services/backends/firebaseBackend')).default;
+    origGetUser = backend.getUser;
+    origIsNetworkError = backend.isNetworkError;
+  });
+
+  afterEach(() => {
+    backend.getUser = origGetUser;
+    backend.isNetworkError = origIsNetworkError;
+    if (origOnLineDescriptor) {
+      Object.defineProperty(navigator, 'onLine', origOnLineDescriptor);
+    } else {
+      setOnLine(true);
+    }
+  });
+
+  function BootProbe() {
+    const { user, authReady, sessionExpired } = useAuth();
+    return (
+      <div>
+        <span data-testid="user">{user ? user.id : 'null'}</span>
+        <span data-testid="ready">{String(authReady)}</span>
+        <span data-testid="expired">{String(sessionExpired)}</span>
+      </div>
+    );
+  }
+
+  it('offline with a cached user: ready immediately, trusts cache, no refresh', async () => {
+    setOnLine(false);
+    backend.getUser = () => ({ id: 'cached' });
+    await act(async () => {
+      render(<AuthProvider><BootProbe /></AuthProvider>);
+    });
+    expect(screen.getByTestId('user').textContent).toBe('cached');
+    expect(screen.getByTestId('ready').textContent).toBe('true');
+    expect(backend.refreshAuth).not.toHaveBeenCalled();
+  });
+
+  it('online with a cached user: revalidates and adopts the refreshed user', async () => {
+    setOnLine(true);
+    backend.getUser = () => ({ id: 'cached' });
+    backend.refreshAuth.mockResolvedValue({ id: 'refreshed' });
+    await act(async () => {
+      render(<AuthProvider><BootProbe /></AuthProvider>);
+    });
+    expect(backend.refreshAuth).toHaveBeenCalledOnce();
+    expect(screen.getByTestId('user').textContent).toBe('refreshed');
+    expect(screen.getByTestId('ready').textContent).toBe('true');
+  });
+
+  it('online network error during revalidation: keeps cached user, no sign-out', async () => {
+    setOnLine(true);
+    backend.getUser = () => ({ id: 'cached' });
+    backend.isNetworkError = (err) => err?.code === 'auth/network-request-failed';
+    backend.refreshAuth.mockRejectedValue({ code: 'auth/network-request-failed' });
+    await act(async () => {
+      render(<AuthProvider><BootProbe /></AuthProvider>);
+    });
+    expect(screen.getByTestId('user').textContent).toBe('cached');
+    expect(screen.getByTestId('ready').textContent).toBe('true');
+    expect(screen.getByTestId('expired').textContent).toBe('false');
+    expect(backend.signOut).not.toHaveBeenCalled();
+  });
+
+  it('online auth error during revalidation: signs out and flags session expired', async () => {
+    setOnLine(true);
+    backend.getUser = () => ({ id: 'cached' });
+    backend.refreshAuth.mockRejectedValue({ code: 'auth/user-token-expired' });
+    await act(async () => {
+      render(<AuthProvider><BootProbe /></AuthProvider>);
+    });
+    expect(backend.signOut).toHaveBeenCalledOnce();
+    expect(screen.getByTestId('user').textContent).toBe('null');
+    expect(screen.getByTestId('expired').textContent).toBe('true');
+    expect(screen.getByTestId('ready').textContent).toBe('true');
   });
 });

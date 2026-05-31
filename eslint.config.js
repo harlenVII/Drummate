@@ -29,12 +29,23 @@ export default defineConfig([
       // over with per-line eslint-disable comments:
       //   - set-state-in-effect: derive/reset local state when a prop changes
       //     (modal-open form resets, DOM-measure layout positioning, liveQuery
-      //     subscription resets, the AuthProvider bootstrap). All reviewed.
+      //     subscription resets). All reviewed.
       //   - only-export-components: context files intentionally export their
       //     useAuth/useLanguage hook next to the provider; this is a dev-only
       //     Fast Refresh hint, not a correctness rule.
       'react-hooks/set-state-in-effect': 'off',
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    // AuthContext's bootstrap effect was refactored to do no synchronous
+    // setState (readiness is computed in the useState initializer), so it can
+    // be held to the stricter standard. Re-enabling here guards the auth-init
+    // path — the one place where a cascading-render regression would be most
+    // costly — against future edits, even though the rule stays off elsewhere.
+    files: ['src/contexts/AuthContext.jsx'],
+    rules: {
+      'react-hooks/set-state-in-effect': 'error',
     },
   },
 ])

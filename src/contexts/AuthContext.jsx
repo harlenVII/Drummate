@@ -17,40 +17,34 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => firebaseBackend.getUser());
   const [isVisitor, setIsVisitor] = useState(() => readVisitorFlag());
   const [sessionExpired, setSessionExpired] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
+  // Only the online + cached-user path needs async work (token revalidation)
+  // before auth is "ready". Offline or signed-out, we know synchronously at
+  // mount that we can start ready and trust the lazily-initialized `user`.
+  const [authReady, setAuthReady] = useState(
+    () => !firebaseBackend.getUser() || !navigator.onLine
+  );
 
   useEffect(() => {
-    const currentUser = firebaseBackend.getUser();
-    if (currentUser) {
-      if (!navigator.onLine) {
-        setUser(currentUser);
-        Promise.resolve().then(() => setAuthReady(true));
-      } else {
-        firebaseBackend.refreshAuth()
-          .then((refreshedUser) => {
-            setUser(refreshedUser);
-          })
-          .catch((err) => {
-            if (firebaseBackend.isAbortError(err)) return;
-            if (firebaseBackend.isNetworkError?.(err)) {
-              setUser(currentUser);
-              return;
-            }
-            firebaseBackend.signOut();
-            setUser(null);
-            setSessionExpired(true);
-          })
-          .finally(() => setAuthReady(true));
-      }
-    } else {
-      Promise.resolve().then(() => setAuthReady(true));
+    // Revalidate the cached session only when we have a user AND a network.
+    // The authReady initializer already covered the offline/signed-out cases,
+    // and `user` already holds the cached value, so neither needs a setState
+    // here — which is what keeps this effect free of cascading renders.
+    if (firebaseBackend.getUser() && navigator.onLine) {
+      firebaseBackend.refreshAuth()
+        .then((refreshedUser) => setUser(refreshedUser))
+        .catch((err) => {
+          if (firebaseBackend.isAbortError(err)) return;
+          if (firebaseBackend.isNetworkError?.(err)) return; // keep cached user
+          firebaseBackend.signOut();
+          setUser(null);
+          setSessionExpired(true);
+        })
+        .finally(() => setAuthReady(true));
     }
 
-    const unsubscribe = firebaseBackend.onAuthChange((newUser) => {
+    return firebaseBackend.onAuthChange((newUser) => {
       setUser(newUser);
     });
-
-    return unsubscribe;
   }, []);
 
   const enterVisitorMode = useCallback(async () => {
