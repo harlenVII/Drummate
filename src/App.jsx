@@ -594,7 +594,7 @@ function App() {
         subscriptionRef.current = null;
       }
     };
-  }, [user, authReady, loadData, syncTrigger]);
+  }, [user, authReady, loadData, syncTrigger, setOfflineMode]);
 
   // Initialize metronome engine once
   useEffect(() => {

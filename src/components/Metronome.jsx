@@ -118,15 +118,15 @@ function Metronome({
     }
 
     tapTimesRef.current = taps;
-  }, []);
+  }, [setBpm]);
 
   const handleTimeSignatureChange = useCallback((sig) => {
     setTimeSignature(sig);
-  }, []);
+  }, [setTimeSignature]);
 
   const handleSubdivisionChange = useCallback((key) => {
     setSubdivision(key);
-  }, []);
+  }, [setSubdivision]);
 
   // Keyboard shortcuts
   useEffect(() => {
