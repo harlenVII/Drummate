@@ -1,7 +1,3 @@
-export function formatMinutes(totalSeconds) {
-  return Math.round(totalSeconds / 60);
-}
-
 export function formatDuration(totalSeconds, unit) {
   if (unit === 'hours') {
     return (totalSeconds / 3600).toFixed(1);

@@ -2,13 +2,6 @@ import { formatInTimezone } from './tzDateHelpers.js';
 import { getTimezone } from '../services/timezoneService.js';
 
 /**
- * Returns "YYYY-MM-DD" for a Date object, in the user's configured timezone.
- */
-export function toDateString(date) {
-  return formatInTimezone(date.getTime(), getTimezone());
-}
-
-/**
  * Returns today's date string in the user's configured timezone.
  */
 export function getTodayString() {

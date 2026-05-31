@@ -110,7 +110,7 @@ export function parseIntent(rawText) {
 /**
  * Levenshtein edit distance between two strings.
  */
-export function levenshtein(a, b) {
+function levenshtein(a, b) {
   const m = a.length;
   const n = b.length;
   const dp = Array.from({ length: m + 1 }, (_, i) =>

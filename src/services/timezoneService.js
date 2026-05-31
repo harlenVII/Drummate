@@ -64,16 +64,3 @@ export async function initTimezone(backend, userId) {
   }
 }
 
-/**
- * Returns the device's OS-level IANA timezone. Reserved for a future
- * new-account flow (currently every user gets the America/Los_Angeles
- * backfill default). Kept here so the consumer site can be wired up
- * later without touching this module.
- */
-export function detectDeviceTimezone() {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_TZ;
-  } catch {
-    return DEFAULT_TZ;
-  }
-}
