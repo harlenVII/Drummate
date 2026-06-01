@@ -30,6 +30,7 @@ import { usePracticeTimer } from './hooks/usePracticeTimer';
 import { usePracticeItems } from './hooks/usePracticeItems';
 import { useMetronomePractices } from './hooks/useMetronomePractices';
 import { useReports } from './hooks/useReports';
+import { useNavigation } from './hooks/useNavigation';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
@@ -52,14 +53,6 @@ import { getItem, setItem, removeItem } from './utils/safeStorage';
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
   const { user, authReady, signOut, isVisitor } = useAuth();
-  const metronomeSubpageRef = useRef('metronome');
-  const reportSubpageRef = useRef('daily');
-  const reportDateRef = useRef(getTodayString());
-  const weekStartRef = useRef(getWeekStart(getTodayString()));
-  const monthStartRef = useRef(getMonthStart(getTodayString()));
-  const yearStartRef = useRef(getYearStart(getTodayString()));
-  const [activeTab, setActiveTab] = useState('practice');
-  const activeTabRef = useRef('practice');
   const languageRef = useRef(language);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const {
@@ -73,10 +66,6 @@ function App() {
     metronomePractices, setMetronomePractices,
     notes, setNotes, goalRefreshKey, loadData, refreshNotes,
   } = useAppData();
-  const [reportSubpage, setReportSubpage] = useState('daily');
-  const [notesSubpage, setNotesSubpage] = useState('byDate');
-  const notesSubpageRef = useRef('byDate');
-
   const metronome = useMetronomeState();
   const {
     engineRef: metronomeEngineRef,
@@ -101,10 +90,6 @@ function App() {
     focusedPracticeItemId, setFocusedPracticeItemId,
     editing, saveAndStop, handleStart, handleStop, handleSetEditing,
   } = timer;
-
-  // Subpage toggle within metronome tab
-  const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
-  // 'metronome' | 'sequencer' | 'practice'
 
   // Wake word (hands-free mode) state
   const wakeWordEngineRef = useRef(null);
@@ -308,6 +293,7 @@ function App() {
         subscriptionRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authReady, loadData, syncTrigger, setOfflineMode]);
 
 
@@ -322,7 +308,7 @@ function App() {
     metronomePractices, items, loadData, handleStart, saveAndStop, activeItemId,
   });
   const {
-    runningPracticeUid, setRunningPracticeUid,
+    runningPracticeUid,
     practiceRunStepIndex, setPracticeRunStepIndex,
     practiceRunBarIndex, setPracticeRunBarIndex,
     practiceRunIsPlaying, setPracticeRunIsPlaying,
@@ -331,81 +317,39 @@ function App() {
     handleReorderPractices, handleStartPractice, handleEndPractice,
   } = practices;
 
+  // reportSubpageNavRef breaks the wiring cycle between useReports and useNavigation:
+  // useNavigation owns setReportSubpage, but useReports needs onNavigateToDaily which
+  // calls setReportSubpage. We forward the call through a stable ref that gets assigned
+  // after nav is created below.
+  const reportSubpageNavRef = useRef(() => {});
   const reports = useReports({
     loadData,
-    onNavigateToDaily: () => setReportSubpage('daily'),
+    onNavigateToDaily: () => reportSubpageNavRef.current(),
     items,
   });
   const {
     reportDate, weekStart, weekLogs, monthStart, monthLogs, yearStart, yearLogs,
     reportLogs, editTimeModal, setEditTimeModal,
-    loadReportData, loadWeekData, loadMonthData, loadYearData,
     handleReportDateChange, handleManualTimeAdjust, handleMergeToYesterday,
     handleEditTime, handleAddTime, handleDayClick,
     handleWeekChange, handleMonthChange, handleYearChange,
-    setReportDate, setWeekStart, setMonthStart, setYearStart,
     setReportLogs, setWeekLogs, setMonthLogs, setYearLogs,
   } = reports;
 
-  const handleTabChange = useCallback(
-    async (tab) => {
-      setActiveTab(tab);
-      if (tab === 'report') {
-        const today = getTodayString();
-        const wStart = getWeekStart(today);
-        const mStart = getMonthStart(today);
-        const yStart = getYearStart(today);
-        setReportDate(today);
-        setWeekStart(wStart);
-        setMonthStart(mStart);
-        setYearStart(yStart);
-        await Promise.all([
-          loadReportData(today),
-          loadWeekData(wStart),
-          loadMonthData(mStart),
-          loadYearData(yStart),
-        ]);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loadReportData, loadWeekData, loadMonthData, loadYearData],
-  );
-
-  const handleSubpageChange = useCallback(
-    (subpage) => {
-      if (metronomeIsPlaying) {
-        metronomeEngineRef.current.stop();
-        metronomeEngineRef.current.setSequence(null);
-        metronomeEngineRef.current.setMeterTrack(null);
-        setMetronomeIsPlaying(false);
-        setMetronomeCurrentBeat(-1);
-        setSequencerPlayingSlot(-1);
-        setMultiMeterPlayingSlot(-1);
-        noSleepRef.current.disable();
-      }
-      // Always restore the App-level beat callback — practice mode overrides it
-      // and may null it on end/pause, leaving the indicators dead if not re-wired.
-      if (metronomeEngineRef.current) {
-        metronomeEngineRef.current.onBeat = ({ beat, subdivisionIndex }) => {
-          if (subdivisionIndex === 0) setMetronomeCurrentBeat(beat);
-        };
-      }
-      if (runningPracticeUid) {
-        if (metronomeEngineRef.current?.isPlaying) {
-          metronomeEngineRef.current.stop();
-        }
-        noSleepRef.current?.disable?.();
-        setRunningPracticeUid(null);
-        setPracticeRunStepIndex(0);
-        setPracticeRunBarIndex(0);
-        setPracticeRunIsPlaying(false);
-        setPracticeRunComplete(false);
-      }
-      setMetronomeSubpage(subpage);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [metronomeIsPlaying, runningPracticeUid],
-  );
+  const nav = useNavigation({ reports, metronome, practices });
+  reportSubpageNavRef.current = () => nav.setReportSubpage('daily');
+  const {
+    activeTab, setActiveTab,
+    metronomeSubpage, setMetronomeSubpage,
+    reportSubpage, setReportSubpage,
+    notesSubpage, setNotesSubpage,
+    activeTabRef,
+    metronomeSubpageRef,
+    reportSubpageRef,
+    notesSubpageRef,
+    reportDateRef, weekStartRef, monthStartRef, yearStartRef,
+    handleTabChange, handleSubpageChange,
+  } = nav;
 
   // TTS wrappers — use Kokoro if enabled and ready, else speechSynthesis
   const speakText = useCallback((text, lang) => {
@@ -803,14 +747,6 @@ function App() {
   }, []);
 
   useEffect(() => { languageRef.current = language; }, [language]);
-  useEffect(() => { metronomeSubpageRef.current = metronomeSubpage; }, [metronomeSubpage]);
-  useEffect(() => { reportSubpageRef.current = reportSubpage; }, [reportSubpage]);
-  useEffect(() => { notesSubpageRef.current = notesSubpage; }, [notesSubpage]);
-  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
-  useEffect(() => { reportDateRef.current = reportDate; }, [reportDate]);
-  useEffect(() => { weekStartRef.current = weekStart; }, [weekStart]);
-  useEffect(() => { monthStartRef.current = monthStart; }, [monthStart]);
-  useEffect(() => { yearStartRef.current = yearStart; }, [yearStart]);
 
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
   useEffect(() => {
