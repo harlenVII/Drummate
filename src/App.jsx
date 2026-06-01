@@ -29,6 +29,7 @@ import { useAppData } from './hooks/useAppData';
 import { usePracticeTimer } from './hooks/usePracticeTimer';
 import { usePracticeItems } from './hooks/usePracticeItems';
 import { useMetronomePractices } from './hooks/useMetronomePractices';
+import { useReports } from './hooks/useReports';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
@@ -38,10 +39,6 @@ import { speak, getLang, cancelSpeech } from './services/voiceFeedback';
 
 import {
   db,
-  addAdjustmentLog,
-  reattributeLogsToDate,
-  getLogsByDate,
-  getLogsByDateRange,
   insertGoalRecord,
   archiveGoal,
   getGoalByUid,
@@ -49,7 +46,7 @@ import {
 import { shouldMigrateLegacy, buildMigratedGoal, selectExpiredForArchive } from './utils/goalStatus';
 import { initTimezone } from './services/timezoneService';
 import { initPriorHours } from './services/priorPracticeService';
-import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
+import { getTodayString, shiftDate, getWeekStart, getMonthStart, getYearStart } from './utils/dateHelpers';
 import { getItem, setItem, removeItem } from './utils/safeStorage';
 
 function App() {
@@ -76,17 +73,9 @@ function App() {
     metronomePractices, setMetronomePractices,
     notes, setNotes, goalRefreshKey, loadData, refreshNotes,
   } = useAppData();
-  const [reportDate, setReportDate] = useState(getTodayString());
-  const [reportLogs, setReportLogs] = useState([]);
   const [reportSubpage, setReportSubpage] = useState('daily');
   const [notesSubpage, setNotesSubpage] = useState('byDate');
   const notesSubpageRef = useRef('byDate');
-  const [weekStart, setWeekStart] = useState(() => getWeekStart(getTodayString()));
-  const [weekLogs, setWeekLogs] = useState([]);
-  const [monthStart, setMonthStart] = useState(() => getMonthStart(getTodayString()));
-  const [yearStart, setYearStart] = useState(() => getYearStart(getTodayString()));
-  const [yearLogs, setYearLogs] = useState([]);
-  const [monthLogs, setMonthLogs] = useState([]);
 
   const metronome = useMetronomeState();
   const {
@@ -147,7 +136,6 @@ function App() {
   const [llmMessage, setLlmMessage] = useState(null);
   const [llmError, setLlmError] = useState(null);
   const [llmModalOpen, setLlmModalOpen] = useState(false);
-  const [editTimeModal, setEditTimeModal] = useState(null); // { itemId, itemName, currentSeconds }
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [offlineMode, _setOfflineMode] = useState(false);
@@ -343,105 +331,21 @@ function App() {
     handleReorderPractices, handleStartPractice, handleEndPractice,
   } = practices;
 
-  const loadReportData = useCallback(async (dateString) => {
-    const logs = await getLogsByDate(dateString);
-    setReportLogs(logs);
-  }, []);
-
-  const loadWeekData = useCallback(async (weekStartStr) => {
-    const weekEndStr = getWeekEnd(weekStartStr);
-    const logs = await getLogsByDateRange(weekStartStr, weekEndStr);
-    setWeekLogs(logs);
-  }, []);
-
-  const loadMonthData = useCallback(async (monthStartStr) => {
-    const monthEndStr = getMonthEnd(monthStartStr);
-    const logs = await getLogsByDateRange(monthStartStr, monthEndStr);
-    setMonthLogs(logs);
-  }, []);
-
-  const loadYearData = useCallback(async (yearStartStr) => {
-    const yearEndStr = getYearEnd(yearStartStr);
-    const logs = await getLogsByDateRange(yearStartStr, yearEndStr);
-    setYearLogs(logs);
-  }, []);
-
-  const handleReportDateChange = useCallback(
-    async (dateString) => {
-      setReportDate(dateString);
-      await loadReportData(dateString);
-    },
-    [loadReportData],
-  );
-
-  const handleManualTimeAdjust = useCallback(async (itemId, deltaSeconds, date) => {
-    const logId = await addAdjustmentLog(itemId, deltaSeconds, date);
-    await Promise.all([
-      loadReportData(date),
-      loadWeekData(weekStart),
-      loadMonthData(monthStart),
-      loadYearData(yearStart),
-      loadData(),
-    ]);
-    if (user) {
-      const log = await db.practiceLogs.get(logId);
-      firebaseBackend.pushLog(log, user.id).catch(console.error);
-    }
-  }, [loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user]);
-
-  const handleEditTime = useCallback((itemId, itemName, currentSeconds) => {
-    setEditTimeModal({ itemId, itemName, currentSeconds });
-  }, []);
-
-  const handleMergeToYesterday = useCallback(async () => {
-    if (!reportLogs || reportLogs.length === 0) return;
-    const yesterday = shiftDate(reportDate, -1);
-    const logIds = reportLogs.map(l => l.id);
-    const updated = await reattributeLogsToDate(logIds, yesterday);
-    await Promise.all([
-      loadReportData(reportDate),
-      loadWeekData(weekStart),
-      loadMonthData(monthStart),
-      loadYearData(yearStart),
-      loadData(),
-    ]);
-    if (user) {
-      await Promise.all(
-        updated.map(log => firebaseBackend.pushLog(log, user.id).catch(console.error))
-      );
-    }
-  }, [reportLogs, reportDate, loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user]);
-
-  const handleAddTime = useCallback((itemId) => {
-    const item = items.find(i => i.id === itemId);
-    if (item) {
-      setEditTimeModal({ itemId, itemName: item.name, currentSeconds: 0 });
-    }
-  }, [items]);
-
-  const handleDayClick = useCallback(
-    async (dateString) => {
-      setReportDate(dateString);
-      setReportSubpage('daily');
-      await loadReportData(dateString);
-    },
-    [loadReportData],
-  );
-
-  const handleWeekChange = useCallback(async (newWeekStart) => {
-    setWeekStart(newWeekStart);
-    await loadWeekData(newWeekStart);
-  }, [loadWeekData]);
-
-  const handleMonthChange = useCallback(async (newMonthStart) => {
-    setMonthStart(newMonthStart);
-    await loadMonthData(newMonthStart);
-  }, [loadMonthData]);
-
-  const handleYearChange = useCallback(async (newYearStart) => {
-    setYearStart(newYearStart);
-    await loadYearData(newYearStart);
-  }, [loadYearData]);
+  const reports = useReports({
+    loadData,
+    onNavigateToDaily: () => setReportSubpage('daily'),
+    items,
+  });
+  const {
+    reportDate, weekStart, weekLogs, monthStart, monthLogs, yearStart, yearLogs,
+    reportLogs, editTimeModal, setEditTimeModal,
+    loadReportData, loadWeekData, loadMonthData, loadYearData,
+    handleReportDateChange, handleManualTimeAdjust, handleMergeToYesterday,
+    handleEditTime, handleAddTime, handleDayClick,
+    handleWeekChange, handleMonthChange, handleYearChange,
+    setReportDate, setWeekStart, setMonthStart, setYearStart,
+    setReportLogs, setWeekLogs, setMonthLogs, setYearLogs,
+  } = reports;
 
   const handleTabChange = useCallback(
     async (tab) => {
@@ -463,6 +367,7 @@ function App() {
         ]);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [loadReportData, loadWeekData, loadMonthData, loadYearData],
   );
 
