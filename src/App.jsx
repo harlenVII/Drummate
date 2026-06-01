@@ -25,7 +25,7 @@ import EditTimeModal from './components/EditTimeModal';
 import NotesPage from './components/NotesPage';
 import GoalsPage from './components/GoalsPage';
 import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from './services/offlineService';
-import { getTheme, setTheme as setThemeService } from './services/themeService';
+import { useUiPreferences } from './hooks/useUiPreferences';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
@@ -90,18 +90,12 @@ function App() {
   const activeTabRef = useRef('practice');
   const languageRef = useRef(language);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [timeUnit, setTimeUnit] = useState(() => {
-    const saved = getItem('drummate_time_unit');
-    return saved === 'hours' ? 'hours' : 'minutes';
-  });
-  const [groupByCategory, setGroupByCategory] = useState(() => {
-    const saved = getItem('drummate_group_by_category');
-    return saved === null ? true : saved === 'true';
-  });
-  const [compactMode, setCompactMode] = useState(() => {
-    return getItem('drummate_compact_mode') === 'true';
-  });
-  const [theme, setThemeState] = useState(getTheme);
+  const {
+    timeUnit, setTimeUnit,
+    groupByCategory, setGroupByCategory,
+    compactMode, setCompactMode,
+    theme, setTheme,
+  } = useUiPreferences();
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
   const [reportSubpage, setReportSubpage] = useState('daily');
@@ -277,18 +271,6 @@ function App() {
   useEffect(() => {
     setItem('drummate_multimeter_slots', JSON.stringify(multiMeterSlots));
   }, [multiMeterSlots]);
-
-  useEffect(() => {
-    setItem('drummate_time_unit', timeUnit);
-  }, [timeUnit]);
-
-  useEffect(() => {
-    setItem('drummate_group_by_category', String(groupByCategory));
-  }, [groupByCategory]);
-
-  useEffect(() => {
-    setItem('drummate_compact_mode', String(compactMode));
-  }, [compactMode]);
 
   // Persist sequencer settings to localStorage
   useEffect(() => {
@@ -1523,11 +1505,6 @@ function App() {
   useEffect(() => { monthStartRef.current = monthStart; }, [monthStart]);
   useEffect(() => { yearStartRef.current = yearStart; }, [yearStart]);
 
-  const setTheme = useCallback((next) => {
-    setThemeService(next);
-    setThemeState(next);
-  }, []);
-
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1606,7 +1583,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage, saveAndStop, setTheme, setMetronomeAccentFirstBeat]);
+  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage, saveAndStop, setTheme, setMetronomeAccentFirstBeat, setTimeUnit]);
 
   const handleEnterOfflineMode = useCallback(() => {
     // Tear down the live Firestore listener so it can't overwrite local
