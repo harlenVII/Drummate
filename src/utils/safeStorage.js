@@ -17,3 +17,11 @@ export function setItem(key, value) {
     // best-effort persistence; ignore
   }
 }
+
+export function removeItem(key) {
+  try {
+    globalThis.localStorage?.removeItem(key);
+  } catch {
+    // best-effort; ignore
+  }
+}

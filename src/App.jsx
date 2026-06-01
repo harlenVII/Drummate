@@ -65,7 +65,7 @@ import { shouldMigrateLegacy, buildMigratedGoal, selectExpiredForArchive } from 
 import { initTimezone } from './services/timezoneService';
 import { initPriorHours } from './services/priorPracticeService';
 import { getTodayString, shiftDate, getWeekStart, getWeekEnd, getMonthStart, getMonthEnd, getYearStart, getYearEnd } from './utils/dateHelpers';
-import { setItem } from './utils/safeStorage';
+import { getItem, setItem, removeItem } from './utils/safeStorage';
 import { SUBDIVISIONS } from './constants/subdivisions';
 
 function App() {
@@ -91,27 +91,15 @@ function App() {
   const languageRef = useRef(language);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timeUnit, setTimeUnit] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_time_unit');
-      return saved === 'hours' ? 'hours' : 'minutes';
-    } catch {
-      return 'minutes';
-    }
+    const saved = getItem('drummate_time_unit');
+    return saved === 'hours' ? 'hours' : 'minutes';
   });
   const [groupByCategory, setGroupByCategory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_group_by_category');
-      return saved === null ? true : saved === 'true';
-    } catch {
-      return true;
-    }
+    const saved = getItem('drummate_group_by_category');
+    return saved === null ? true : saved === 'true';
   });
   const [compactMode, setCompactMode] = useState(() => {
-    try {
-      return localStorage.getItem('drummate_compact_mode') === 'true';
-    } catch {
-      return false;
-    }
+    return getItem('drummate_compact_mode') === 'true';
   });
   const [theme, setThemeState] = useState(getTheme);
   const [reportDate, setReportDate] = useState(getTodayString());
@@ -130,57 +118,41 @@ function App() {
   const noSleepRef = useRef(new NoSleep());
   const metronomeEngineRef = useRef(null);
   const [metronomeBpm, setMetronomeBpm] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_metronome_bpm');
-      const bpm = saved ? Number(saved) : 120;
-      return bpm >= 30 && bpm <= 300 ? bpm : 120;
-    } catch {
-      return 120;
-    }
+    const saved = getItem('drummate_metronome_bpm');
+    const bpm = saved ? Number(saved) : 120;
+    return bpm >= 30 && bpm <= 300 ? bpm : 120;
   });
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [metronomeCurrentBeat, setMetronomeCurrentBeat] = useState(-1);
   const [metronomeTimeSignature, setMetronomeTimeSignature] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_metronome_time_signature');
-      if (saved) {
+    const saved = getItem('drummate_metronome_time_signature');
+    if (saved) {
+      try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === 2 &&
             typeof parsed[0] === 'number' && typeof parsed[1] === 'number') {
           return parsed;
         }
+      } catch {
+        // ignore malformed data
       }
-      return [4, 4];
-    } catch {
-      return [4, 4];
     }
+    return [4, 4];
   });
   const [metronomeSubdivision, setMetronomeSubdivision] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_metronome_subdivision');
-      const validSubdivisions = SUBDIVISIONS.map((s) => s.key);
-      return saved && validSubdivisions.includes(saved) ? saved : 'quarter';
-    } catch {
-      return 'quarter';
-    }
+    const saved = getItem('drummate_metronome_subdivision');
+    const validSubdivisions = SUBDIVISIONS.map((s) => s.key);
+    return saved && validSubdivisions.includes(saved) ? saved : 'quarter';
   });
   const [metronomeSoundType, setMetronomeSoundType] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_metronome_sound_type');
-      const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
-      return saved && validTypes.includes(saved) ? saved : 'click';
-    } catch {
-      return 'click';
-    }
+    const saved = getItem('drummate_metronome_sound_type');
+    const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+    return saved && validTypes.includes(saved) ? saved : 'click';
   });
 
   const [metronomeAccentFirstBeat, setMetronomeAccentFirstBeat] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_metronome_accent_first_beat');
-      return saved === null ? true : saved === 'true';
-    } catch {
-      return true;
-    }
+    const saved = getItem('drummate_metronome_accent_first_beat');
+    return saved === null ? true : saved === 'true';
   });
 
   // Subpage toggle within metronome tab
@@ -196,27 +168,20 @@ function App() {
 
   // Sequencer state (persists across tab changes and page reloads)
   const [sequencerBpm, setSequencerBpm] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_sequencer_bpm');
-      const bpm = saved ? Number(saved) : 120;
-      return bpm >= 30 && bpm <= 300 ? bpm : 120;
-    } catch {
-      return 120;
-    }
+    const saved = getItem('drummate_sequencer_bpm');
+    const bpm = saved ? Number(saved) : 120;
+    return bpm >= 30 && bpm <= 300 ? bpm : 120;
   });
   const [sequencerSoundType, setSequencerSoundType] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_sequencer_sound_type');
-      const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
-      return saved && validTypes.includes(saved) ? saved : 'click';
-    } catch {
-      return 'click';
-    }
+    const saved = getItem('drummate_sequencer_sound_type');
+    const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+    return saved && validTypes.includes(saved) ? saved : 'click';
   });
   const [sequencerSlots, setSequencerSlots] = useState(() => {
+    const saved = getItem('drummate_sequencer_slots');
+    if (!saved) return [];
     try {
-      const saved = localStorage.getItem('drummate_sequencer_slots');
-      return saved ? JSON.parse(saved) : [];
+      return JSON.parse(saved);
     } catch {
       return [];
     }
@@ -236,14 +201,14 @@ function App() {
   // Kokoro TTS state
   const ttsServiceRef = useRef(null);
   const [kokoroEnabled, setKokoroEnabled] = useState(() => {
-    try { return localStorage.getItem('drummate_kokoro_tts') === 'true'; } catch { return false; }
+    return getItem('drummate_kokoro_tts') === 'true';
   });
   const [kokoroStatus, setKokoroStatus] = useState('idle'); // 'idle'|'downloading'|'ready'|'error'
   const [kokoroProgress, setKokoroProgress] = useState({ percentage: 0 });
 
   // AI Coach toggle (off by default)
   const [aiCoachEnabled, setAiCoachEnabled] = useState(() => {
-    try { return localStorage.getItem('drummate_ai_coach_enabled') === 'true'; } catch { return false; }
+    return getItem('drummate_ai_coach_enabled') === 'true';
   });
 
   // LLM encouragement state
@@ -256,37 +221,26 @@ function App() {
   const [editTimeModal, setEditTimeModal] = useState(null); // { itemId, itemName, currentSeconds }
   const sequencerNextIdRef = useRef(null);
   if (sequencerNextIdRef.current === null) {
-    try {
-      const saved = localStorage.getItem('drummate_sequencer_next_id');
-      sequencerNextIdRef.current = saved ? Number(saved) : 1;
-    } catch {
-      sequencerNextIdRef.current = 1;
-    }
+    const saved = getItem('drummate_sequencer_next_id');
+    sequencerNextIdRef.current = saved ? Number(saved) : 1;
   }
 
   // Multi-Meter state (persists across tab changes and page reloads)
   const [multiMeterBpm, setMultiMeterBpm] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_multimeter_bpm');
-      const bpm = saved ? Number(saved) : 120;
-      return bpm >= 30 && bpm <= 300 ? bpm : 120;
-    } catch {
-      return 120;
-    }
+    const saved = getItem('drummate_multimeter_bpm');
+    const bpm = saved ? Number(saved) : 120;
+    return bpm >= 30 && bpm <= 300 ? bpm : 120;
   });
   const [multiMeterSoundType, setMultiMeterSoundType] = useState(() => {
-    try {
-      const saved = localStorage.getItem('drummate_multimeter_sound_type');
-      const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
-      return saved && validTypes.includes(saved) ? saved : 'click';
-    } catch {
-      return 'click';
-    }
+    const saved = getItem('drummate_multimeter_sound_type');
+    const validTypes = ['click', 'woodBlock', 'hiHat', 'rimshot', 'beep'];
+    return saved && validTypes.includes(saved) ? saved : 'click';
   });
   const [multiMeterSlots, setMultiMeterSlots] = useState(() => {
+    const saved = getItem('drummate_multimeter_slots');
+    if (!saved) return [];
     try {
-      const saved = localStorage.getItem('drummate_multimeter_slots');
-      return saved ? JSON.parse(saved) : [];
+      return JSON.parse(saved);
     } catch {
       return [];
     }
@@ -538,14 +492,14 @@ function App() {
         // One-shot legacy migration: if Dexie has no goals AND localStorage
         // has a single goal from the pre-v15 schema, promote it.
         const dexieGoalCount = await db.goals.count();
-        const legacyGoalRaw = localStorage.getItem('drummate_goal');
+        const legacyGoalRaw = getItem('drummate_goal');
         if (shouldMigrateLegacy(dexieGoalCount, legacyGoalRaw)) {
           const record = buildMigratedGoal(legacyGoalRaw, Date.now(), () => crypto.randomUUID());
           if (record) {
             await insertGoalRecord(record);
           }
         }
-        if (legacyGoalRaw) localStorage.removeItem('drummate_goal');
+        if (legacyGoalRaw) removeItem('drummate_goal');
         // flushSyncQueue replays queued offline edits to cloud AND restores
         // local Dexie to match payload, so loadData below reads the final
         // post-merge state. Keep the sync overlay up until this is done —
@@ -625,9 +579,9 @@ function App() {
 
   // Recover any unsaved practice session from a previous page close
   useEffect(() => {
-    const pending = localStorage.getItem('drummate_pending_log');
+    const pending = getItem('drummate_pending_log');
     if (pending) {
-      localStorage.removeItem('drummate_pending_log');
+      removeItem('drummate_pending_log');
       try {
         const parsed = JSON.parse(pending);
         const { itemId, duration } = parsed;
@@ -1202,11 +1156,11 @@ function App() {
   const handleToggleKokoro = useCallback(async () => {
     if (kokoroEnabled) {
       setKokoroEnabled(false);
-      localStorage.setItem('drummate_kokoro_tts', 'false');
+      setItem('drummate_kokoro_tts', 'false');
       return;
     }
     setKokoroEnabled(true);
-    localStorage.setItem('drummate_kokoro_tts', 'true');
+    setItem('drummate_kokoro_tts', 'true');
     if (!ttsServiceRef.current?.isReady) {
       await loadKokoroTts();
     }
@@ -2008,7 +1962,7 @@ function App() {
         onToggleAiCoach={() => {
           setAiCoachEnabled((prev) => {
             const next = !prev;
-            try { localStorage.setItem('drummate_ai_coach_enabled', String(next)); } catch { /* ignore */ }
+            setItem('drummate_ai_coach_enabled', String(next));
             return next;
           });
         }}

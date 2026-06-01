@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { getItem, setItem } from '../src/utils/safeStorage';
+import { getItem, setItem, removeItem } from '../src/utils/safeStorage';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -28,5 +28,18 @@ describe('safeStorage', () => {
       throw new Error('quota');
     });
     expect(() => setItem('k', 'v')).not.toThrow();
+  });
+
+  it('removes a stored value', () => {
+    setItem('k', 'v');
+    removeItem('k');
+    expect(getItem('k')).toBe(null);
+  });
+
+  it('swallows errors when removeItem throws', () => {
+    vi.spyOn(globalThis.localStorage, 'removeItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    expect(() => removeItem('k')).not.toThrow();
   });
 });

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { getItem, setItem } from '../utils/safeStorage';
 
 const translations = {
   en: {
@@ -873,13 +874,13 @@ const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('drummate_language') || 'en';
+    return getItem('drummate_language') || 'en';
   });
 
   const toggleLanguage = useCallback(() => {
     setLanguage((prev) => {
       const next = prev === 'en' ? 'zh' : 'en';
-      localStorage.setItem('drummate_language', next);
+      setItem('drummate_language', next);
       return next;
     });
   }, []);
