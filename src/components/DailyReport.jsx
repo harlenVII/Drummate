@@ -62,8 +62,8 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
         onPrev={() => onDateChange(shiftDate(reportDate, -1))}
         onNext={() => onDateChange(shiftDate(reportDate, 1))}
         nextDisabled={isToday}
-        prevLabel="Previous day"
-        nextLabel="Next day"
+        prevLabel={t('accessibility.prevDay')}
+        nextLabel={t('accessibility.nextDay')}
         compactMode={compactMode}
       >
         {formatDateLabel(reportDate, t)}

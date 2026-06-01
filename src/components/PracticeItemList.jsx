@@ -9,12 +9,13 @@ import MergeTargetPicker from './MergeTargetPicker';
 import GoalBanner from './GoalBanner';
 
 function DragHandle({ listeners, attributes }) {
+  const { t } = useLanguage();
   return (
     <button
       {...listeners}
       {...attributes}
       className="p-2 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 cursor-grab active:cursor-grabbing touch-none"
-      aria-label="Drag to reorder"
+      aria-label={t('accessibility.dragToReorder')}
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
         <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z" />

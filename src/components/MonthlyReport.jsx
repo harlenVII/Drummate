@@ -150,8 +150,8 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
         onPrev={handlePrevMonth}
         onNext={handleNextMonth}
         nextDisabled={isCurrentMonth}
-        prevLabel="Previous month"
-        nextLabel="Next month"
+        prevLabel={t('accessibility.prevMonth')}
+        nextLabel={t('accessibility.nextMonth')}
         compactMode={compactMode}
       >
         {monthLabel}

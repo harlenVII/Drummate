@@ -188,8 +188,8 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
         onPrev={handlePrevYear}
         onNext={handleNextYear}
         nextDisabled={isCurrentYear}
-        prevLabel="Previous year"
-        nextLabel="Next year"
+        prevLabel={t('accessibility.prevYear')}
+        nextLabel={t('accessibility.nextYear')}
         compactMode={compactMode}
       >
         {year}

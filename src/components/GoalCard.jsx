@@ -64,7 +64,7 @@ function GoalCard({
             <button
               type="button"
               className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400"
-              aria-label="Drag to reorder"
+              aria-label={t('accessibility.dragToReorder')}
               {...dragHandleListeners}
               {...dragHandleAttributes}
             >

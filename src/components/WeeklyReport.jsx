@@ -63,8 +63,8 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
         onPrev={() => onWeekChange(shiftDate(weekStart, -7))}
         onNext={() => onWeekChange(shiftDate(weekStart, 7))}
         nextDisabled={isCurrentWeek}
-        prevLabel="Previous week"
-        nextLabel="Next week"
+        prevLabel={t('accessibility.prevWeek')}
+        nextLabel={t('accessibility.nextWeek')}
         compactMode={compactMode}
       >
         {formatShortDate(weekStart)} – {formatShortDate(weekEnd)}

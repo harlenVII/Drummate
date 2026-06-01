@@ -16,7 +16,7 @@ function FloatingPracticeWidget({ itemName, elapsedTime, onStop, onNavigate }) {
   useLayoutEffect(() => {
     if (pos !== null) return;
     const h1 = document.querySelector('h1');
-    const settingsBtn = document.querySelector('[aria-label="Open settings"]');
+    const settingsBtn = document.querySelector('[data-settings-button]');
     const pill = btnRef.current;
     if (!h1 || !settingsBtn || !pill) return;
 

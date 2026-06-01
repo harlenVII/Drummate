@@ -150,7 +150,7 @@ function BpmDial({ bpm, onBpmChange }) {
       <button
         onClick={handleDecrement}
         className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 rounded-full hover:bg-gray-100 dark:hover:bg-slate-600 active:bg-gray-200 dark:active:bg-slate-600 transition-colors"
-        aria-label="Decrease BPM"
+        aria-label={t('accessibility.decreaseBpm')}
       >
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
           <line x1="5" y1="12" x2="19" y2="12" className="text-gray-700 dark:text-slate-200" />
@@ -250,7 +250,7 @@ function BpmDial({ bpm, onBpmChange }) {
       <button
         onClick={handleIncrement}
         className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600 rounded-full hover:bg-gray-100 dark:hover:bg-slate-600 active:bg-gray-200 dark:active:bg-slate-600 transition-colors"
-        aria-label="Increase BPM"
+        aria-label={t('accessibility.increaseBpm')}
       >
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" className="text-gray-700 dark:text-slate-200" />

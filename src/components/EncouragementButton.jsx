@@ -1,11 +1,14 @@
+import { useLanguage } from '../contexts/LanguageContext';
+
 function EncouragementButton({ status, onPress }) {
+  const { t } = useLanguage();
   const isLoading = status === 'downloading' || status === 'loading' || status === 'generating';
 
   return (
     <button
       onClick={onPress}
       className="fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-blue-600 dark:bg-indigo-600 hover:bg-blue-700 dark:hover:bg-indigo-700 flex items-center justify-center text-white shadow-lg transition-all duration-200 active:scale-95"
-      aria-label="AI Coach"
+      aria-label={t('accessibility.aiCoach')}
     >
       {isLoading ? (
         <svg className="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none">
