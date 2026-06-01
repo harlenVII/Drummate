@@ -59,7 +59,7 @@ function PracticeRow({ practice, isFocused, onStart, onEdit, compactMode }) {
         {...attributes}
         {...listeners}
         className="text-gray-300 dark:text-slate-700 hover:text-gray-500 dark:hover:text-slate-400 cursor-grab touch-none px-1 transition-colors"
-        aria-label="drag"
+        aria-label={t('accessibility.dragToReorder')}
       >
         ⋮⋮
       </button>
