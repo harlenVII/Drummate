@@ -26,6 +26,7 @@ import GoalsPage from './components/GoalsPage';
 import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from './services/offlineService';
 import { useUiPreferences } from './hooks/useUiPreferences';
 import { useAppData } from './hooks/useAppData';
+import { usePracticeTimer } from './hooks/usePracticeTimer';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
@@ -42,7 +43,6 @@ import {
   setItemCategory,
   trashItem,
   restoreItem,
-  addLog,
   addAdjustmentLog,
   reattributeLogsToDate,
   getLogsByDate,
@@ -66,13 +66,6 @@ import { getItem, setItem, removeItem } from './utils/safeStorage';
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
   const { user, authReady, signOut, isVisitor } = useAuth();
-  const [editing, setEditing] = useState(false);
-  const [activeItemId, setActiveItemId] = useState(null);
-  const [focusedPracticeItemId, setFocusedPracticeItemId] = useState(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const intervalRef = useRef(null);
-  const startTimeRef = useRef(null);
-  const activeItemIdRef = useRef(null);
   const metronomeSubpageRef = useRef('metronome');
   const reportSubpageRef = useRef('daily');
   const reportDateRef = useRef(getTodayString());
@@ -123,6 +116,13 @@ function App() {
     multiMeterBpm, setMultiMeterBpm, multiMeterSoundType, setMultiMeterSoundType,
     multiMeterSlots, setMultiMeterSlots, multiMeterPlayingSlot, setMultiMeterPlayingSlot,
   } = metronome;
+
+  const timer = usePracticeTimer({ loadData, metronome });
+  const {
+    activeItemId, setActiveItemId, elapsedTime, setElapsedTime,
+    focusedPracticeItemId, setFocusedPracticeItemId,
+    editing, stopTimer, saveAndStop, handleStart, handleStop, handleSetEditing,
+  } = timer;
 
   // Subpage toggle within metronome tab
   const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
@@ -339,146 +339,7 @@ function App() {
     };
   }, [user, authReady, loadData, syncTrigger, setOfflineMode]);
 
-  // Keep ref in sync so pagehide/beforeunload always read latest value
-  useEffect(() => {
-    activeItemIdRef.current = activeItemId;
-  }, [activeItemId]);
 
-  // Recover any unsaved practice session from a previous page close
-  useEffect(() => {
-    const pending = getItem('drummate_pending_log');
-    if (pending) {
-      removeItem('drummate_pending_log');
-      try {
-        const parsed = JSON.parse(pending);
-        const { itemId, duration } = parsed;
-        // Older format used `date`; convert to loggedAt for backward compat.
-        const loggedAt = typeof parsed.loggedAt === 'number'
-          ? parsed.loggedAt
-          : (parsed.date ? Date.parse(parsed.date + 'T12:00:00') : Date.now());
-        if (itemId != null && duration > 0) {
-          addLog(itemId, duration, { loggedAt })
-            .then(() => loadData())
-            .catch((err) => console.error('addLog failed:', err));
-        }
-      } catch {
-        // ignore malformed data
-      }
-    }
-  }, [loadData]);
-
-  // Save ongoing practice session when page is closed/refreshed
-  useEffect(() => {
-    const saveSession = () => {
-      const itemId = activeItemIdRef.current;
-      const start = startTimeRef.current;
-      if (itemId != null && start != null) {
-        const elapsed = Math.floor((Date.now() - start) / 1000);
-        if (elapsed > 0) {
-          clearInterval(intervalRef.current);
-          // Synchronous localStorage write survives iOS page kill
-          setItem(
-            'drummate_pending_log',
-            JSON.stringify({ itemId, duration: elapsed, loggedAt: Date.now() }),
-          );
-        }
-      }
-    };
-
-    // For desktop browsers (close/refresh)
-    window.addEventListener('beforeunload', saveSession);
-
-    // For iOS Safari (more reliable than beforeunload)
-    window.addEventListener('pagehide', saveSession);
-
-    return () => {
-      window.removeEventListener('beforeunload', saveSession);
-      window.removeEventListener('pagehide', saveSession);
-    };
-  }, []);
-
-  const stopTimer = useCallback(() => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = null;
-    startTimeRef.current = null;
-  }, []);
-
-  const saveAndStop = useCallback(async () => {
-    stopTimer();
-    if (metronomeIsPlaying && metronomeEngineRef.current) {
-      metronomeEngineRef.current.stop();
-      setMetronomeIsPlaying(false);
-    }
-    const elapsed = elapsedTime;
-    const itemId = activeItemId;
-
-    if (itemId != null) {
-      await db.practiceItems.update(itemId, {
-        metronomeSettings: { bpm: metronomeBpm, timeSignature: metronomeTimeSignature, subdivision: metronomeSubdivision, soundType: metronomeSoundType },
-      });
-    }
-
-    if (elapsed > 0 && itemId != null) {
-      const logId = await addLog(itemId, elapsed);
-      await loadData();
-      setActiveItemId(null);
-      setElapsedTime(0);
-      if (user) {
-        const log = await db.practiceLogs.get(logId);
-        firebaseBackend.pushLog(log, user.id).catch(console.error);
-      }
-    } else {
-      setActiveItemId(null);
-      setElapsedTime(0);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType, metronomeIsPlaying]);
-
-  const handleStart = useCallback(
-    async (itemId) => {
-      // If another item is running, save it first (including its metronome settings)
-      if (activeItemId != null) {
-        stopTimer();
-        await db.practiceItems.update(activeItemId, {
-          metronomeSettings: { bpm: metronomeBpm, timeSignature: metronomeTimeSignature, subdivision: metronomeSubdivision, soundType: metronomeSoundType },
-        });
-        if (elapsedTime > 0) {
-          const logId = await addLog(activeItemId, elapsedTime);
-          if (user) {
-            const log = await db.practiceLogs.get(logId);
-            firebaseBackend.pushLog(log, user.id).catch(console.error);
-          }
-        }
-      }
-
-      // Load metronome settings saved for this item
-      const item = await db.practiceItems.get(itemId);
-      if (item?.metronomeSettings) {
-        const { bpm, timeSignature, subdivision, soundType } = item.metronomeSettings;
-        if (bpm != null) setMetronomeBpm(bpm);
-        if (timeSignature != null) setMetronomeTimeSignature(timeSignature);
-        if (subdivision != null) setMetronomeSubdivision(subdivision);
-        if (soundType != null) setMetronomeSoundType(soundType);
-      }
-
-      setActiveItemId(itemId);
-      setElapsedTime(0);
-      startTimeRef.current = Date.now();
-      intervalRef.current = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000));
-      }, 200);
-
-      if (activeItemId != null && elapsedTime > 0) {
-        await loadData();
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, elapsedTime, stopTimer, loadData, user, metronomeBpm, metronomeTimeSignature, metronomeSubdivision, metronomeSoundType],
-  );
-
-  const handleStop = useCallback(async () => {
-    await saveAndStop();
-  }, [saveAndStop]);
 
   const handleAddItem = useCallback(
     async (name, category) => {
@@ -524,6 +385,7 @@ function App() {
         firebaseBackend.pushTrashItem(item.uid, true, new Date().toISOString(), user.id).catch(console.error);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeItemId, stopTimer, loadData, user],
   );
 
@@ -553,6 +415,7 @@ function App() {
         firebaseBackend.pushDeleteItem(item.uid, user.id).catch(console.error);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeItemId, stopTimer, loadData, user],
   );
 
@@ -570,6 +433,7 @@ function App() {
         firebaseBackend.pushArchiveItem(item.uid, archived, user.id).catch(console.error);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeItemId, stopTimer, loadData, user],
   );
 
@@ -718,16 +582,6 @@ function App() {
       }
     },
     [loadData, user],
-  );
-
-  const handleSetEditing = useCallback(
-    async (value) => {
-      if (value && activeItemId != null) {
-        await saveAndStop();
-      }
-      setEditing(value);
-    },
-    [activeItemId, saveAndStop],
   );
 
   const loadReportData = useCallback(async (dateString) => {
@@ -1309,7 +1163,7 @@ function App() {
       else if (e.code === 'KeyL') setTheme('light');
       else if (e.code === 'KeyD') setTheme('dark');
       else if (e.code === 'KeyS') {
-        if (activeItemIdRef.current != null) saveAndStop();
+        if (timer.activeItemIdRef.current != null) saveAndStop();
       }
       else if (e.code === 'KeyA') {
         if (activeTabRef.current === 'metronome') setMetronomeAccentFirstBeat(prev => !prev);
@@ -1372,6 +1226,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage, saveAndStop, setTheme, setMetronomeAccentFirstBeat, setTimeUnit]);
 
   const handleEnterOfflineMode = useCallback(() => {
