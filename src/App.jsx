@@ -25,6 +25,7 @@ import NotesPage from './components/NotesPage';
 import GoalsPage from './components/GoalsPage';
 import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from './services/offlineService';
 import { useUiPreferences } from './hooks/useUiPreferences';
+import { useAppData } from './hooks/useAppData';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
@@ -34,7 +35,6 @@ import { speak, getLang, cancelSpeech } from './services/voiceFeedback';
 
 import {
   db,
-  getItems,
   addItem,
   renameItem,
   deleteItem,
@@ -42,16 +42,13 @@ import {
   setItemCategory,
   trashItem,
   restoreItem,
-  purgeExpiredTrash,
   addLog,
   addAdjustmentLog,
   reattributeLogsToDate,
-  getTodaysLogs,
   getLogsByDate,
   getLogsByDateRange,
   mergeItem,
   getPractices,
-  getAllNotes,
   addPractice as dbAddPractice,
   updatePractice as dbUpdatePractice,
   deletePractice as dbDeletePractice,
@@ -69,8 +66,6 @@ import { getItem, setItem, removeItem } from './utils/safeStorage';
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
   const { user, authReady, signOut, isVisitor } = useAuth();
-  const [items, setItems] = useState([]);
-  const [totals, setTotals] = useState({});
   const [editing, setEditing] = useState(false);
   const [activeItemId, setActiveItemId] = useState(null);
   const [focusedPracticeItemId, setFocusedPracticeItemId] = useState(null);
@@ -94,6 +89,11 @@ function App() {
     compactMode, setCompactMode,
     theme, setTheme,
   } = useUiPreferences();
+  const {
+    items, setItems, totals, setTotals,
+    metronomePractices, setMetronomePractices,
+    notes, setNotes, goalRefreshKey, loadData, refreshNotes,
+  } = useAppData();
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
   const [reportSubpage, setReportSubpage] = useState('daily');
@@ -127,7 +127,6 @@ function App() {
   // Subpage toggle within metronome tab
   const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');
   // 'metronome' | 'sequencer' | 'practice'
-  const [metronomePractices, setMetronomePractices] = useState([]);
   const [runningPracticeUid, setRunningPracticeUid] = useState(null);
   // Run-view state persisted in App so it survives tab switches.
   const [practiceRunStepIndex, setPracticeRunStepIndex] = useState(0);
@@ -167,11 +166,6 @@ function App() {
   const [llmModalOpen, setLlmModalOpen] = useState(false);
   const [editTimeModal, setEditTimeModal] = useState(null); // { itemId, itemName, currentSeconds }
 
-  const [notes, setNotes] = useState([]);
-  const refreshNotes = useCallback(async () => {
-    setNotes(await getAllNotes());
-  }, []);
-  const [goalRefreshKey, setGoalRefreshKey] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [offlineMode, _setOfflineMode] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
@@ -190,75 +184,6 @@ function App() {
     const timer = setTimeout(() => setGoOnlineToast(false), 3500);
     return () => clearTimeout(timer);
   }, [goOnlineToast]);
-
-  const loadData = useCallback(async () => {
-    const [allItems, logs, practices, allNotes] = await Promise.all([
-      getItems(), getTodaysLogs(), getPractices(), getAllNotes(),
-    ]);
-    setItems(allItems);
-    setMetronomePractices(practices);
-    setNotes(allNotes);
-    const trashedIds = new Set(allItems.filter(i => i.trashed).map(i => i.id));
-    const totalsMap = {};
-    for (const log of logs) {
-      if (!trashedIds.has(log.itemId)) {
-        totalsMap[log.itemId] = (totalsMap[log.itemId] || 0) + log.duration;
-      }
-    }
-    setTotals(totalsMap);
-    setGoalRefreshKey(k => k + 1);
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useEffect(() => {
-    const purge = async () => {
-      const { expiredItems, expiredNotes } = await purgeExpiredTrash();
-      if (expiredItems.length > 0 || expiredNotes.length > 0) {
-        await loadData();
-        if (user) {
-          for (const item of expiredItems) {
-            firebaseBackend.pushDeleteItem(item.uid, user.id).catch(console.error);
-          }
-          for (const note of expiredNotes) {
-            firebaseBackend.deleteNoteRemote(note.uid, user.id).catch(console.error);
-          }
-        }
-      }
-    };
-    purge();
-  }, [loadData, user]);
-
-  // Refresh practice data when the calendar day changes (app left open past midnight)
-  useEffect(() => {
-    let currentDay = getTodayString();
-
-    const checkDayChange = () => {
-      const now = getTodayString();
-      if (now !== currentDay) {
-        currentDay = now;
-        loadData();
-      }
-    };
-
-    // Check every 30 seconds for a day change
-    const id = setInterval(checkDayChange, 30_000);
-
-    // Also refresh when the tab becomes visible again (e.g. phone unlocked next morning)
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        checkDayChange();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [loadData]);
 
   const subscriptionRef = useRef(null);
 
