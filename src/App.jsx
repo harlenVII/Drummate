@@ -34,17 +34,16 @@ import { useTts } from './hooks/useTts';
 import { useLlmEncouragement } from './hooks/useLlmEncouragement';
 import { useVoiceControl } from './hooks/useVoiceControl';
 import { useSync } from './hooks/useSync';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 
-import { getTodayString, shiftDate, getWeekStart, getMonthStart, getYearStart } from './utils/dateHelpers';
 import { setItem } from './utils/safeStorage';
 
 function App() {
   const { language, toggleLanguage, t } = useLanguage();
   const { user, signOut, isVisitor } = useAuth();
-  const languageRef = useRef(language);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const {
     timeUnit, setTimeUnit,
@@ -96,8 +95,6 @@ function App() {
     handleLlmDownload, handleEncouragementPress, generateEncouragement,
   } = llm;
 
-  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
-
   const {
     handleAddItem, handleRenameItem, handleDeleteItem, handleRestoreItem,
     handlePermanentDelete, handleArchiveItem, handleSetItemCategory,
@@ -136,17 +133,12 @@ function App() {
   } = reports;
 
   const nav = useNavigation({ reports, metronome, practices });
-  reportSubpageNavRef.current = () => nav.setReportSubpage('daily');
+  reportSubpageNavRef.current = () => nav.setReportSubpage('daily'); // eslint-disable-line react-hooks/refs
   const {
     activeTab, setActiveTab,
     metronomeSubpage, setMetronomeSubpage,
     reportSubpage, setReportSubpage,
     notesSubpage, setNotesSubpage,
-    activeTabRef,
-    metronomeSubpageRef,
-    reportSubpageRef,
-    notesSubpageRef,
-    reportDateRef, weekStartRef, monthStartRef, yearStartRef,
     handleTabChange, handleSubpageChange,
   } = nav;
 
@@ -196,88 +188,15 @@ function App() {
     }
   }, [aiCoachEnabled, handsFreeMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { languageRef.current = language; }, [language]);
-
-  // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.code === 'Digit1') handleTabChange('practice');
-      else if (e.code === 'Digit2') handleTabChange('metronome');
-      else if (e.code === 'Digit3') handleTabChange('report');
-      else if (e.code === 'Digit4') handleTabChange('notes');
-      else if (e.code === 'KeyM') setTimeUnit('minutes');
-      else if (e.code === 'KeyH') setTimeUnit('hours');
-      else if (e.code === 'KeyE') { if (languageRef.current !== 'en') toggleLanguage(); }
-      else if (e.code === 'KeyC') { if (languageRef.current !== 'zh') toggleLanguage(); }
-      else if (e.code === 'KeyL') setTheme('light');
-      else if (e.code === 'KeyD') setTheme('dark');
-      else if (e.code === 'KeyS') {
-        if (timer.activeItemIdRef.current != null) saveAndStop();
-      }
-      else if (e.code === 'KeyA') {
-        if (activeTabRef.current === 'metronome') setMetronomeAccentFirstBeat(prev => !prev);
-      }
-      else if (e.key === '?') setShowKeyboardHelp(prev => !prev);
-      else if (e.key === 'Tab') {
-        if (activeTabRef.current === 'metronome') {
-          e.preventDefault();
-          const pages = ['metronome', 'practice', 'sequencer', 'multiMeter'];
-          const idx = pages.indexOf(metronomeSubpageRef.current);
-          const next = e.shiftKey
-            ? pages[(idx - 1 + pages.length) % pages.length]
-            : pages[(idx + 1) % pages.length];
-          handleSubpageChange(next);
-        } else if (activeTabRef.current === 'report') {
-          e.preventDefault();
-          const pages = ['daily', 'weekly', 'monthly', 'yearly', 'stats', 'goals'];
-          const idx = pages.indexOf(reportSubpageRef.current);
-          const next = e.shiftKey
-            ? pages[(idx - 1 + pages.length) % pages.length]
-            : pages[(idx + 1) % pages.length];
-          setReportSubpage(next);
-        } else if (activeTabRef.current === 'notes') {
-          e.preventDefault();
-          const pages = ['byDate', 'byItem'];
-          const idx = pages.indexOf(notesSubpageRef.current);
-          const next = e.shiftKey
-            ? pages[(idx - 1 + pages.length) % pages.length]
-            : pages[(idx + 1) % pages.length];
-          setNotesSubpage(next);
-        }
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (activeTabRef.current === 'report') {
-          const dir = e.key === 'ArrowLeft' ? -1 : 1;
-          const subpage = reportSubpageRef.current;
-          const today = getTodayString();
-          if (subpage === 'daily') {
-            e.preventDefault();
-            const newDate = shiftDate(reportDateRef.current, dir);
-            if (newDate <= today) handleReportDateChange(newDate);
-          } else if (subpage === 'weekly') {
-            e.preventDefault();
-            const newWeekStart = getWeekStart(shiftDate(weekStartRef.current, dir * 7));
-            if (newWeekStart <= getWeekStart(today)) handleWeekChange(newWeekStart);
-          } else if (subpage === 'monthly') {
-            e.preventDefault();
-            const newMonthStart = dir === -1
-              ? getMonthStart(shiftDate(monthStartRef.current, -1))
-              : getMonthStart(shiftDate(monthStartRef.current, 32));
-            if (newMonthStart <= getMonthStart(today)) handleMonthChange(newMonthStart);
-          } else if (subpage === 'yearly') {
-            e.preventDefault();
-            const newYearStart = dir === -1
-              ? getYearStart(shiftDate(yearStartRef.current, -1))
-              : getYearStart(shiftDate(yearStartRef.current, 366));
-            if (newYearStart <= getYearStart(today)) handleYearChange(newYearStart);
-          }
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleTabChange, handleSubpageChange, setReportSubpage, handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange, toggleLanguage, saveAndStop, setTheme, setMetronomeAccentFirstBeat, setTimeUnit]);
+  const { showKeyboardHelp, setShowKeyboardHelp } = useKeyboardShortcuts({
+    activeItemIdRef: timer.activeItemIdRef,
+    nav,
+    reports,
+    setTimeUnit,
+    setTheme,
+    setMetronomeAccentFirstBeat: metronome.setAccentFirstBeat,
+    saveAndStop,
+  });
 
   if (!user && !isVisitor) {
     return <AuthScreen />;
