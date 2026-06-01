@@ -3,6 +3,7 @@ import { useMetronomeState } from './hooks/useMetronomeState';
 import PracticeItemList from './components/PracticeItemList';
 import MetronomeTab from './components/MetronomeTab';
 import ReportTab from './components/ReportTab';
+import AppHeader from './components/AppHeader';
 import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
@@ -193,19 +194,7 @@ function App() {
       )}
       <div className="flex-1 overflow-y-auto">
         <div className={`${activeTab === 'practice' ? 'max-w-4xl' : 'max-w-lg'} mx-auto px-4 py-8 flex flex-col gap-6`}>
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-slate-100">
-              {t('appName')}
-            </h1>
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="w-9 h-9 rounded-full bg-blue-600 dark:bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors shrink-0"
-              aria-label={t('accessibility.openSettings')}
-              data-settings-button
-            >
-              {(user?.name || user?.email || '?')[0].toUpperCase()}
-            </button>
-          </div>
+          <AppHeader user={user} onOpenSettings={() => setSettingsOpen(true)} />
 
           {activeTab === 'practice' && (
             <PracticeItemList
