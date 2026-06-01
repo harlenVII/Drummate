@@ -1,5 +1,7 @@
 import { formatDuration } from '../utils/formatTime';
 import ReportItemCard from './ReportItemCard';
+import ReportNavHeader from './ReportNavHeader';
+import ReportItemBreakdown from './ReportItemBreakdown';
 import {
   getYearStart,
   getYearEnd,
@@ -182,54 +184,16 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   return (
     <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
       {/* Year navigation */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={handlePrevYear}
-          className={`${compactMode ? 'p-1' : 'p-2'} text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors`}
-          aria-label="Previous year"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <span className={`${compactMode ? 'text-base' : 'text-lg'} font-semibold text-gray-800 dark:text-slate-100`}>{year}</span>
-        <button
-          onClick={handleNextYear}
-          disabled={isCurrentYear}
-          className={`${compactMode ? 'p-1' : 'p-2'} transition-colors ${
-            isCurrentYear
-              ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed'
-              : 'text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
-          }`}
-          aria-label="Next year"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={compactMode ? 'h-5 w-5' : 'h-6 w-6'}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      </div>
+      <ReportNavHeader
+        onPrev={handlePrevYear}
+        onNext={handleNextYear}
+        nextDisabled={isCurrentYear}
+        prevLabel="Previous year"
+        nextLabel="Next year"
+        compactMode={compactMode}
+      >
+        {year}
+      </ReportNavHeader>
 
       {/* Grand total card */}
       <div className={`bg-white dark:bg-slate-800 shadow-sm text-center ${compactMode ? 'rounded-md p-3' : 'rounded-lg p-6'}`}>
@@ -387,38 +351,14 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
       )}
 
       {/* Per-item breakdown */}
-      {groupByCategory ? (
-        <>
-          {fundamentals.length > 0 && (
-            <>
-              <div className="flex justify-between items-center px-1 pt-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
-                  {t('categories.fundamentals')}
-                </span>
-                <span className="text-xs text-gray-400 dark:text-slate-500">
-                  {formatDuration(fundamentals.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
-                </span>
-              </div>
-              {fundamentals.map(renderItemCard)}
-            </>
-          )}
-          {songs.length > 0 && (
-            <>
-              <div className="flex justify-between items-center px-1 pt-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-slate-500">
-                  {t('categories.songs')}
-                </span>
-                <span className="text-xs text-gray-400 dark:text-slate-500">
-                  {formatDuration(songs.reduce((s, e) => s + e.duration, 0), timeUnit)} {t(timeUnit)}
-                </span>
-              </div>
-              {songs.map(renderItemCard)}
-            </>
-          )}
-        </>
-      ) : (
-        breakdown.map(renderItemCard)
-      )}
+      <ReportItemBreakdown
+        groupByCategory={groupByCategory}
+        fundamentals={fundamentals}
+        songs={songs}
+        breakdown={breakdown}
+        timeUnit={timeUnit}
+        renderCard={renderItemCard}
+      />
 
       {items.length === 0 && (
         <p className="text-center text-gray-400 dark:text-slate-500 py-8">
