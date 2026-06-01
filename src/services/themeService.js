@@ -25,6 +25,15 @@ function applyTheme(theme) {
 
 let currentTheme = readCache() ?? DEFAULT_THEME;
 
+const listeners = new Set();
+
+export function subscribeTheme(listener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 // Apply once at module load so the class is on <html> before React mounts.
 // This prevents a light-flash when reloading in dark mode.
 applyTheme(currentTheme);
@@ -44,4 +53,5 @@ export function setTheme(theme) {
     // ignore
   }
   applyTheme(theme);
+  listeners.forEach((l) => l());
 }
