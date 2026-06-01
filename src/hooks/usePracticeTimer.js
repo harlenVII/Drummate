@@ -169,6 +169,14 @@ export function usePracticeTimer({ loadData, metronome }) {
     [activeItemId, saveAndStop],
   );
 
+  const clearActiveTimer = useCallback((id) => {
+    if (activeItemId === id) {
+      stopTimer();
+      setActiveItemId(null);
+      setElapsedTime(0);
+    }
+  }, [activeItemId, stopTimer]);
+
   return {
     activeItemId, setActiveItemId,
     elapsedTime, setElapsedTime,
@@ -176,5 +184,6 @@ export function usePracticeTimer({ loadData, metronome }) {
     editing,
     activeItemIdRef,
     stopTimer, saveAndStop, handleStart, handleStop, handleSetEditing,
+    clearActiveTimer,
   };
 }
