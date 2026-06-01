@@ -1,12 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useMetronomeState } from './hooks/useMetronomeState';
 import PracticeItemList from './components/PracticeItemList';
-import DailyReport from './components/DailyReport';
-import WeeklyReport from './components/WeeklyReport';
-import MonthlyReport from './components/MonthlyReport';
-import YearlyReport from './components/YearlyReport';
-import StatsReport from './components/StatsReport';
 import MetronomeTab from './components/MetronomeTab';
+import ReportTab from './components/ReportTab';
 import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
@@ -19,7 +15,6 @@ import EncouragementButton from './components/EncouragementButton';
 import EncouragementModal from './components/EncouragementModal';
 import EditTimeModal from './components/EditTimeModal';
 import NotesPage from './components/NotesPage';
-import GoalsPage from './components/GoalsPage';
 import { useUiPreferences } from './hooks/useUiPreferences';
 import { useAppData } from './hooks/useAppData';
 import { usePracticeTimer } from './hooks/usePracticeTimer';
@@ -97,11 +92,9 @@ function App() {
     items,
   });
   const {
-    reportDate, weekStart, weekLogs, monthStart, monthLogs, yearStart, yearLogs,
-    reportLogs, editTimeModal, setEditTimeModal,
-    handleReportDateChange, handleManualTimeAdjust, handleMergeToYesterday,
-    handleEditTime, handleAddTime, handleDayClick,
-    handleWeekChange, handleMonthChange, handleYearChange,
+    reportDate,
+    editTimeModal, setEditTimeModal,
+    handleManualTimeAdjust,
   } = reports;
 
   const nav = useNavigation({ reports, metronome, practices });
@@ -254,96 +247,17 @@ function App() {
           )}
 
           {activeTab === 'report' && (
-            <>
-              {/* Report subpage toggle */}
-              <div className="flex bg-gray-200 dark:bg-slate-700 rounded-lg p-1 gap-1">
-                {['daily', 'weekly', 'monthly', 'yearly', 'stats', 'goals'].map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setReportSubpage(page)}
-                    className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      reportSubpage === page
-                        ? 'bg-white dark:bg-slate-600 text-gray-800 dark:text-slate-100 shadow-sm'
-                        : 'text-gray-500 dark:text-slate-400'
-                    }`}
-                  >
-                    {t(`reportSubpages.${page}`)}
-                  </button>
-                ))}
-              </div>
-
-              {reportSubpage === 'daily' && (
-                <DailyReport
-                  items={items.filter(i => !i.trashed)}
-                  allItems={items.filter(i => !i.trashed)}
-                  reportDate={reportDate}
-                  reportLogs={reportLogs}
-                  onDateChange={handleReportDateChange}
-                  onEditTime={handleEditTime}
-                  onAddTime={handleAddTime}
-                  onMergeToYesterday={handleMergeToYesterday}
-                  timeUnit={timeUnit}
-                  groupByCategory={groupByCategory}
-                  compactMode={compactMode}
-                />
-              )}
-
-              {reportSubpage === 'weekly' && (
-                <WeeklyReport
-                  items={items.filter(i => !i.trashed)}
-                  weekStart={weekStart}
-                  weekLogs={weekLogs}
-                  onWeekChange={handleWeekChange}
-                  onDayClick={handleDayClick}
-                  timeUnit={timeUnit}
-                  groupByCategory={groupByCategory}
-                  compactMode={compactMode}
-                />
-              )}
-
-              {reportSubpage === 'monthly' && (
-                <MonthlyReport
-                  items={items.filter(i => !i.trashed)}
-                  monthStart={monthStart}
-                  monthLogs={monthLogs}
-                  onMonthChange={handleMonthChange}
-                  onDayClick={handleDayClick}
-                  timeUnit={timeUnit}
-                  groupByCategory={groupByCategory}
-                  compactMode={compactMode}
-                />
-              )}
-
-              {reportSubpage === 'yearly' && (
-                <YearlyReport
-                  items={items.filter(i => !i.trashed)}
-                  yearStart={yearStart}
-                  yearLogs={yearLogs}
-                  onYearChange={handleYearChange}
-                  onDayClick={handleDayClick}
-                  timeUnit={timeUnit}
-                  groupByCategory={groupByCategory}
-                  compactMode={compactMode}
-                />
-              )}
-
-              {reportSubpage === 'stats' && (
-                <StatsReport
-                  items={items.filter(i => !i.trashed)}
-                  timeUnit={timeUnit}
-                  compactMode={compactMode}
-                />
-              )}
-
-              {reportSubpage === 'goals' && (
-                <GoalsPage
-                  user={user}
-                  firebaseBackend={firebaseBackend}
-                  compactMode={compactMode}
-                  timeUnit={timeUnit}
-                />
-              )}
-            </>
+            <ReportTab
+              reportSubpage={reportSubpage}
+              setReportSubpage={setReportSubpage}
+              items={items}
+              reports={reports}
+              timeUnit={timeUnit}
+              groupByCategory={groupByCategory}
+              compactMode={compactMode}
+              user={user}
+              firebaseBackend={firebaseBackend}
+            />
           )}
 
           {activeTab === 'notes' && (
