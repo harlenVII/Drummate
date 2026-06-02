@@ -69,13 +69,7 @@ async function replayNotePayload(p, userId) {
   if (!(p.uid && p.itemUid !== undefined && p.body !== undefined)) return false;
   const fs = getFirestore();
   await fs.setDoc(fs.doc(notesRef(userId), p.uid), {
-    uid: p.uid,
-    item_uid: p.itemUid,
-    date: p.date,
-    body: p.body ?? '',
-    trashed: !!p.trashed,
-    trashed_at: p.trashedAt || '',
-    created_at: p.createdAt || '',
+    ...noteCodec.toRemote(p),
     updated_at: fs.serverTimestamp(),
   }, { merge: true });
   const localNote = await db.notes.where('uid').equals(p.uid).first();
@@ -133,16 +127,7 @@ async function replayGoalPayload(p, userId) {
   if (!(p.uid && p.startDate && p.endDate && p.targetHours !== undefined)) return false;
   const fs = getFirestore();
   await fs.setDoc(fs.doc(goalsRef(userId), p.uid), {
-    uid: p.uid,
-    name: p.name ?? '',
-    start_date: p.startDate,
-    end_date: p.endDate,
-    target_hours: p.targetHours,
-    archived: !!p.archived,
-    archived_at: p.archivedAt ?? null,
-    pinned: !!p.pinned,
-    created_at: p.createdAt || 0,
-    sort_order: p.sortOrder ?? 0,
+    ...goalCodec.toRemote(p),
     updated_at: fs.serverTimestamp(),
   }, { merge: true });
   const localGoal = await db.goals.where('uid').equals(p.uid).first();
