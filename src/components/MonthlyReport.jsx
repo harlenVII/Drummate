@@ -11,13 +11,14 @@ import {
   getTodayString,
 } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useIsDarkMode } from '../hooks/useIsDarkMode';
 import { buildBreakdown } from '../utils/practiceStats';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
-  const isDarkMode = document.documentElement.classList.contains('dark');
+  const isDarkMode = useIsDarkMode();
   const monthEnd = getMonthEnd(monthStart);
   const monthDays = getDaysInRange(monthStart, monthEnd);
   const today = getTodayString();

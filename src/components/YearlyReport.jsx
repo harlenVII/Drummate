@@ -11,6 +11,7 @@ import {
   shiftDate,
 } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useIsDarkMode } from '../hooks/useIsDarkMode';
 import { buildBreakdown } from '../utils/practiceStats';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -18,7 +19,7 @@ const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep
 
 function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
-  const isDarkMode = document.documentElement.classList.contains('dark');
+  const isDarkMode = useIsDarkMode();
   const yearEnd = getYearEnd(yearStart);
   const year = yearStart.split('-')[0];
   const today = getTodayString();

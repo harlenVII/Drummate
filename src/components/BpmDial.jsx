@@ -1,8 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-
-const getAccentColor = () =>
-  document.documentElement.classList.contains('dark') ? '#4f46e5' : '#2563eb';
+import { useIsDarkMode } from '../hooks/useIsDarkMode';
 
 const MIN_BPM = 30;
 const MAX_BPM = 300;
@@ -65,6 +63,8 @@ const ticks = Array.from({ length: NUM_TICKS }, (_, i) => {
 
 function BpmDial({ bpm, onBpmChange }) {
   const { t } = useLanguage();
+  const isDarkMode = useIsDarkMode();
+  const accentColor = isDarkMode ? '#4f46e5' : '#2563eb';
   const svgRef = useRef(null);
   const isDragging = useRef(false);
   const lastAngle = useRef(null);
@@ -198,7 +198,7 @@ function BpmDial({ bpm, onBpmChange }) {
           <path
             d={arcPath}
             fill="none"
-            stroke={getAccentColor()}
+            stroke={accentColor}
             strokeWidth="8"
             strokeLinecap="round"
           />
@@ -209,7 +209,7 @@ function BpmDial({ bpm, onBpmChange }) {
           cx={handle.x}
           cy={handle.y}
           r={HANDLE_RADIUS}
-          fill={getAccentColor()}
+          fill={accentColor}
           style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
         />
 

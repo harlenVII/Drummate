@@ -9,13 +9,14 @@ import {
   getTodayString,
 } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useIsDarkMode } from '../hooks/useIsDarkMode';
 import { buildBreakdown } from '../utils/practiceStats';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
-  const isDarkMode = document.documentElement.classList.contains('dark');
+  const isDarkMode = useIsDarkMode();
   const weekEnd = getWeekEnd(weekStart);
   const weekDays = getDaysInRange(weekStart, weekEnd);
   const today = getTodayString();
