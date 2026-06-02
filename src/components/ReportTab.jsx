@@ -22,6 +22,7 @@ export default function ReportTab({
     handleEditTime, handleAddTime, handleMergeToYesterday,
     handleDayClick,
     handleWeekChange, handleMonthChange, handleYearChange,
+    handleWeekClick, handleMonthClick,
   } = reports;
 
   const nonTrashedItems = items.filter(i => !i.trashed);
@@ -81,6 +82,7 @@ export default function ReportTab({
           monthLogs={monthLogs}
           onMonthChange={handleMonthChange}
           onDayClick={handleDayClick}
+          onWeekClick={handleWeekClick}
           timeUnit={timeUnit}
           groupByCategory={groupByCategory}
           compactMode={compactMode}
@@ -94,6 +96,7 @@ export default function ReportTab({
           yearLogs={yearLogs}
           onYearChange={handleYearChange}
           onDayClick={handleDayClick}
+          onMonthClick={handleMonthClick}
           timeUnit={timeUnit}
           groupByCategory={groupByCategory}
           compactMode={compactMode}
