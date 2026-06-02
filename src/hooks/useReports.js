@@ -19,7 +19,7 @@ import {
   getYearEnd,
 } from '../utils/dateHelpers';
 
-export function useReports({ loadData, onNavigateToDaily, items = [] }) {
+export function useReports({ loadData, onNavigateToSubpage, items = [] }) {
   const { user } = useAuth();
 
   const [reportDate, setReportDate] = useState(getTodayString());
@@ -111,10 +111,28 @@ export function useReports({ loadData, onNavigateToDaily, items = [] }) {
   const handleDayClick = useCallback(
     async (dateString) => {
       setReportDate(dateString);
-      onNavigateToDaily();
+      onNavigateToSubpage('daily');
       await loadReportData(dateString);
     },
-    [loadReportData, onNavigateToDaily],
+    [loadReportData, onNavigateToSubpage],
+  );
+
+  const handleWeekClick = useCallback(
+    async (newWeekStart) => {
+      setWeekStart(newWeekStart);
+      onNavigateToSubpage('weekly');
+      await loadWeekData(newWeekStart);
+    },
+    [loadWeekData, onNavigateToSubpage],
+  );
+
+  const handleMonthClick = useCallback(
+    async (newMonthStart) => {
+      setMonthStart(newMonthStart);
+      onNavigateToSubpage('monthly');
+      await loadMonthData(newMonthStart);
+    },
+    [loadMonthData, onNavigateToSubpage],
   );
 
   const handleWeekChange = useCallback(async (newWeekStart) => {
@@ -137,7 +155,7 @@ export function useReports({ loadData, onNavigateToDaily, items = [] }) {
     reportLogs, editTimeModal, setEditTimeModal,
     loadReportData, loadWeekData, loadMonthData, loadYearData,
     handleReportDateChange, handleManualTimeAdjust, handleMergeToYesterday,
-    handleEditTime, handleAddTime, handleDayClick,
+    handleEditTime, handleAddTime, handleDayClick, handleWeekClick, handleMonthClick,
     handleWeekChange, handleMonthChange, handleYearChange,
     setReportDate, setWeekStart, setMonthStart, setYearStart,
     setReportLogs, setWeekLogs, setMonthLogs, setYearLogs,

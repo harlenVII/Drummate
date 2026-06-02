@@ -83,13 +83,13 @@ function App() {
   });
 
   // reportSubpageNavRef breaks the wiring cycle between useReports and useNavigation:
-  // useNavigation owns setReportSubpage, but useReports needs onNavigateToDaily which
+  // useNavigation owns setReportSubpage, but useReports needs onNavigateToSubpage which
   // calls setReportSubpage. We forward the call through a stable ref that gets assigned
   // after nav is created below.
   const reportSubpageNavRef = useRef(() => {});
   const reports = useReports({
     loadData,
-    onNavigateToDaily: () => reportSubpageNavRef.current(),
+    onNavigateToSubpage: (subpage) => reportSubpageNavRef.current(subpage),
     items,
   });
   const {
@@ -99,7 +99,7 @@ function App() {
   } = reports;
 
   const nav = useNavigation({ reports, metronome, practices });
-  reportSubpageNavRef.current = () => nav.setReportSubpage('daily'); // eslint-disable-line react-hooks/refs
+  reportSubpageNavRef.current = (subpage) => nav.setReportSubpage(subpage); // eslint-disable-line react-hooks/refs
   const {
     activeTab, setActiveTab,
     metronomeSubpage, setMetronomeSubpage,
