@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getTodayString, getWeekStart, getMonthStart, getYearStart } from '../utils/dateHelpers';
 
 export function useNavigation({ reports, metronome, practices }) {
-  // reports: { loadReportData, loadWeekData, loadMonthData, loadYearData,
-  //            setReportDate, setWeekStart, setMonthStart, setYearStart,
+  // reports: { setReportDate, setWeekStart, setMonthStart, setYearStart,
   //            reportDate, weekStart, monthStart, yearStart }
   // metronome: { engineRef, noSleepRef, isPlaying, setIsPlaying, setCurrentBeat,
   //              setSequencerPlayingSlot, setMultiMeterPlayingSlot }
@@ -46,20 +45,15 @@ export function useNavigation({ reports, metronome, practices }) {
         const wStart = getWeekStart(today);
         const mStart = getMonthStart(today);
         const yStart = getYearStart(today);
+        // Setting the anchors re-subscribes each report liveQuery to "today".
         reports.setReportDate(today);
         reports.setWeekStart(wStart);
         reports.setMonthStart(mStart);
         reports.setYearStart(yStart);
-        await Promise.all([
-          reports.loadReportData(today),
-          reports.loadWeekData(wStart),
-          reports.loadMonthData(mStart),
-          reports.loadYearData(yStart),
-        ]);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [reports.loadReportData, reports.loadWeekData, reports.loadMonthData, reports.loadYearData],
+    [reports.setReportDate, reports.setWeekStart, reports.setMonthStart, reports.setYearStart],
   );
 
   const handleSubpageChange = useCallback(

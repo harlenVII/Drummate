@@ -125,10 +125,6 @@ function App() {
     loadData,
     resetters: {
       setItems, setTotals, setMetronomePractices, setNotes,
-      setReportLogs: reports.setReportLogs,
-      setWeekLogs: reports.setWeekLogs,
-      setMonthLogs: reports.setMonthLogs,
-      setYearLogs: reports.setYearLogs,
       setSequencerBpm: metronome.setSequencerBpm,
       setSequencerSoundType: metronome.setSequencerSoundType,
       setSequencerSlots: metronome.setSequencerSlots,

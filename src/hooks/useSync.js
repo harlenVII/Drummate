@@ -45,10 +45,6 @@ export function useSync({ loadData, resetters }) {
       resetters.setTotals({});
       resetters.setMetronomePractices([]);
       resetters.setNotes([]);
-      resetters.setReportLogs([]);
-      resetters.setWeekLogs([]);
-      resetters.setMonthLogs([]);
-      resetters.setYearLogs([]);
       resetters.setSequencerBpm(120);
       resetters.setSequencerSoundType('click');
       resetters.setSequencerSlots([]);
