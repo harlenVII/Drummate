@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useLiveQuery } from './useLiveQuery';
+import { useTimezone } from './useTimezone';
 import { getItems, getPractices, getAllNotes, getTodaysLogs } from '../services/database';
 import { getTodayString } from '../utils/dateHelpers';
 
@@ -12,12 +13,11 @@ export function useLiveData() {
   // timezone — neither of which is a Dexie write, so liveQuery alone won't
   // re-run the totals query when the day rolls over (app left open past
   // midnight) or when the user changes their timezone. We track a `today`
-  // string and a manual `tzVersion` and feed both into the totals query deps so
-  // it re-subscribes (and re-buckets) on those changes.
+  // string and the reactive `tz` (shared timezoneService pub/sub) and feed both
+  // into the totals query deps so it re-subscribes (and re-buckets) on those
+  // changes.
   const [today, setToday] = useState(getTodayString());
-  const [tzVersion, setTzVersion] = useState(0);
-
-  const refreshTotals = useCallback(() => setTzVersion((v) => v + 1), []);
+  const tz = useTimezone();
 
   // Detect a calendar-day change (moved here from useAppData): re-bucket
   // "today's" totals after midnight or when the tab becomes visible again.
@@ -43,13 +43,12 @@ export function useLiveData() {
     const map = {};
     for (const l of logs) if (!trashed.has(l.itemId)) map[l.itemId] = (map[l.itemId] || 0) + l.duration;
     return map;
-  }, [today, tzVersion], {});
+  }, [today, tz], {});
 
   return {
     items: items ?? [],
     practices: practices ?? [],
     notes: notes ?? [],
     totals: totals ?? {},
-    refreshTotals,
   };
 }

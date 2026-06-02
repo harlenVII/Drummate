@@ -39,6 +39,25 @@ describe('timezoneService', () => {
     expect(m.getTimezone()).toBe(before);
   });
 
+  it('setTimezone notifies subscribers; unsubscribe stops them', async () => {
+    const m = await import('../src/services/timezoneService.js');
+    const fn = vi.fn();
+    const unsub = m.subscribeTimezone(fn);
+    await m.setTimezone('Europe/London');
+    expect(fn).toHaveBeenCalledTimes(1);
+    unsub();
+    await m.setTimezone('Asia/Tokyo');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('setTimezone does not notify subscribers when the tz is invalid', async () => {
+    const m = await import('../src/services/timezoneService.js');
+    const fn = vi.fn();
+    m.subscribeTimezone(fn);
+    await expect(m.setTimezone('Not/A_Real_Zone')).rejects.toThrow();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
   describe('initTimezone', () => {
     it('adopts a valid remote timezone', async () => {
       const m = await import('../src/services/timezoneService.js');

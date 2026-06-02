@@ -9,6 +9,7 @@ import {
   getLogsByDateRange,
 } from '../services/database';
 import { useLiveQuery } from './useLiveQuery';
+import { useTimezone } from './useTimezone';
 import {
   getTodayString,
   shiftDate,
@@ -31,21 +32,25 @@ export function useReports({ onNavigateToSubpage, items = [] }) {
   const [editTimeModal, setEditTimeModal] = useState(null); // { itemId, itemName, currentSeconds }
 
   // Reactive log reads: each query re-subscribes when its date anchor changes,
-  // and re-emits whenever the underlying practiceLogs rows mutate.
-  const reportLogs = useLiveQuery(() => getLogsByDate(reportDate), [reportDate], []);
+  // and re-emits whenever the underlying practiceLogs rows mutate. `tz` is a
+  // dep so a home-timezone change re-buckets every report immediately (the
+  // date→loggedAt window depends on the current timezone, which isn't a Dexie
+  // write that liveQuery would otherwise observe).
+  const tz = useTimezone();
+  const reportLogs = useLiveQuery(() => getLogsByDate(reportDate), [reportDate, tz], []);
   const weekLogs = useLiveQuery(
     () => getLogsByDateRange(weekStart, getWeekEnd(weekStart)),
-    [weekStart],
+    [weekStart, tz],
     [],
   );
   const monthLogs = useLiveQuery(
     () => getLogsByDateRange(monthStart, getMonthEnd(monthStart)),
-    [monthStart],
+    [monthStart, tz],
     [],
   );
   const yearLogs = useLiveQuery(
     () => getLogsByDateRange(yearStart, getYearEnd(yearStart)),
-    [yearStart],
+    [yearStart, tz],
     [],
   );
 

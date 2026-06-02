@@ -46,7 +46,7 @@ function App() {
   } = useUiPreferences();
   // Reactive reads from Dexie (items/totals/practices/notes). Mutations made by
   // the hooks below propagate to the UI automatically via liveQuery.
-  const { items, totals, practices: metronomePractices, notes, refreshTotals } = useLiveData();
+  const { items, totals, practices: metronomePractices, notes } = useLiveData();
   // Side-effect-only hook: runs the expired-trash purge on mount.
   useAppData();
   const metronome = useMetronomeState();
@@ -302,7 +302,6 @@ function App() {
         listeningState={listeningState}
         voiceTranscript={voiceTranscript}
         userId={user?.id}
-        onTimezoneChange={refreshTotals}
         offlineMode={offlineMode}
         onEnterOfflineMode={handleEnterOfflineMode}
         onGoOnline={handleGoOnline}

@@ -26,6 +26,19 @@ function readCache() {
 // so the order is enforced by the auth effect — there is no in-flight guard here.
 let currentTz = readCache() ?? DEFAULT_TZ;
 
+// Pub/sub so reactive consumers (useTimezone → liveQuery deps) re-bucket
+// when the home timezone changes at runtime. Mirrors themeService. Only
+// setTimezone (a deliberate runtime change) broadcasts; initTimezone updates
+// currentTz directly at boot, before any subscriber exists.
+const listeners = new Set();
+
+export function subscribeTimezone(listener) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 export function getTimezone() {
   return currentTz;
 }
@@ -43,6 +56,7 @@ export async function setTimezone(tz, backend = null, userId = null) {
   if (backend && userId) {
     backend.setUserSetting(userId, 'timezone', tz).catch(console.error);
   }
+  listeners.forEach((l) => l());
 }
 
 export async function initTimezone(backend, userId) {

@@ -132,7 +132,6 @@ function SettingsPanel({
   listeningState,
   voiceTranscript,
   userId,
-  onTimezoneChange,
   offlineMode,
   onEnterOfflineMode,
   onGoOnline,
@@ -153,8 +152,9 @@ function SettingsPanel({
   const handleTimezoneChange = async (e) => {
     const newTz = e.target.value;
     try {
+      // setTimezone broadcasts to timezoneService subscribers (useTimezone),
+      // which re-buckets the Practice totals and every report automatically.
       await setTimezone(newTz, backend, userId);
-      if (onTimezoneChange) onTimezoneChange();
     } catch (err) {
       console.error('Failed to set timezone', err);
     }
