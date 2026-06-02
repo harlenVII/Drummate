@@ -10,7 +10,7 @@ import {
 } from '../services/database';
 
 export function useMetronomePractices({
-  metronomePractices, items, loadData, handleStart, saveAndStop, activeItemId,
+  metronomePractices, items, handleStart, saveAndStop, activeItemId,
 }) {
   const { user } = useAuth();
   const backend = useBackend();
@@ -25,24 +25,22 @@ export function useMetronomePractices({
   const handleAddPractice = useCallback(
     async (data) => {
       const record = await dbAddPractice(data);
-      await loadData();
       if (user) {
         backend.pushPractice({ ...record }, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   const handleUpdatePractice = useCallback(
     async (id, data) => {
       await dbUpdatePractice(id, data);
-      await loadData();
       if (user) {
         const updated = await getPractices().then((ps) => ps.find((p) => p.id === id));
         if (updated) backend.pushPractice(updated, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   const handleDeletePractice = useCallback(
@@ -55,24 +53,22 @@ export function useMetronomePractices({
         setPracticeRunComplete(false);
       }
       await dbDeletePractice(id);
-      await loadData();
       if (user) {
         backend.pushDeletePractice(uid, user.id).catch(console.error);
       }
     },
-    [loadData, user, runningPracticeUid, backend],
+    [user, runningPracticeUid, backend],
   );
 
   const handleReorderPractices = useCallback(
     async (orderedIds) => {
       await updatePracticeOrder(orderedIds);
-      await loadData();
       if (user) {
         const updated = await getPractices();
         backend.pushPracticeReorder(updated, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   const handleStartPractice = useCallback(async (uid) => {

@@ -14,7 +14,7 @@ import { initPriorHours } from '../services/priorPracticeService';
 import { getTodayString } from '../utils/dateHelpers';
 import { getItem, removeItem } from '../utils/safeStorage';
 
-export function useSync({ loadData, resetters }) {
+export function useSync({ resetters }) {
   const { user, authReady, isVisitor } = useAuth();
   const backend = useBackend();
 
@@ -41,10 +41,9 @@ export function useSync({ loadData, resetters }) {
 
   useEffect(() => {
     if (!user) {
-      resetters.setItems([]);
-      resetters.setTotals({});
-      resetters.setMetronomePractices([]);
-      resetters.setNotes([]);
+      // Data (items/totals/practices/notes/logs) is reactive via liveQuery and
+      // signOut wipes Dexie, so the data UI clears itself. We only reset the
+      // ephemeral metronome/sequencer/multimeter engine state and navigation.
       resetters.setSequencerBpm(120);
       resetters.setSequencerSoundType('click');
       resetters.setSequencerSlots([]);
@@ -66,11 +65,8 @@ export function useSync({ loadData, resetters }) {
     prevIsVisitorRef.current = isVisitor;
     // Visitor logged off: isVisitor went true→false, no user
     if (wasVisitor && !isVisitor && !user) {
+      // Data clears via liveQuery + the Dexie wipe in exitVisitorModeLogOff.
       resetters.setActiveTab('practice');
-      resetters.setItems([]);
-      resetters.setTotals({});
-      resetters.setMetronomePractices([]);
-      resetters.setNotes([]);
       resetters.setSequencerBpm(120);
       resetters.setSequencerSoundType('click');
       resetters.setSequencerSlots([]);
@@ -140,8 +136,8 @@ export function useSync({ loadData, resetters }) {
         }
         if (legacyGoalRaw) removeItem('drummate_goal');
         // flushSyncQueue replays queued offline edits to cloud AND restores
-        // local Dexie to match payload, so loadData below reads the final
-        // post-merge state. Keep the sync overlay up until this is done —
+        // local Dexie to match payload, so the reactive UI settles on the
+        // final post-merge state. Keep the sync overlay up until this is done —
         // otherwise the UI flickers between pull-overwritten old state and
         // queue-applied new state.
         await backend.flushSyncQueue(user.id);
@@ -159,23 +155,21 @@ export function useSync({ loadData, resetters }) {
         console.error('Sync init failed:', err);
         if (!cancelled) setSyncError(err?.message || 'sync_failed');
       } finally {
-        // loadData is the single source of truth for UI state. Run it
-        // whether sync succeeded, failed, or short-circuited (offline).
-        // Guard with !cancelled: if sign-out fired the cleanup, the !user
-        // useEffect already cleared state. Calling loadData() here after
-        // that clear (but before wipeAllLocalData finishes) would repopulate
-        // React state with the previous user's Dexie rows.
+        // UI reads are reactive (useLiveData / useReports subscribe to Dexie
+        // via liveQuery), so the pulls above already propagated to the UI by
+        // writing Dexie — no manual refetch needed. Just drop the overlay.
         if (!cancelled) {
-          await loadData();
           setIsSyncing(false);
         }
       }
       // Subscribe AFTER local state is reconciled — its initial snapshot
-      // will see local == cloud and won't trigger a flicker. Stored in a
+      // will see local == cloud and won't trigger a flicker. The callback is
+      // a no-op: subscribeToChanges writes adopted remote changes to Dexie,
+      // and liveQuery re-emits from those writes automatically. Stored in a
       // ref so handleEnterOfflineMode can tear it down without re-running
       // the effect.
       if (!cancelled && !getOfflineMode()) {
-        subscriptionRef.current = backend.subscribeToChanges(loadData);
+        subscriptionRef.current = backend.subscribeToChanges(() => {});
       }
     };
     init();
@@ -188,7 +182,7 @@ export function useSync({ loadData, resetters }) {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authReady, loadData, syncTrigger, setOfflineMode, backend]);
+  }, [user, authReady, syncTrigger, setOfflineMode, backend]);
 
   const handleEnterOfflineMode = useCallback(() => {
     // Tear down the live Firestore listener so it can't overwrite local

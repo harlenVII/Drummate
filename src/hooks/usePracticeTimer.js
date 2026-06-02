@@ -4,7 +4,7 @@ import { useBackend } from '../contexts/BackendContext';
 import { db, addLog } from '../services/database';
 import { getItem, setItem, removeItem } from '../utils/safeStorage';
 
-export function usePracticeTimer({ loadData, metronome }) {
+export function usePracticeTimer({ metronome }) {
   const { user } = useAuth();
   const backend = useBackend();
   // metronome provides: bpm, timeSignature, subdivision, soundType,
@@ -37,15 +37,15 @@ export function usePracticeTimer({ loadData, metronome }) {
           ? parsed.loggedAt
           : (parsed.date ? Date.parse(parsed.date + 'T12:00:00') : Date.now());
         if (itemId != null && duration > 0) {
+          // liveQuery picks up the new log; no manual refresh needed.
           addLog(itemId, duration, { loggedAt })
-            .then(() => loadData())
             .catch((err) => console.error('addLog failed:', err));
         }
       } catch {
         // ignore malformed data
       }
     }
-  }, [loadData]);
+  }, []);
 
   // Save ongoing practice session when page is closed/refreshed
   useEffect(() => {
@@ -100,7 +100,6 @@ export function usePracticeTimer({ loadData, metronome }) {
 
     if (elapsed > 0 && itemId != null) {
       const logId = await addLog(itemId, elapsed);
-      await loadData();
       setActiveItemId(null);
       setElapsedTime(0);
       if (user) {
@@ -112,7 +111,7 @@ export function usePracticeTimer({ loadData, metronome }) {
       setElapsedTime(0);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeItemId, elapsedTime, stopTimer, loadData, user, backend, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType, metronome.isPlaying]);
+  }, [activeItemId, elapsedTime, stopTimer, user, backend, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType, metronome.isPlaying]);
 
   const handleStart = useCallback(
     async (itemId) => {
@@ -147,13 +146,9 @@ export function usePracticeTimer({ loadData, metronome }) {
       intervalRef.current = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 200);
-
-      if (activeItemId != null && elapsedTime > 0) {
-        await loadData();
-      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, elapsedTime, stopTimer, loadData, user, backend, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType],
+    [activeItemId, elapsedTime, stopTimer, user, backend, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType],
   );
 
   const handleStop = useCallback(async () => {

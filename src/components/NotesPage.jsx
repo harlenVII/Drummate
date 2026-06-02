@@ -16,7 +16,6 @@ function NotesPage({
   notesSubpage,
   onSubpageChange,
   notes,
-  onNotesRefresh,
   compactMode = false,
 }) {
   const { t } = useLanguage();
@@ -34,52 +33,48 @@ function NotesPage({
 
   const handleCreate = useCallback(async ({ itemUid, date, body }) => {
     const localId = await addNote(itemUid, body, date);
-    onNotesRefresh();
+    // notes are reactive (liveQuery in App) — the Dexie write above propagates.
     if (user) {
       const note = await db.notes.get(localId);
       backend.pushNote(note, user.id).catch(console.error);
     }
-  }, [user, backend, onNotesRefresh]);
+  }, [user, backend]);
 
   const handleEdit = useCallback(async ({ body }) => {
     if (!editingNote) return;
     await updateNote(editingNote.id, body);
-    onNotesRefresh();
     if (user) {
       const note = await db.notes.get(editingNote.id);
       backend.pushNote(note, user.id).catch(console.error);
     }
-  }, [editingNote, user, backend, onNotesRefresh]);
+  }, [editingNote, user, backend]);
 
   const handleDelete = useCallback(async () => {
     if (!editingNote) return;
     await trashNote(editingNote.id);
-    onNotesRefresh();
     if (user) {
       const note = await db.notes.get(editingNote.id);
       backend.pushNote(note, user.id).catch(console.error);
     }
-  }, [editingNote, user, backend, onNotesRefresh]);
+  }, [editingNote, user, backend]);
 
   const handleRestore = useCallback(async (note) => {
     await restoreNote(note.id);
     setTrashedNotes(prev => prev.filter(n => n.id !== note.id));
-    onNotesRefresh();
     if (user) {
       const updated = await db.notes.get(note.id);
       backend.pushNote(updated, user.id).catch(console.error);
     }
-  }, [user, backend, onNotesRefresh]);
+  }, [user, backend]);
 
   const handlePermanentDelete = useCallback(async (note) => {
     if (!window.confirm(t('notes.confirmPermanentDelete'))) return;
     await purgeNote(note.id);
     setTrashedNotes(prev => prev.filter(n => n.id !== note.id));
-    onNotesRefresh();
     if (user) {
       backend.deleteNoteRemote(note.uid, user.id).catch(console.error);
     }
-  }, [user, backend, onNotesRefresh, t]);
+  }, [user, backend, t]);
 
   const openCreate = () => {
     setEditingNote(null);

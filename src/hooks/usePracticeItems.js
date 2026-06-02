@@ -14,7 +14,7 @@ import {
   mergeItem,
 } from '../services/database';
 
-export function usePracticeItems({ items, loadData, activeItemId, clearActiveTimer }) {
+export function usePracticeItems({ items, activeItemId, clearActiveTimer }) {
   const { user } = useAuth();
   const backend = useBackend();
   const { t } = useLanguage();
@@ -29,24 +29,22 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
         return;
       }
       const newItem = await addItem(name, category);
-      await loadData();
       if (user) {
         backend.pushItem(newItem, user.id).catch(console.error);
       }
     },
-    [items, loadData, user, t, backend],
+    [items, user, t, backend],
   );
 
   const handleRenameItem = useCallback(
     async (id, newName) => {
       const item = await db.practiceItems.get(id);
       await renameItem(id, newName);
-      await loadData();
       if (user && item) {
         backend.pushRenameItem(item.uid, newName, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   const handleDeleteItem = useCallback(
@@ -54,25 +52,23 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       clearActiveTimer(id);
       const item = await db.practiceItems.get(id);
       await trashItem(id);
-      await loadData();
       if (user && item) {
         backend.pushTrashItem(item.uid, true, new Date().toISOString(), user.id).catch(console.error);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, clearActiveTimer, loadData, user, backend],
+    [activeItemId, clearActiveTimer, user, backend],
   );
 
   const handleRestoreItem = useCallback(
     async (id) => {
       const item = await db.practiceItems.get(id);
       await restoreItem(id);
-      await loadData();
       if (user && item) {
         backend.pushTrashItem(item.uid, false, null, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   const handlePermanentDelete = useCallback(
@@ -80,13 +76,12 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       clearActiveTimer(id);
       const item = await db.practiceItems.get(id);
       await deleteItem(id);
-      await loadData();
       if (user && item) {
         backend.pushDeleteItem(item.uid, user.id).catch(console.error);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, clearActiveTimer, loadData, user, backend],
+    [activeItemId, clearActiveTimer, user, backend],
   );
 
   const handleArchiveItem = useCallback(
@@ -94,25 +89,23 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       clearActiveTimer(id);
       const item = await db.practiceItems.get(id);
       await archiveItem(id, archived);
-      await loadData();
       if (user && item) {
         backend.pushArchiveItem(item.uid, archived, user.id).catch(console.error);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, clearActiveTimer, loadData, user, backend],
+    [activeItemId, clearActiveTimer, user, backend],
   );
 
   const handleSetItemCategory = useCallback(
     async (id, category) => {
       const item = await db.practiceItems.get(id);
       await setItemCategory(id, category);
-      await loadData();
       if (user && item) {
         backend.pushSetCategory(item.uid, category, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   const handleMergeItem = useCallback(
@@ -125,14 +118,13 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
         console.error('mergeItem failed:', err);
         return;
       }
-      await loadData();
       if (user && result) {
         backend
           .mergeItems(result.sourceUid, result.targetUid, result.targetName, user.id)
           .catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   const handleReorder = useCallback(
@@ -149,7 +141,6 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
           await db.practiceItems.update(normalized[i].id, update);
         }
       });
-      await loadData();
 
       if (user) {
         const reorderedItems = await Promise.all(
@@ -158,7 +149,7 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
         backend.pushReorder(reorderedItems, user.id).catch(console.error);
       }
     },
-    [loadData, user, backend],
+    [user, backend],
   );
 
   return {

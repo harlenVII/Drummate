@@ -17,6 +17,7 @@ import EditTimeModal from './components/EditTimeModal';
 import NotesPage from './components/NotesPage';
 import { useUiPreferences } from './hooks/useUiPreferences';
 import { useAppData } from './hooks/useAppData';
+import { useLiveData } from './hooks/useLiveData';
 import { usePracticeTimer } from './hooks/usePracticeTimer';
 import { usePracticeItems } from './hooks/usePracticeItems';
 import { useMetronomePractices } from './hooks/useMetronomePractices';
@@ -43,14 +44,14 @@ function App() {
     compactMode, setCompactMode,
     theme, setTheme,
   } = useUiPreferences();
-  const {
-    items, setItems, totals, setTotals,
-    metronomePractices, setMetronomePractices,
-    notes, setNotes, goalRefreshKey, loadData, refreshNotes,
-  } = useAppData();
+  // Reactive reads from Dexie (items/totals/practices/notes). Mutations made by
+  // the hooks below propagate to the UI automatically via liveQuery.
+  const { items, totals, practices: metronomePractices, notes, refreshTotals } = useLiveData();
+  // Side-effect-only hook: runs the expired-trash purge on mount.
+  useAppData();
   const metronome = useMetronomeState();
 
-  const timer = usePracticeTimer({ loadData, metronome });
+  const timer = usePracticeTimer({ metronome });
   const {
     activeItemId, elapsedTime,
     focusedPracticeItemId, setFocusedPracticeItemId,
@@ -75,10 +76,10 @@ function App() {
     handleAddItem, handleRenameItem, handleDeleteItem, handleRestoreItem,
     handlePermanentDelete, handleArchiveItem, handleSetItemCategory,
     handleMergeItem, handleReorder,
-  } = usePracticeItems({ items, loadData, activeItemId, clearActiveTimer: timer.clearActiveTimer });
+  } = usePracticeItems({ items, activeItemId, clearActiveTimer: timer.clearActiveTimer });
 
   const practices = useMetronomePractices({
-    metronomePractices, items, loadData, handleStart, saveAndStop, activeItemId,
+    metronomePractices, items, handleStart, saveAndStop, activeItemId,
   });
 
   // reportSubpageNavRef breaks the wiring cycle between useReports and useNavigation:
@@ -87,7 +88,6 @@ function App() {
   // after nav is created below.
   const reportSubpageNavRef = useRef(() => {});
   const reports = useReports({
-    loadData,
     onNavigateToSubpage: (subpage) => reportSubpageNavRef.current(subpage),
     items,
   });
@@ -122,9 +122,7 @@ function App() {
   } = voice;
 
   const sync = useSync({
-    loadData,
     resetters: {
-      setItems, setTotals, setMetronomePractices, setNotes,
       setSequencerBpm: metronome.setSequencerBpm,
       setSequencerSoundType: metronome.setSequencerSoundType,
       setSequencerSlots: metronome.setSequencerSlots,
@@ -226,7 +224,6 @@ function App() {
               onReorder={handleReorder}
               focusedItemId={focusedPracticeItemId}
               onFocusChange={setFocusedPracticeItemId}
-              goalRefreshKey={goalRefreshKey}
               compactMode={compactMode}
               timeUnit={timeUnit}
             />
@@ -269,7 +266,6 @@ function App() {
               notesSubpage={notesSubpage}
               onSubpageChange={setNotesSubpage}
               notes={notes}
-              onNotesRefresh={refreshNotes}
               compactMode={compactMode}
             />
           )}
@@ -305,7 +301,7 @@ function App() {
         listeningState={listeningState}
         voiceTranscript={voiceTranscript}
         userId={user?.id}
-        onTimezoneChange={loadData}
+        onTimezoneChange={refreshTotals}
         offlineMode={offlineMode}
         onEnterOfflineMode={handleEnterOfflineMode}
         onGoOnline={handleGoOnline}

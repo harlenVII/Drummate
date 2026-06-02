@@ -20,7 +20,7 @@ import {
   getYearEnd,
 } from '../utils/dateHelpers';
 
-export function useReports({ loadData, onNavigateToSubpage, items = [] }) {
+export function useReports({ onNavigateToSubpage, items = [] }) {
   const { user } = useAuth();
   const backend = useBackend();
 
@@ -55,12 +55,11 @@ export function useReports({ loadData, onNavigateToSubpage, items = [] }) {
 
   const handleManualTimeAdjust = useCallback(async (itemId, deltaSeconds, date) => {
     const logId = await addAdjustmentLog(itemId, deltaSeconds, date);
-    await loadData();
     if (user) {
       const log = await db.practiceLogs.get(logId);
       backend.pushLog(log, user.id).catch(console.error);
     }
-  }, [loadData, user, backend]);
+  }, [user, backend]);
 
   const handleEditTime = useCallback((itemId, itemName, currentSeconds) => {
     setEditTimeModal({ itemId, itemName, currentSeconds });
@@ -71,13 +70,12 @@ export function useReports({ loadData, onNavigateToSubpage, items = [] }) {
     const yesterday = shiftDate(reportDate, -1);
     const logIds = reportLogs.map(l => l.id);
     const updated = await reattributeLogsToDate(logIds, yesterday);
-    await loadData();
     if (user) {
       await Promise.all(
         updated.map(log => backend.pushLog(log, user.id).catch(console.error))
       );
     }
-  }, [reportLogs, reportDate, loadData, user, backend]);
+  }, [reportLogs, reportDate, user, backend]);
 
   const handleAddTime = useCallback((itemId) => {
     const item = items.find(i => i.id === itemId);
