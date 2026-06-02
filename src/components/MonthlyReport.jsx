@@ -2,6 +2,7 @@ import { formatDuration } from '../utils/formatTime';
 import ReportItemCard from './ReportItemCard';
 import ReportNavHeader from './ReportNavHeader';
 import ReportItemBreakdown from './ReportItemBreakdown';
+import TrendLineChart from './TrendLineChart';
 import {
   getMonthEnd,
   getMonthStart,
@@ -17,7 +18,7 @@ import { computePercentiles, intensityColor } from '../utils/heatmap';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
-function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
+function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, onWeekClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const isDarkMode = useIsDarkMode();
   const monthEnd = getMonthEnd(monthStart);
@@ -89,22 +90,16 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       .reduce((sum, d) => sum + (dayTotals[d] || 0), 0);
   });
 
-  const maxWeek = Math.max(...weekTotals, 1);
-  const TREND_PAD_X = 6; // horizontal padding for dot radius
-  const TREND_PAD_TOP = 16; // space for label text above dots
-  const TREND_PAD_BOTTOM = 6;
-  const TREND_W = 280;
-  const TREND_H = 60;
-
-  const trendPoints = weekTotals.map((v, i) => ({
-    x:
-      weekTotals.length === 1
-        ? (TREND_W + TREND_PAD_X * 2) / 2
-        : TREND_PAD_X + (i / (weekTotals.length - 1)) * TREND_W,
-    y: TREND_PAD_TOP + TREND_H - (v / maxWeek) * TREND_H,
-  }));
-
-  const polylineStr = trendPoints.map((p) => `${p.x},${p.y}`).join(' ');
+  const trendPoints = weekStarts.map((wStart, i) => {
+    const wEnd = shiftDate(wStart, 6);
+    return {
+      key: wStart,
+      value: weekTotals[i],
+      xLabel: t('analytics.weekShort', { n: i + 1 }),
+      highlight: isCurrentMonth && today >= wStart && today <= wEnd,
+      onClick: () => onWeekClick(wStart),
+    };
+  });
 
   // Navigation helpers
   const handlePrevMonth = () => {
@@ -209,44 +204,13 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       </div>
 
       {/* Weekly trend chart */}
-      {grandTotal > 0 && weekTotals.length > 1 && (
-        <div className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
-          <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mb-2">
-            {t('analytics.weeklyTrend')}
-          </p>
-          <svg viewBox={`0 0 ${TREND_W + TREND_PAD_X * 2} ${TREND_PAD_TOP + TREND_H + TREND_PAD_BOTTOM}`} className="w-full">
-            <polyline
-              points={polylineStr}
-              fill="none"
-              stroke={isDarkMode ? '#6366f1' : '#3b82f6'}
-              strokeWidth="2"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-            {trendPoints.map((p, i) => {
-              const anchor =
-                i === 0
-                  ? 'start'
-                  : i === trendPoints.length - 1
-                    ? 'end'
-                    : 'middle';
-              return (
-                <g key={i}>
-                  <circle cx={p.x} cy={p.y} r={4} fill={isDarkMode ? '#6366f1' : '#3b82f6'} />
-                  <text
-                    x={p.x}
-                    y={p.y - 8}
-                    textAnchor={anchor}
-                    fontSize="9"
-                    fill="#6b7280"
-                  >
-                    {formatDuration(weekTotals[i], timeUnit)}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+      {grandTotal > 0 && (
+        <TrendLineChart
+          title={t('analytics.weeklyTrend')}
+          points={trendPoints}
+          timeUnit={timeUnit}
+          compactMode={compactMode}
+        />
       )}
 
       {/* Per-item breakdown */}
