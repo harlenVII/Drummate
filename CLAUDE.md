@@ -198,6 +198,11 @@ Pulls go first so device adopts remote truth (renames/deletes) before pushing lo
 - Backend interface compliance: new sync ops must be added to `firebaseBackend.js` and declared in `src/services/backends/backendInterface.js`. The singleton is injected via `BackendContext` (statically imported there — always bundled).
 - Theme is applied before React mounts: [src/services/themeService.js](src/services/themeService.js) is imported by [src/main.jsx](src/main.jsx) before `App` so the `dark` class is on `<html>` before first paint. Do not move this import below `App` or gate `applyTheme` behind React state.
 
+**Testing**
+- DB tests use `import 'fake-indexeddb/auto'` and clear all tables in `beforeEach` (see [tests/database.test.js](tests/database.test.js), [tests/useLiveData.test.jsx](tests/useLiveData.test.jsx)). For TZ-dependent assertions, pin the zone with `await setTimezone('America/Los_Angeles')` in `beforeEach` — module TZ state persists across tests in the same file.
+- **Never use `vi.useFakeTimers()` in a test that awaits a Dexie/fake-indexeddb op.** Fake timers freeze fake-indexeddb's internal promises, so any `db.*` read hangs and the test times out. To control the clock for time-based logic (e.g. the practice-timer auto-save), spy on `Date.now` instead: `vi.spyOn(Date, 'now').mockImplementation(() => now)` and mutate `now`. See [tests/usePracticeTimer.test.jsx](tests/usePracticeTimer.test.jsx).
+- Hooks that read auth/backend (`useAuth`, `useBackend`) but exercise real DB behavior should `vi.mock` those two contexts and keep the real (fake-indexeddb) `db` — that isolates the contract under test without standing up Firebase.
+
 ## File Naming
 
 - Components: PascalCase (`PracticeItemList.jsx`)
