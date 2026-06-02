@@ -413,6 +413,12 @@
     "restore": "恢复",
     "pinAction": "固定"
   },
+  "sync": {
+    "error": "同步失败 — 显示本地数据。"
+  },
+  "common": {
+    "dismiss": "关闭"
+  },
   "notes": {
     "tabLabel": "笔记",
     "subpageByDate": "按日期",

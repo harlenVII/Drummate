@@ -143,7 +143,7 @@ function App() {
   });
   const {
     isSyncing, offlineMode, pendingModalOpen, setPendingModalOpen,
-    goOnlineToast, handleEnterOfflineMode, handleGoOnline,
+    goOnlineToast, syncError, setSyncError, handleEnterOfflineMode, handleGoOnline,
   } = sync;
 
   // Auto-disable Kokoro TTS when neither AI Coach nor Hands-Free is on
@@ -175,6 +175,20 @@ function App() {
           onShowPending={() => setPendingModalOpen(true)}
           onGoOnline={handleGoOnline}
         />
+      )}
+      {syncError && (
+        <div
+          className="flex items-center justify-between gap-3 bg-red-600 text-white text-sm px-4 py-2"
+          role="alert"
+        >
+          <span>{t('sync.error')}</span>
+          <button
+            onClick={() => setSyncError(null)}
+            className="font-medium underline underline-offset-2"
+          >
+            {t('common.dismiss')}
+          </button>
+        </div>
       )}
       {isSyncing && (
         <div

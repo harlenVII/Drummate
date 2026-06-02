@@ -21,6 +21,7 @@ export function useSync({ loadData, resetters }) {
   const [offlineMode, _setOfflineMode] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [syncError, setSyncError] = useState(null);
 
   const setOfflineMode = useCallback((value) => {
     setOfflineServiceMode(value);
@@ -98,6 +99,7 @@ export function useSync({ loadData, resetters }) {
 
     const init = async () => {
       setIsSyncing(true);
+      setSyncError(null);
       try {
         // Initial-load auto-enter offline: if the device is plainly offline
         // when sync starts, flip into offline mode so the banner shows and
@@ -158,6 +160,7 @@ export function useSync({ loadData, resetters }) {
         }
       } catch (err) {
         console.error('Sync init failed:', err);
+        if (!cancelled) setSyncError(err?.message || 'sync_failed');
       } finally {
         // loadData is the single source of truth for UI state. Run it
         // whether sync succeeded, failed, or short-circuited (offline).
@@ -220,6 +223,7 @@ export function useSync({ loadData, resetters }) {
     isSyncing, offlineMode, setOfflineMode,
     pendingModalOpen, setPendingModalOpen,
     goOnlineToast,
+    syncError, setSyncError,
     handleEnterOfflineMode, handleGoOnline,
   };
 }

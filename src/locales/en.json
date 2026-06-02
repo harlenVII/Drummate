@@ -413,6 +413,12 @@
     "restore": "Restore",
     "pinAction": "Pin"
   },
+  "sync": {
+    "error": "Sync failed — showing local data."
+  },
+  "common": {
+    "dismiss": "Dismiss"
+  },
   "notes": {
     "tabLabel": "Notes",
     "subpageByDate": "By Date",
