@@ -2,6 +2,7 @@ import { formatDuration } from '../utils/formatTime';
 import ReportItemCard from './ReportItemCard';
 import ReportNavHeader from './ReportNavHeader';
 import ReportItemBreakdown from './ReportItemBreakdown';
+import TrendLineChart from './TrendLineChart';
 import {
   getWeekEnd,
   getDaysInRange,
@@ -9,14 +10,12 @@ import {
   getTodayString,
 } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useIsDarkMode } from '../hooks/useIsDarkMode';
 import { buildBreakdown } from '../utils/practiceStats';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
-  const isDarkMode = useIsDarkMode();
   const weekEnd = getWeekEnd(weekStart);
   const weekDays = getDaysInRange(weekStart, weekEnd);
   const today = getTodayString();
@@ -24,13 +23,11 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   const activeItemIds = new Set(items.map(i => i.id));
   const activeLogs = weekLogs.filter(log => activeItemIds.has(log.itemId));
 
-  // Per-day totals for bar chart
+  // Per-day totals for trend chart
   const dayTotals = {};
   for (const log of activeLogs) {
     dayTotals[log.date] = (dayTotals[log.date] || 0) + log.duration;
   }
-  const maxDay = Math.max(...weekDays.map((d) => dayTotals[d] || 0), 1);
-
   // Build per-item breakdown (totals, split by category, grandTotal)
   const { breakdown, fundamentals, songs, grandTotal } = buildBreakdown(items, activeLogs);
 
@@ -50,12 +47,13 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
   // Format date range label
   const formatShortDate = (dateString) => dateString.replace(/-/g, '/');
 
-  // Bar chart dimensions
-  const BAR_W = 24;
-  const BAR_GAP = 16;
-  const CHART_W = 7 * (BAR_W + BAR_GAP);
-  const CHART_H = 80;
-  const LABEL_TOP = 16; // space above bars for minute labels
+  const trendPoints = weekDays.map((day, i) => ({
+    key: day,
+    value: dayTotals[day] || 0,
+    xLabel: t(`analytics.weekdays.${WEEKDAY_KEYS[i]}`),
+    highlight: day === today,
+    onClick: () => onDayClick(day),
+  }));
 
   return (
     <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-4'}`}>
@@ -86,62 +84,14 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
         )}
       </div>
 
-      {/* Bar chart */}
+      {/* Trend chart */}
       {grandTotal > 0 && (
-        <div className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
-          <svg
-            viewBox={`0 0 ${CHART_W} ${LABEL_TOP + CHART_H + 24}`}
-            className="w-full"
-          >
-            {weekDays.map((day, i) => {
-              const seconds = dayTotals[day] || 0;
-              const barH =
-                seconds > 0 ? Math.max(4, (seconds / maxDay) * CHART_H) : 4;
-              const x = i * (BAR_W + BAR_GAP) + BAR_GAP / 2;
-              const y = LABEL_TOP + CHART_H - barH;
-              const isToday = day === today;
-
-              return (
-                <g key={day} onClick={() => onDayClick(day)} style={{ cursor: 'pointer' }}>
-                  <rect
-                    x={x}
-                    y={y}
-                    width={BAR_W}
-                    height={barH}
-                    rx={3}
-                    fill={
-                      isToday
-                        ? (isDarkMode ? '#6366f1' : '#3b82f6')
-                        : seconds > 0
-                          ? (isDarkMode ? '#a5b4fc' : '#93c5fd')
-                          : isDarkMode ? '#1e293b' : '#f3f4f6'
-                    }
-                  />
-                  {seconds > 0 && (
-                    <text
-                      x={x + BAR_W / 2}
-                      y={y - 4}
-                      textAnchor="middle"
-                      fontSize="9"
-                      fill="#6b7280"
-                    >
-                      {formatDuration(seconds, timeUnit)}
-                    </text>
-                  )}
-                  <text
-                    x={x + BAR_W / 2}
-                    y={LABEL_TOP + CHART_H + 16}
-                    textAnchor="middle"
-                    fontSize="10"
-                    fill={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : '#9ca3af'}
-                  >
-                    {t(`analytics.weekdays.${WEEKDAY_KEYS[i]}`)}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+        <TrendLineChart
+          title={t('analytics.dailyTrend')}
+          points={trendPoints}
+          timeUnit={timeUnit}
+          compactMode={compactMode}
+        />
       )}
 
       {/* Per-item breakdown */}
