@@ -20,7 +20,7 @@ npm run test:watch                        # watch mode
 npx vitest run tests/dateHelpers.test.js  # run a single test file
 ```
 
-Tests live in `tests/` (not `src/`). Covered: `dateHelpers`, `tzDateHelpers`, `timezoneService`, `offlineService`, `pendingActionFormatter`, `practicePage`, `practiceEditModal`, `goalStatus`, `authContext`, `visitorMode`, `priorPracticeService`, and a smoke test.
+Tests live in `tests/` (not `src/`). Covered: `dateHelpers`, `tzDateHelpers`, `timezoneService`, `offlineService`, `pendingActionFormatter`, `practicePage`, `practiceEditModal`, `goalStatus`, `authContext`, `visitorMode`, `priorPracticeService`, `firebaseBackend.sync` (characterization suite for sync/reconciler behavior), and a smoke test.
 
 ## Environment Variables
 
@@ -28,9 +28,13 @@ Tests live in `tests/` (not `src/`). Covered: `dateHelpers`, `tzDateHelpers`, `t
 
 ## Architecture
 
-**Provider hierarchy:** `LanguageProvider → BackendProvider → AuthProvider → App`. Firebase is the sole backend.
+**Provider hierarchy:** `LanguageProvider → BackendProvider → AuthProvider → ErrorBoundary → App`. Firebase is the sole backend.
 
-**State:** All in `App.jsx`, passed down as props. No external state library. Metronome/sequencer state persists across tab switches; the audio engine is initialized once on mount and destroyed only on unmount.
+**Backend injection:** The `firebaseBackend` singleton is provided via `src/contexts/BackendContext.jsx` (`BackendProvider` + `useBackend()` hook). The context default IS the singleton, so tests work unwrapped. Only `BackendContext.jsx` imports the singleton directly — `AuthContext`, all data/mutation hooks (`useSync`, `usePracticeItems`, `usePracticeTimer`, `useReports`, `useMetronomePractices`, `useAppData`), and components (`NotesPage`, `GoalsPage`, `SettingsPanel`) all call `useBackend()`. The backend interface is documented as `@typedef Backend` in `src/services/backends/backendInterface.js`.
+
+**Error handling:** `src/components/ErrorBoundary.jsx` wraps `<App>` and shows a recoverable fallback. Text is intentionally English-only because a crash may break the `LanguageProvider` tree. `useSync` surfaces init failures via a `syncError` state, shown as a dismissible red banner in `App.jsx` (i18n keys `sync.error`, `common.dismiss`).
+
+**State:** Ephemeral UI state (metronome/sequencer settings, active tab, settings panel) lives in `App.jsx` and is passed down as props or via hooks. No external state library. UI reads for items/practices/notes/totals are reactive via `Dexie.liveQuery` — `src/hooks/useLiveData.js` exposes `{ items, practices, notes, totals, refreshTotals }` and `useReports` subscribes log queries keyed to date anchors the same way. Metronome/sequencer state persists across tab switches; the audio engine is initialized once on mount and destroyed only on unmount.
 
 **Audio engine** ([src/audio/metronomeEngine.js](src/audio/metronomeEngine.js)): Web Audio API + Web Worker lookahead scheduler (25ms wake-up, 100ms lookahead). Worker MUST live at `public/metronome-worker.js` (absolute path `/metronome-worker.js`). Two modes: normal (single `subdivisionPattern`) and sequence (`sequencePatterns[]`, one per beat slot). Subdivision patterns are fractional beat positions 0.0–1.0; negative values = silent; `null` = rest beat (see `src/constants/subdivisions.js`).
 
@@ -53,7 +57,7 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 
 **Daily report "Merge to yesterday"** (edit mode, when `isToday && grandTotal > 0`): re-stamps every log in `reportLogs` to noon yesterday in home TZ via `reattributeLogsToDate`, preserves per-item breakdown, pushes via `pushLog` upsert.
 
-**i18n** ([src/contexts/LanguageContext.jsx](src/contexts/LanguageContext.jsx)): `t(key)` with nested keys and `{param}` interpolation. `en` / `zh`. Persisted to `localStorage['drummate_language']`.
+**i18n** ([src/contexts/LanguageContext.jsx](src/contexts/LanguageContext.jsx)): `t(key)` with nested keys and `{param}` interpolation. `en` / `zh`. Persisted to `localStorage['drummate_language']`. Translation tables live in `src/locales/en.json` and `src/locales/zh.json`; `LanguageContext.jsx` is ~50 lines (provider + `t()` only). Adding a language means adding a JSON file and registering it in the `locales` map in `LanguageContext.jsx`.
 
 **UI preferences in localStorage** (boolean/string, read at init, persisted in `useEffect`):
 
@@ -77,11 +81,13 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 - `FloatingVoiceIndicator.jsx` — overlay showing voice-listening state.
 - `EncouragementButton.jsx` / `EncouragementModal.jsx` — UI entry point that triggers the LLM encouragement flow; modal shows generated text with a copy action.
 
-**Backend abstraction**: `src/services/backends/firebaseBackend.js` is the sole concrete backend. New sync operations must be added here. The file is statically imported (always bundled — no dynamic loading).
+**Backend abstraction**: `src/services/backends/firebaseBackend.js` is the sole concrete backend. New sync operations must be added here. The file is statically imported via `BackendContext.jsx` (always bundled — no dynamic loading).
+
+**Codec + reconciler layer**: The previously duplicated per-collection reconciliation logic is consolidated. Per-collection codecs live in `src/services/backends/codecs/` (`noteCodec`, `practiceCodec`, `goalCodec`, `itemCodec` each export `{ table, toRemote, toLocal, diff }`; `logCodec` is special — named exports, and its `toLocal`/`diff` take a resolved parent `localItem` since there is no `toRemote`). A generic reconciler `src/services/backends/reconcile.js` exports `reconcileSnapshot`, `applyChange`, and `applyRemoteDoc`, which drive BOTH `pullAll*` and the `subscribeToChanges` live listeners for notes/practices/goals from one code path. Items and logs keep specialized orchestration (legacy migration, name-fallback, parent resolution, remap-before-delete, deletion cascade) but use the codecs for field mapping and diff. `flushSyncQueue` replay reuses codec `toRemote` for note and goal payloads (practice replay is hand-written due to flat payload shape). `resolveLoggedAt` moved to `src/services/backends/resolveLoggedAt.js`. Firestore SDK access goes through an injectable seam `src/services/backends/firestoreAccess.js` (`getFirestore()`/`setFirestoreImpl()`) so tests inject a fake without monkey-patching. A characterization suite `tests/firebaseBackend.sync.test.js` pins sync behavior.
 
 **Visitor mode** ([src/contexts/AuthContext.jsx](src/contexts/AuthContext.jsx)): users can skip auth via "Continue as guest" on AuthScreen. `isVisitor` flag in `AuthContext` persists to `localStorage['drummate_visitor']`. App gate is `!user && !isVisitor`. Every `firebaseBackend.push*` call in App.jsx is already guarded by `if (user)`, so cloud writes naturally short-circuit — no Firestore push site needed changes. `fromVisitorIntent` (React state, not persisted) tells `signUp` to migrate local Dexie via `pushAllLocal*` (which filters `syncedOnce: false` — exactly visitor rows), or tells `signIn` to wipe local before the normal cloud pull. Three Settings actions for visitors: Sign in / Create account (preserve Dexie, set intent) / Log off (wipe Dexie, no intent). `wipeAllLocalData()` in [src/services/database.js](src/services/database.js) atomically clears all five Dexie tables; localStorage UI prefs survive.
 
-**Goals system**: Multiple goals live in Dexie `goals` table. Pure status helpers are in `src/utils/goalStatus.js` (no side effects — safe to call anywhere). `GoalsPage` subscribes to `db.goals` and `db.practiceLogs` via `liveQuery`. `GoalBanner` on the Practice tab reads the single `pinned: true` goal via `liveQuery`. `GoalCard` is fully prop-driven (no localStorage reads). `user` and `firebaseBackend` are passed as props from `App.jsx` — there is no `useBackend` or `useAuth` hook to consume them.
+**Goals system**: Multiple goals live in Dexie `goals` table. Pure status helpers are in `src/utils/goalStatus.js` (no side effects — safe to call anywhere). `GoalsPage` subscribes to `db.goals` and `db.practiceLogs` via `liveQuery` and calls `useBackend()` for mutations. `GoalBanner` on the Practice tab reads the single `pinned: true` goal via `liveQuery`. `GoalCard` is fully prop-driven (no localStorage reads). `user` is still passed as a prop from `App.jsx`; the backend is consumed via `useBackend()` inside `GoalsPage` (no longer a prop).
 
 ## Keyboard Shortcuts
 
@@ -168,9 +174,9 @@ Tailwind v4 only — no CSS modules, no inline styles. Mobile-first. System font
 - All user-facing text must go through `t()`.
 - Dexie version must bump when adding/changing indexed fields; provide `.upgrade()` to populate defaults.
 
-**Sync init order** (see `init()` in [src/App.jsx](src/App.jsx)):
-`[initTimezone, initPriorHours, pullAll, pullAllNotes, pullAllPractices, pullAllGoals] (parallel) → legacy goal migration → flushSyncQueue → pushAllLocal → auto-archive expired goals → loadData → setIsSyncing(false) → subscribeToChanges`
-Pulls go first so device adopts remote truth (renames/deletes) before pushing local. `loadData` + `setIsSyncing(false)` are in `finally` so UI unblocks on partial failure. `subscribeToChanges` registers AFTER `loadData` to avoid stale-state flicker.
+**Sync init order** (see `init()` in [src/hooks/useSync.js](src/hooks/useSync.js)):
+`[initTimezone, initPriorHours, pullAll, pullAllNotes, pullAllPractices, pullAllGoals] (parallel) → legacy goal migration → flushSyncQueue → pushAllLocal → auto-archive expired goals → setIsSyncing(false) → subscribeToChanges`
+Pulls go first so device adopts remote truth (renames/deletes) before pushing local. Pulls write Dexie; `useLiveData` and `useReports` liveQuery subscriptions in the UI react to those writes automatically — no manual `loadData` refetch needed. `setIsSyncing(false)` is in `finally` so the overlay drops on partial failure. `subscribeToChanges` registers AFTER the init sequence to avoid a stale-state flicker on first snapshot; its callback is a no-op (`() => {}`) because `subscribeToChanges` writes adopted changes to Dexie and liveQuery propagates them to the UI without further instruction.
 
 **Sync correctness — these comments are load-bearing; do not "simplify" without understanding why:**
 - `pullAll` processes items loop → logs loop → item-deletion reconciliation, in that order. Reordering causes silent log loss during cross-device merges.
@@ -185,11 +191,11 @@ Pulls go first so device adopts remote truth (renames/deletes) before pushing lo
 - `category` (`'fundamentals' | 'songs'`) is orthogonal to `archived`. Both fields always persisted. Tolerant pull rule: treat absent remote `category` as "no change" to avoid clobbering old clients.
 - `purgeExpiredTrash` returns `{ expiredItems, expiredNotes }`; caller must propagate both to remote (`pushDeleteItem`, `deleteNoteRemote`).
 - Note soft-delete is a `pushNote` upsert with `trashed: true`, NOT a hard-delete. `deleteNoteRemote` is only called by `purgeExpiredTrash` (30 days) and the `deleteItem` cascade.
-- `notes` live in `App.jsx` state (lifted from the subpages to prevent an empty-state flash on tab switch — `NotesPage` is conditionally mounted, so subpages can't own this state). `loadData` fetches them via `getAllNotes()` alongside items/practices. Local note mutations call `refreshNotes` via the `onNotesRefresh` prop, which re-fetches and updates the lifted state. Subpages (`NotesByDate`, `NotesByItem`) are pure prop-driven renderers — they no longer fetch.
+- `notes` are read reactively via `useLiveData` (which subscribes to `getAllNotes()` via `liveQuery`) and passed down as props to `NotesPage`. Local note mutations write to Dexie; `liveQuery` re-emits automatically so no manual refresh is needed. Subpages (`NotesByDate`, `NotesByItem`) are pure prop-driven renderers.
 - Goal `delete_goal_permanent` in `flushSyncQueue` only calls `deleteGoalRemote` — the Dexie delete already ran at action time in the handler, so no second local delete.
 
 **Boot / setup**
-- Backend interface compliance: new sync ops must be added to `firebaseBackend.js`. The SDK is statically imported (always bundled).
+- Backend interface compliance: new sync ops must be added to `firebaseBackend.js` and declared in `src/services/backends/backendInterface.js`. The singleton is injected via `BackendContext` (statically imported there — always bundled).
 - Theme is applied before React mounts: [src/services/themeService.js](src/services/themeService.js) is imported by [src/main.jsx](src/main.jsx) before `App` so the `dark` class is on `<html>` before first paint. Do not move this import below `App` or gate `applyTheme` behind React state.
 
 ## File Naming
