@@ -16,7 +16,7 @@ vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) 
 import { useReports } from '../src/hooks/useReports';
 
 describe('useReports', () => {
-  beforeEach(() => { getLogsByDate.mockClear(); });
+  beforeEach(() => { getLogsByDate.mockClear(); getLogsByDateRange.mockClear(); });
 
   it('handleReportDateChange updates date and loads that day', async () => {
     const { result } = renderHook(() =>
