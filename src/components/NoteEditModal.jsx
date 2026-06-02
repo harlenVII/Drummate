@@ -36,6 +36,9 @@ function NoteEditModal({
     [items],
   );
 
+  const fundamentals = useMemo(() => activeItems.filter(i => i.category === 'fundamentals'), [activeItems]);
+  const songs = useMemo(() => activeItems.filter(i => i.category === 'songs'), [activeItems]);
+
   const [itemUid, setItemUid] = useState(
     isEdit ? note.itemUid
            : (defaultItemUid && activeItems.some(i => i.uid === defaultItemUid)
@@ -113,9 +116,20 @@ function NoteEditModal({
               onChange={(e) => setItemUid(e.target.value)}
               className="w-full mb-3 px-3 py-2 border border-gray-300 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 rounded-md"
             >
-              {activeItems.map(item => (
-                <option key={item.uid} value={item.uid}>{item.name}</option>
-              ))}
+              {fundamentals.length > 0 && (
+                <optgroup label={t('categories.fundamentals')}>
+                  {fundamentals.map(item => (
+                    <option key={item.uid} value={item.uid}>{item.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {songs.length > 0 && (
+                <optgroup label={t('categories.songs')}>
+                  {songs.map(item => (
+                    <option key={item.uid} value={item.uid}>{item.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
 
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">
