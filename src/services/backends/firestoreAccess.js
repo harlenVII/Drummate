@@ -6,17 +6,19 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseApp } from '../firebase';
 
-let impl = {
+const realImpl = {
   collection, query, where, getDocs, getDoc, setDoc, updateDoc, deleteDoc,
   onSnapshot, serverTimestamp, doc,
   getDb: () => getFirebaseApp().db,
 };
 
+let impl = realImpl;
+
 export function getFirestore() {
   return impl;
 }
 
-// Test-only: replace the Firestore implementation. Pass no arg to reset.
+// Test-only: replace the Firestore implementation. Pass no arg to reset to the real SDK.
 export function setFirestoreImpl(next) {
-  impl = next ?? impl;
+  impl = next ?? realImpl;
 }
