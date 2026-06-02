@@ -13,6 +13,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 import { useIsDarkMode } from '../hooks/useIsDarkMode';
 import { buildBreakdown } from '../utils/practiceStats';
+import { computePercentiles, intensityColor } from '../utils/heatmap';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
@@ -44,29 +45,12 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   })();
 
   // --- Heatmap ---
-  // Compute intensity buckets from active durations
-  const activeDurations = monthDays
-    .map((d) => dayTotals[d] || 0)
-    .filter((v) => v > 0)
-    .sort((a, b) => a - b);
-
-  const getPercentile = (arr, p) =>
-    arr.length > 0 ? arr[Math.floor(arr.length * p)] : 0;
-  const p25 = getPercentile(activeDurations, 0.25);
-  const p50 = getPercentile(activeDurations, 0.5);
-  const p75 = getPercentile(activeDurations, 0.75);
+  // Intensity buckets from per-day durations (zeros ignored inside the util).
+  const { p25, p50, p75 } = computePercentiles(monthDays.map((d) => dayTotals[d] || 0));
 
   const BG_TEXT = isDarkMode
     ? { '#334155': '#94a3b8', '#a5b4fc': '#312e81', '#6366f1': '#ffffff', '#4338ca': '#ffffff', '#3730a3': '#ffffff' }
     : { '#e2e8f0': '#94a3b8', '#bfdbfe': '#1e3a8a', '#60a5fa': '#ffffff', '#2563eb': '#ffffff', '#1e3a8a': '#ffffff' };
-
-  const intensityColor = (seconds) => {
-    if (seconds === 0) return isDarkMode ? '#334155' : '#e2e8f0'; // slate-700 / slate-200
-    if (seconds <= p25) return isDarkMode ? '#a5b4fc' : '#bfdbfe'; // indigo-300 / blue-200
-    if (seconds <= p50) return isDarkMode ? '#6366f1' : '#60a5fa'; // indigo-500 / blue-400
-    if (seconds <= p75) return isDarkMode ? '#4338ca' : '#2563eb'; // indigo-700 / blue-600
-    return isDarkMode ? '#3730a3' : '#1e3a8a'; // indigo-800 / blue-900
-  };
 
   // Build calendar grid cells
   const firstDayOfWeek = (new Date(monthStart + 'T12:00:00').getDay() + 6) % 7; // 0=Mon
@@ -196,7 +180,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             const dayNum = parseInt(date.split('-')[2], 10);
             const cx = PADDING + c * (CELL + GAP);
             const cy = r * (CELL + GAP) + HEADER_H;
-            const bg = intensityColor(seconds);
+            const bg = intensityColor(seconds, { p25, p50, p75 }, isDarkMode);
             return (
               <g key={date} onClick={() => onDayClick(date)} style={{ cursor: 'pointer' }}>
                 <rect

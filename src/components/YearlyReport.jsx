@@ -13,6 +13,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 import { useIsDarkMode } from '../hooks/useIsDarkMode';
 import { buildBreakdown } from '../utils/practiceStats';
+import { computePercentiles, intensityColor } from '../utils/heatmap';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -43,25 +44,8 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
   const heatmapEnd = isCurrentYear ? (today < yearEnd ? today : yearEnd) : yearEnd;
   const allDays = getDaysInRange(yearStart, heatmapEnd);
 
-  // Compute intensity buckets
-  const activeDurations = allDays
-    .map((d) => dayTotals[d] || 0)
-    .filter((v) => v > 0)
-    .sort((a, b) => a - b);
-
-  const getPercentile = (arr, p) =>
-    arr.length > 0 ? arr[Math.floor(arr.length * p)] : 0;
-  const p25 = getPercentile(activeDurations, 0.25);
-  const p50 = getPercentile(activeDurations, 0.5);
-  const p75 = getPercentile(activeDurations, 0.75);
-
-  const intensityColor = (seconds) => {
-    if (seconds === 0) return isDarkMode ? '#334155' : '#e2e8f0'; // slate-700 / slate-200
-    if (seconds <= p25) return isDarkMode ? '#a5b4fc' : '#bfdbfe'; // indigo-300 / blue-200
-    if (seconds <= p50) return isDarkMode ? '#6366f1' : '#60a5fa'; // indigo-500 / blue-400
-    if (seconds <= p75) return isDarkMode ? '#4338ca' : '#2563eb'; // indigo-700 / blue-600
-    return isDarkMode ? '#3730a3' : '#1e3a8a'; // indigo-800 / blue-900
-  };
+  // Intensity buckets from per-day durations across the heatmap range.
+  const { p25, p50, p75 } = computePercentiles(allDays.map((d) => dayTotals[d] || 0));
 
   // Build grid: columns = day of week (0=Mon, 6=Sun), rows = weeks
   const CELL = 10;
@@ -256,7 +240,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
                 width={CELL}
                 height={CELL}
                 rx={2}
-                fill={intensityColor(seconds)}
+                fill={intensityColor(seconds, { p25, p50, p75 }, isDarkMode)}
                 stroke={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : 'none'}
                 strokeWidth={isToday ? 1 : 0}
                 onClick={() => onDayClick(date)}
