@@ -58,4 +58,23 @@ describe('TrendLineChart', () => {
     const zeros = screen.getAllByText('0');
     expect(zeros.length).toBe(2);
   });
+
+  it('does not render a value label for future points but still renders the x-axis label', () => {
+    const points = [
+      { key: 'past', value: 1800, xLabel: 'Mon' },
+      { key: 'future', value: 0, xLabel: 'Tue', future: true },
+    ];
+    render(<TrendLineChart title="t" points={points} timeUnit="minutes" />);
+    expect(screen.getByText('30')).toBeInTheDocument();   // past point has label
+    expect(screen.queryByText('0')).not.toBeInTheDocument(); // future "0" suppressed
+    expect(screen.getByText('Tue')).toBeInTheDocument();  // x-label still shows
+  });
+
+  it('does not fire onClick for future points', () => {
+    const onClick = vi.fn();
+    const points = [{ key: 'f', value: 0, xLabel: 'Tue', future: true, onClick }];
+    render(<TrendLineChart title="t" points={points} timeUnit="minutes" />);
+    fireEvent.click(screen.getByText('Tue'));
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });

@@ -105,6 +105,7 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, on
       value: total,
       xLabel: monthShortLabels[i],
       highlight: isCurrentYear && mStart.slice(0, 7) === today.slice(0, 7),
+      future: mStart > today,
       onClick: () => onMonthClick(mStart),
     };
   });

@@ -52,6 +52,7 @@ function WeeklyReport({ items, weekStart, weekLogs, onWeekChange, onDayClick, ti
     value: dayTotals[day] || 0,
     xLabel: t(`analytics.weekdays.${WEEKDAY_KEYS[i]}`),
     highlight: day === today,
+    future: day > today,
     onClick: () => onDayClick(day),
   }));
 

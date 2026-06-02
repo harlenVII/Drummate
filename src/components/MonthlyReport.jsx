@@ -97,6 +97,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
       value: weekTotals[i],
       xLabel: t('analytics.weekShort', { n: i + 1 }),
       highlight: isCurrentMonth && today >= wStart && today <= wEnd,
+      future: wStart > today,
       onClick: () => onWeekClick(wStart),
     };
   });
