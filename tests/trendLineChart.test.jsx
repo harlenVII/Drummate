@@ -41,4 +41,21 @@ describe('TrendLineChart', () => {
     const { container } = render(<TrendLineChart title="t" points={[]} timeUnit="minutes" />);
     expect(container.firstChild).toBeNull();
   });
+
+  it('renders without error for a single point', () => {
+    render(<TrendLineChart title="Single" points={[{ key: 'a', value: 3600, xLabel: 'Mon' }]} timeUnit="minutes" />);
+    expect(screen.getByText('Single')).toBeInTheDocument();
+    expect(screen.getByText('Mon')).toBeInTheDocument();
+    expect(screen.getByText('60')).toBeInTheDocument(); // 3600s -> 60 min
+  });
+
+  it('renders zero labels when all values are zero', () => {
+    const points = [
+      { key: 'a', value: 0, xLabel: 'Mon' },
+      { key: 'b', value: 0, xLabel: 'Tue' },
+    ];
+    render(<TrendLineChart title="t" points={points} timeUnit="minutes" />);
+    const zeros = screen.getAllByText('0');
+    expect(zeros.length).toBe(2);
+  });
 });
