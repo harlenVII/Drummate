@@ -50,7 +50,6 @@ export function createWakeWordEngine() {
 
       // Wire up events after load
       unsubDetect = engine.on('detect', (event) => {
-        console.log(`[WakeWord] Detected "${event.keyword}" (score: ${event.score.toFixed(3)})`);
         if (detectCallback) detectCallback(event);
       });
 

@@ -181,8 +181,8 @@ export function useVoiceControl({
         sttServiceRef.current = createSttService();
       }
 
+      // eslint-disable-next-line no-unused-vars
       wakeWordEngineRef.current.onDetected(async ({ keyword, score }) => {
-        console.log(`Wake word "${keyword}" detected (score: ${score.toFixed(3)})`);
         setWakeWordDetected(true);
 
         if (!sttServiceRef.current) {
