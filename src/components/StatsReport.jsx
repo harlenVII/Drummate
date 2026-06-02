@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatDuration } from '../utils/formatTime';
-import { getTodayString, shiftDate } from '../utils/dateHelpers';
+import { getTodayString } from '../utils/dateHelpers';
+import { computeLongestStreak, computeCurrentStreak } from '../utils/streaks';
 import { getAllLogs } from '../services/database';
 import { useLanguage } from '../contexts/LanguageContext';
 import ReportGeneratorModal from './ReportGeneratorModal';
@@ -135,42 +136,13 @@ function computeStats(allLogs, items) {
   const practiceDays = Object.keys(dayTotals).sort();
   const totalDays = practiceDays.length;
 
-  // Current streak
+  // Current streak (all-time): only counts if today itself has practice.
   const today = getTodayString();
-  const daysSet = new Set(practiceDays);
-  let currentStreak = 0;
-  let date = today;
-  while (daysSet.has(date)) {
-    currentStreak++;
-    date = shiftDate(date, -1);
-  }
+  const currentStreak = computeCurrentStreak(new Set(practiceDays), { today });
 
-  // Longest streak
-  let longestStreak = 0;
-  let longestStreakStart = null;
-  let longestStreakEnd = null;
-  let streak = 1;
-  let streakStart = practiceDays[0] ?? null;
-  for (let i = 1; i < practiceDays.length; i++) {
-    const expected = shiftDate(practiceDays[i - 1], 1);
-    if (practiceDays[i] === expected) {
-      streak++;
-    } else {
-      if (streak > longestStreak) {
-        longestStreak = streak;
-        longestStreakStart = streakStart;
-        longestStreakEnd = practiceDays[i - 1];
-      }
-      streak = 1;
-      streakStart = practiceDays[i];
-    }
-  }
-  if (streak > longestStreak) {
-    longestStreak = streak;
-    longestStreakStart = streakStart;
-    longestStreakEnd = practiceDays[practiceDays.length - 1];
-  }
-  if (practiceDays.length === 0) longestStreak = 0;
+  // Longest streak with its date bounds.
+  const { length: longestStreak, start: longestStreakStart, end: longestStreakEnd } =
+    computeLongestStreak(practiceDays);
 
   // Longest day
   let longestDay = null;
