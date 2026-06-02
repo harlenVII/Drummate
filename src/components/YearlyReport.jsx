@@ -2,6 +2,7 @@ import { formatDuration } from '../utils/formatTime';
 import ReportItemCard from './ReportItemCard';
 import ReportNavHeader from './ReportNavHeader';
 import ReportItemBreakdown from './ReportItemBreakdown';
+import TrendLineChart from './TrendLineChart';
 import {
   getYearStart,
   getYearEnd,
@@ -18,7 +19,7 @@ import { computePercentiles, intensityColor } from '../utils/heatmap';
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, timeUnit, groupByCategory, compactMode = false }) {
+function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, onMonthClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const isDarkMode = useIsDarkMode();
   const yearEnd = getYearEnd(yearStart);
@@ -95,16 +96,18 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
     monthTotals.push(total);
   }
 
-  const maxMonth = Math.max(...monthTotals, 1);
-  const BAR_W = 20;
-  const BAR_GAP = 4;
-  const CHART_H = 80;
-  const CHART_PAD_TOP = 18;
-  const CHART_PAD_BOTTOM = 18;
-  const chartW = 12 * (BAR_W + BAR_GAP) - BAR_GAP;
-  const chartTotalH = CHART_PAD_TOP + CHART_H + CHART_PAD_BOTTOM;
-
   const monthShortLabels = MONTH_KEYS.map((key) => t(`analytics.months.${key}`));
+
+  const trendPoints = monthTotals.map((total, i) => {
+    const mStart = `${year}-${String(i + 1).padStart(2, '0')}-01`;
+    return {
+      key: mStart,
+      value: total,
+      xLabel: monthShortLabels[i],
+      highlight: isCurrentYear && mStart.slice(0, 7) === today.slice(0, 7),
+      onClick: () => onMonthClick(mStart),
+    };
+  });
 
   // Practice days count
   const practiceDayCount = allDays.filter((d) => (dayTotals[d] || 0) > 0).length;
@@ -254,67 +257,14 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, ti
         </div>
       </div>
 
-      {/* Monthly bar chart */}
+      {/* Monthly trend chart */}
       {grandTotal > 0 && (
-        <div className={`bg-white dark:bg-slate-800 shadow-sm ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-4'}`}>
-          <p className="text-sm text-gray-500 dark:text-slate-400 font-medium mb-2">
-            {t('analytics.monthlyTrend')}
-          </p>
-          <svg viewBox={`0 0 ${chartW} ${chartTotalH}`} className="w-full">
-            {monthTotals.map((total, i) => {
-              const barH = total > 0 ? (total / maxMonth) * CHART_H : 0;
-              const x = i * (BAR_W + BAR_GAP);
-              const y = CHART_PAD_TOP + CHART_H - barH;
-              const isFutureMonth = `${year}-${String(i + 1).padStart(2, '0')}-01` > today;
-              return (
-                <g key={i}>
-                  {/* Bar background */}
-                  <rect
-                    x={x}
-                    y={CHART_PAD_TOP}
-                    width={BAR_W}
-                    height={CHART_H}
-                    rx={3}
-                    fill={isDarkMode ? '#1e293b' : '#f3f4f6'}
-                  />
-                  {/* Bar fill */}
-                  {barH > 0 && (
-                    <rect
-                      x={x}
-                      y={y}
-                      width={BAR_W}
-                      height={barH}
-                      rx={3}
-                      fill={isFutureMonth ? (isDarkMode ? '#a5b4fc' : '#93c5fd') : (isDarkMode ? '#6366f1' : '#3b82f6')}
-                    />
-                  )}
-                  {/* Duration label */}
-                  {total > 0 && (
-                    <text
-                      x={x + BAR_W / 2}
-                      y={y - 4}
-                      textAnchor="middle"
-                      fontSize="7"
-                      fill="#6b7280"
-                    >
-                      {formatDuration(total, timeUnit)}
-                    </text>
-                  )}
-                  {/* Month label */}
-                  <text
-                    x={x + BAR_W / 2}
-                    y={CHART_PAD_TOP + CHART_H + 14}
-                    textAnchor="middle"
-                    fontSize="8"
-                    fill={isFutureMonth ? '#d1d5db' : '#9ca3af'}
-                  >
-                    {monthShortLabels[i]}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+        <TrendLineChart
+          title={t('analytics.monthlyTrend')}
+          points={trendPoints}
+          timeUnit={timeUnit}
+          compactMode={compactMode}
+        />
       )}
 
       {/* Per-item breakdown */}
