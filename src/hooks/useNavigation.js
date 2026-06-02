@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getTodayString, getWeekStart, getMonthStart, getYearStart } from '../utils/dateHelpers';
 
-export function useNavigation({ reports, metronome, practices }) {
+export function useNavigation({ reports, metronome, practices, reportSubpage, setReportSubpage }) {
   // reports: { setReportDate, setWeekStart, setMonthStart, setYearStart,
   //            reportDate, weekStart, monthStart, yearStart }
   // metronome: { engineRef, noSleepRef, isPlaying, setIsPlaying, setCurrentBeat,
@@ -9,11 +9,12 @@ export function useNavigation({ reports, metronome, practices }) {
   // practices: { runningPracticeUid, setRunningPracticeUid,
   //              setPracticeRunStepIndex, setPracticeRunBarIndex,
   //              setPracticeRunIsPlaying, setPracticeRunComplete }
+  // reportSubpage/setReportSubpage: lifted to App to break the wiring cycle —
+  //   useReports also needs setReportSubpage for drill-down click handlers.
 
   const [activeTab, setActiveTab] = useState('practice');
   const activeTabRef = useRef('practice');
 
-  const [reportSubpage, setReportSubpage] = useState('daily');
   const reportSubpageRef = useRef('daily');
 
   const [metronomeSubpage, setMetronomeSubpage] = useState('metronome');

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMetronomeState } from './hooks/useMetronomeState';
 import PracticeItemList from './components/PracticeItemList';
 import MetronomeTab from './components/MetronomeTab';
@@ -82,13 +82,13 @@ function App() {
     metronomePractices, items, handleStart, saveAndStop, activeItemId,
   });
 
-  // reportSubpageNavRef breaks the wiring cycle between useReports and useNavigation:
-  // useNavigation owns setReportSubpage, but useReports needs onNavigateToSubpage which
-  // calls setReportSubpage. We forward the call through a stable ref that gets assigned
-  // after nav is created below.
-  const reportSubpageNavRef = useRef(() => {});
+  // reportSubpage is lifted here so both useReports (needs setReportSubpage for drill-down
+  // click handlers) and useNavigation (needs to read/write reportSubpage for keyboard
+  // shortcuts and tab-change resets) can share it without depending on each other.
+  const [reportSubpage, setReportSubpage] = useState('daily');
+
   const reports = useReports({
-    onNavigateToSubpage: (subpage) => reportSubpageNavRef.current(subpage),
+    onNavigateToSubpage: setReportSubpage,
     items,
   });
   const {
@@ -97,12 +97,13 @@ function App() {
     handleManualTimeAdjust,
   } = reports;
 
-  const nav = useNavigation({ reports, metronome, practices });
-  reportSubpageNavRef.current = (subpage) => nav.setReportSubpage(subpage); // eslint-disable-line react-hooks/refs
+  const nav = useNavigation({
+    reports, metronome, practices,
+    reportSubpage, setReportSubpage,
+  });
   const {
     activeTab, setActiveTab,
     metronomeSubpage, setMetronomeSubpage,
-    reportSubpage, setReportSubpage,
     notesSubpage, setNotesSubpage,
     handleTabChange, handleSubpageChange,
   } = nav;
