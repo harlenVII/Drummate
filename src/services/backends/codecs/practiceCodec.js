@@ -2,6 +2,10 @@
 // pullAllPractices (and the snake_case shape in pushPractice).
 export const practiceCodec = {
   table: 'metronomePractices',
+  // NOTE: toRemote is parity/test-only. Production pushes (pushPractice) hand-write
+  // the remote shape (with flat time_signature_beats / time_signature_note_value rather
+  // than a nested object); this exists for codec symmetry and unit-test verification.
+  // flushSyncQueue's replayPracticePayload also does NOT use toRemote for the same reason.
   toRemote(local) {
     return {
       uid: local.uid,

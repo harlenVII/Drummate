@@ -90,6 +90,69 @@ describe('pullAll', () => {
     expect(local).toBeTruthy();
     expect(local.uid).toBeTruthy();
   });
+
+  it('logs-fromCache bail: item absent from cloud survives when logsSnap is fromCache', async () => {
+    // Items snapshot is NOT fromCache (real server data — empty, i.e. remote deleted item 'a').
+    // Logs snapshot IS fromCache (offline cache — bail before deletion-reconciliation).
+    //
+    // The logs-fromCache guard at line 679 of pullAll returns BEFORE the item-deletion
+    // reconciliation loop. So even though item 'a' is absent from the real items snapshot,
+    // the bail prevents the deletion loop from running, and the item survives locally.
+    //
+    // Note: logs are NOT directly reconciled by pullAll (no log-deletion-by-absence loop);
+    // log deletion only happens as a cascade inside the item-deletion loop. So the cleanest
+    // observable effect of the logs bail is: a synced item that IS absent from the remote
+    // items snapshot is NOT deletion-reconciled, because the guard exits before that loop.
+    fs = createFakeFirestore({
+      // items path is NOT fromCache (fromCache = false by default)
+      fromCacheByPath: { [logsPath]: true },
+    });
+    setFirestoreImpl(fs);
+    // Seed a synced local item that is absent from the remote items snapshot.
+    // Normally pullAll would delete it (syncedOnce + not in remoteUids). But because
+    // the logs snapshot is fromCache, pullAll bails before the deletion loop.
+    await db.practiceItems.add({ uid: 'a', name: 'ShouldSurvive', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    // Remote items snapshot is empty — 'a' is "deleted" on the server.
+    // Remote logs snapshot is fromCache (empty cache), so pullAll bails early.
+    await firebaseBackend.pullAll(UID);
+    expect(await db.practiceItems.where('uid').equals('a').first()).toBeTruthy();
+  });
+
+  it('remap-before-delete: log moved to surviving parent b is remapped before item a is deleted', async () => {
+    // Invariant: pullAll processes the remote logs loop (including item_uid remapping)
+    // BEFORE the item-deletion reconciliation loop. This ensures a log whose item_uid
+    // moved to a surviving parent on another device is adopted locally with the new
+    // parent BEFORE its old parent is cascade-deleted.
+    //
+    // Setup:
+    //   - Remote items: only 'b' present (item 'a' was deleted on another device)
+    //   - Remote logs: log 'l1' carries item_uid: 'b' (merged to b before a was deleted)
+    //   - Local: synced items 'a' and 'b'; synced log 'l1' still under parent 'a'
+    //
+    // Expected outcome after pullAll:
+    //   - Item 'a' is deletion-reconciled (absent from remote items snapshot)
+    //   - Log 'l1' survives with itemUid === 'b' and itemId === idB
+    //     (remapped during the logs loop before a's cascade runs)
+    const idA = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    const idB = await db.practiceItems.add({ uid: 'b', name: 'B', category: 'fundamentals', sortOrder: 1, syncedOnce: true });
+    // Local log l1 is currently under parent 'a'.
+    await db.practiceLogs.add({ uid: 'l1', itemId: idA, itemUid: 'a', date: '2026-01-01', duration: 60, loggedAt: 1000, syncedOnce: true });
+
+    // Remote: only item 'b' exists; log 'l1' has already been moved to 'b'.
+    fs.__seed(itemsPath, 'b', { uid: 'b', name: 'B', category: 'fundamentals', sort_order: 1 });
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'b', item_name: 'B', date: '2026-01-01', duration: 60, logged_at: 1000 });
+
+    await firebaseBackend.pullAll(UID);
+
+    // Item 'a' must be gone (deleted on remote, syncedOnce=true).
+    expect(await db.practiceItems.where('uid').equals('a').first()).toBeUndefined();
+
+    // Log 'l1' must survive and point to parent 'b'.
+    const log = await db.practiceLogs.where('uid').equals('l1').first();
+    expect(log).toBeTruthy();
+    expect(log.itemUid).toBe('b');
+    expect(log.itemId).toBe(idB);
+  });
 });
 
 describe('pullAllNotes', () => {

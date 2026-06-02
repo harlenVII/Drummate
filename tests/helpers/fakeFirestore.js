@@ -1,5 +1,5 @@
 // In-memory Firestore double matching the surface firebaseBackend.js uses.
-export function createFakeFirestore({ fromCache = false } = {}) {
+export function createFakeFirestore({ fromCache = false, fromCacheByPath = {} } = {}) {
   // store: Map<collectionPath, Map<docId, data>>
   const store = new Map();
   const listeners = []; // { path, cb }
@@ -11,6 +11,8 @@ export function createFakeFirestore({ fromCache = false } = {}) {
     return store.get(path);
   };
 
+  const resolveFromCache = (path) => fromCacheByPath[path] ?? fromCache;
+
   const makeSnap = (path) => {
     const col = getCol(path);
     const docs = [...col.entries()].map(([id, data]) => ({
@@ -20,7 +22,7 @@ export function createFakeFirestore({ fromCache = false } = {}) {
     }));
     return {
       docs,
-      metadata: { fromCache },
+      metadata: { fromCache: resolveFromCache(path) },
       docChanges: () => docs.map((d) => ({ type: 'added', doc: d })),
     };
   };
@@ -49,7 +51,7 @@ export function createFakeFirestore({ fromCache = false } = {}) {
       const docs = entries.map(([id, data]) => ({
         id, ref: { _path: path, _id: id }, data: () => ({ ...data }),
       }));
-      return { docs, metadata: { fromCache }, docChanges: () => docs.map((d) => ({ type: 'added', doc: d })) };
+      return { docs, metadata: { fromCache: resolveFromCache(path) }, docChanges: () => docs.map((d) => ({ type: 'added', doc: d })) };
     },
     getDoc: async (ref) => {
       const col = getCol(ref._path);
@@ -92,7 +94,7 @@ export function createFakeFirestore({ fromCache = false } = {}) {
         type: c.type,
         doc: { id: c.id, ref: { _path: path, _id: c.id }, data: () => ({ ...c.data }) },
       }));
-      pending.push(Promise.resolve(l.cb({ docs, metadata: { fromCache }, docChanges: () => docs })));
+      pending.push(Promise.resolve(l.cb({ docs, metadata: { fromCache: resolveFromCache(path) }, docChanges: () => docs })));
     }
   };
   // Await every listener callback (initial snapshots + __emit) so tests can

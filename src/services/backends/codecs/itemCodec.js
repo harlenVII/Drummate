@@ -5,6 +5,8 @@
 // which only sets data.sort_order when localItem.sortOrder != null.
 export const itemCodec = {
   table: 'practiceItems',
+  // NOTE: toRemote is parity/test-only. Production pushes (pushItem) hand-write
+  // the remote shape; this exists for codec symmetry and unit-test verification.
   toRemote(local) {
     const data = {
       uid: local.uid,
