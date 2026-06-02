@@ -69,6 +69,107 @@ function withOfflineQueue(action, buildPayload, onlineFn) {
   return runWithOfflineQueue({ action, buildPayload, onlineFn, queueFn: queueSync });
 }
 
+// --- flushSyncQueue enriched-payload replay helpers ---
+// Each writes the user's offline intent to BOTH cloud and local Dexie, because
+// pullAll* earlier in init may have overwritten the local row with cloud's
+// prior state. Returns true when it handled an enriched payload; false when the
+// payload is a legacy/minimal shape the caller must handle by re-reading local.
+
+async function replayNotePayload(p, userId) {
+  if (!(p.uid && p.itemUid !== undefined && p.body !== undefined)) return false;
+  await setDoc(doc(notesRef(userId), p.uid), {
+    uid: p.uid,
+    item_uid: p.itemUid,
+    date: p.date,
+    body: p.body ?? '',
+    trashed: !!p.trashed,
+    trashed_at: p.trashedAt || '',
+    created_at: p.createdAt || '',
+    updated_at: serverTimestamp(),
+  }, { merge: true });
+  const localNote = await db.notes.where('uid').equals(p.uid).first();
+  if (localNote) {
+    await db.notes.update(localNote.id, {
+      body: p.body ?? '',
+      trashed: !!p.trashed,
+      trashedAt: p.trashedAt || null,
+      itemUid: p.itemUid ?? localNote.itemUid,
+      syncedOnce: true,
+    });
+  }
+  return true;
+}
+
+async function replayPracticePayload(p, userId) {
+  if (!(p.uid && p.startBpm !== undefined)) return false;
+  await setDoc(doc(practicesRef(userId), p.uid), {
+    uid: p.uid,
+    name: p.name,
+    start_bpm: p.startBpm,
+    end_bpm: p.endBpm,
+    bpm_increment: p.bpmIncrement,
+    bars_per_step: p.barsPerStep,
+    time_signature_beats: p.timeSignatureBeats,
+    time_signature_note_value: p.timeSignatureNoteValue,
+    subdivision: p.subdivision,
+    sound_type: p.soundType,
+    linked_item_uid: p.linkedItemUid ?? null,
+    sort_order: p.sortOrder ?? 0,
+    created_at: p.createdAt || '',
+    updated_at: p.updatedAt || '',
+  }, { merge: true });
+  const localPractice = await db.metronomePractices.where('uid').equals(p.uid).first();
+  if (localPractice) {
+    await db.metronomePractices.update(localPractice.id, {
+      name: p.name,
+      startBpm: p.startBpm,
+      endBpm: p.endBpm,
+      bpmIncrement: p.bpmIncrement,
+      barsPerStep: p.barsPerStep,
+      timeSignature: { beats: p.timeSignatureBeats, noteValue: p.timeSignatureNoteValue },
+      subdivision: p.subdivision,
+      soundType: p.soundType,
+      linkedItemUid: p.linkedItemUid ?? null,
+      sortOrder: p.sortOrder ?? 0,
+      syncedOnce: true,
+    });
+  }
+  return true;
+}
+
+async function replayGoalPayload(p, userId) {
+  if (!(p.uid && p.startDate && p.endDate && p.targetHours !== undefined)) return false;
+  await setDoc(doc(goalsRef(userId), p.uid), {
+    uid: p.uid,
+    name: p.name ?? '',
+    start_date: p.startDate,
+    end_date: p.endDate,
+    target_hours: p.targetHours,
+    archived: !!p.archived,
+    archived_at: p.archivedAt ?? null,
+    pinned: !!p.pinned,
+    created_at: p.createdAt || 0,
+    sort_order: p.sortOrder ?? 0,
+    updated_at: serverTimestamp(),
+  }, { merge: true });
+  const localGoal = await db.goals.where('uid').equals(p.uid).first();
+  if (localGoal) {
+    await db.goals.update(localGoal.id, {
+      name: p.name ?? '',
+      startDate: p.startDate,
+      endDate: p.endDate,
+      targetHours: p.targetHours,
+      archived: !!p.archived,
+      archivedAt: p.archivedAt ?? null,
+      pinned: !!p.pinned,
+      createdAt: p.createdAt || localGoal.createdAt || 0,
+      sortOrder: p.sortOrder ?? 0,
+      syncedOnce: true,
+    });
+  }
+  return true;
+}
+
 // --- Backend ---
 
 const firebaseBackend = {
@@ -984,82 +1085,17 @@ const firebaseBackend = {
             userId,
           );
         } else if (entry.action === 'push_note') {
-          // Push from payload (not from local Dexie), because pullAllNotes
-          // earlier in init may have overwritten the offline edit back to
-          // cloud's prior state. The payload carries the user's actual
-          // intent; we replay that intent to cloud AND re-assert it locally.
-          const p = entry.payload;
-          if (p.uid && p.itemUid !== undefined && p.body !== undefined) {
-            await setDoc(doc(notesRef(userId), p.uid), {
-              uid: p.uid,
-              item_uid: p.itemUid,
-              date: p.date,
-              body: p.body ?? '',
-              trashed: !!p.trashed,
-              trashed_at: p.trashedAt || '',
-              created_at: p.createdAt || '',
-              updated_at: serverTimestamp(),
-            }, { merge: true });
-            const localNote = await db.notes.where('uid').equals(p.uid).first();
-            if (localNote) {
-              await db.notes.update(localNote.id, {
-                body: p.body ?? '',
-                trashed: !!p.trashed,
-                trashedAt: p.trashedAt || null,
-                itemUid: p.itemUid ?? localNote.itemUid,
-                syncedOnce: true,
-              });
-            }
-          } else {
-            // Legacy minimal payload — fall back to re-reading local.
-            const local = await db.notes.where('uid').equals(p.uid).first();
+          // Replay enriched payload (pullAllNotes may have reverted local).
+          // Legacy/minimal payloads fall back to re-reading local.
+          if (!(await replayNotePayload(entry.payload, userId))) {
+            const local = await db.notes.where('uid').equals(entry.payload.uid).first();
             if (local) await firebaseBackend.pushNote(local, userId);
           }
         } else if (entry.action === 'delete_note') {
           await firebaseBackend.deleteNoteRemote(entry.payload.uid, userId);
         } else if (entry.action === 'push_practice') {
-          // Same payload-driven approach as push_note. pullAllPractices
-          // may have overwritten the offline edit; payload carries intent.
-          const p = entry.payload;
-          if (p.uid && p.startBpm !== undefined) {
-            await setDoc(doc(practicesRef(userId), p.uid), {
-              uid: p.uid,
-              name: p.name,
-              start_bpm: p.startBpm,
-              end_bpm: p.endBpm,
-              bpm_increment: p.bpmIncrement,
-              bars_per_step: p.barsPerStep,
-              time_signature_beats: p.timeSignatureBeats,
-              time_signature_note_value: p.timeSignatureNoteValue,
-              subdivision: p.subdivision,
-              sound_type: p.soundType,
-              linked_item_uid: p.linkedItemUid ?? null,
-              sort_order: p.sortOrder ?? 0,
-              created_at: p.createdAt || '',
-              updated_at: p.updatedAt || '',
-            }, { merge: true });
-            const localPractice = await db.metronomePractices.where('uid').equals(p.uid).first();
-            if (localPractice) {
-              await db.metronomePractices.update(localPractice.id, {
-                name: p.name,
-                startBpm: p.startBpm,
-                endBpm: p.endBpm,
-                bpmIncrement: p.bpmIncrement,
-                barsPerStep: p.barsPerStep,
-                timeSignature: {
-                  beats: p.timeSignatureBeats,
-                  noteValue: p.timeSignatureNoteValue,
-                },
-                subdivision: p.subdivision,
-                soundType: p.soundType,
-                linkedItemUid: p.linkedItemUid ?? null,
-                sortOrder: p.sortOrder ?? 0,
-                syncedOnce: true,
-              });
-            }
-          } else {
-            // Legacy minimal payload — fall back to re-reading local.
-            const local = await db.metronomePractices.where('uid').equals(p.uid).first();
+          if (!(await replayPracticePayload(entry.payload, userId))) {
+            const local = await db.metronomePractices.where('uid').equals(entry.payload.uid).first();
             if (local) await firebaseBackend.pushPractice(local, userId);
           }
         } else if (entry.action === 'delete_practice') {
@@ -1073,42 +1109,8 @@ const firebaseBackend = {
             }
           }
         } else if (entry.action === 'push_goal') {
-          // Push from payload (not from local Dexie) — pullAllGoals earlier
-          // in init may have overwritten the offline edit back to cloud's
-          // prior state. The payload carries the user's actual intent.
-          const p = entry.payload;
-          if (p.uid && p.startDate && p.endDate && p.targetHours !== undefined) {
-            await setDoc(doc(goalsRef(userId), p.uid), {
-              uid: p.uid,
-              name: p.name ?? '',
-              start_date: p.startDate,
-              end_date: p.endDate,
-              target_hours: p.targetHours,
-              archived: !!p.archived,
-              archived_at: p.archivedAt ?? null,
-              pinned: !!p.pinned,
-              created_at: p.createdAt || 0,
-              sort_order: p.sortOrder ?? 0,
-              updated_at: serverTimestamp(),
-            }, { merge: true });
-            const localGoal = await db.goals.where('uid').equals(p.uid).first();
-            if (localGoal) {
-              await db.goals.update(localGoal.id, {
-                name: p.name ?? '',
-                startDate: p.startDate,
-                endDate: p.endDate,
-                targetHours: p.targetHours,
-                archived: !!p.archived,
-                archivedAt: p.archivedAt ?? null,
-                pinned: !!p.pinned,
-                createdAt: p.createdAt || localGoal.createdAt || 0,
-                sortOrder: p.sortOrder ?? 0,
-                syncedOnce: true,
-              });
-            }
-          } else {
-            // Legacy minimal payload — fall back to re-reading local.
-            const local = await db.goals.where('uid').equals(p.uid).first();
+          if (!(await replayGoalPayload(entry.payload, userId))) {
+            const local = await db.goals.where('uid').equals(entry.payload.uid).first();
             if (local) await firebaseBackend.pushGoal(local, userId);
           }
         } else if (entry.action === 'delete_goal_permanent') {
