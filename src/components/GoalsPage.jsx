@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useBackend } from '../contexts/BackendContext';
 import { getTodayString } from '../utils/dateHelpers';
 import {
   db,
@@ -49,8 +50,9 @@ function SortableGoalCard({ goal, logs, ...cardProps }) {
   );
 }
 
-function GoalsPage({ user, firebaseBackend, compactMode = false, timeUnit }) {
+function GoalsPage({ user, compactMode = false, timeUnit }) {
   const { t } = useLanguage();
+  const backend = useBackend();
   const [goals, setGoals] = useState([]);
   const [logs, setLogs] = useState([]);
   const [editingGoal, setEditingGoal] = useState(null);
@@ -95,7 +97,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false, timeUnit }) {
   const pushOne = async (goalUid) => {
     if (!user) return;
     const fresh = await getGoalByUid(goalUid);
-    if (fresh) await firebaseBackend.pushGoal(fresh, user.id);
+    if (fresh) await backend.pushGoal(fresh, user.id);
   };
 
   const sensors = useSensors(
@@ -160,7 +162,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false, timeUnit }) {
     if (!user) return;
     for (const g of changed) {
       const fresh = await getGoalByUid(g.uid);
-      if (fresh) await firebaseBackend.pushGoal(fresh, user.id);
+      if (fresh) await backend.pushGoal(fresh, user.id);
     }
   };
 
@@ -172,7 +174,7 @@ function GoalsPage({ user, firebaseBackend, compactMode = false, timeUnit }) {
   const handleDelete = async (goal) => {
     if (!window.confirm(t('goal.deleteConfirm'))) return;
     await deleteGoalLocal(goal.uid);
-    if (user) await firebaseBackend.deleteGoalRemote(goal.uid, user.id);
+    if (user) await backend.deleteGoalRemote(goal.uid, user.id);
   };
 
   const handleUnarchive = async (goal) => {

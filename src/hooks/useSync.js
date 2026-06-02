@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from '../services/offlineService';
-import firebaseBackend from '../services/backends/firebaseBackend';
 import {
   db,
   insertGoalRecord,
@@ -14,13 +14,15 @@ import { initPriorHours } from '../services/priorPracticeService';
 import { getTodayString } from '../utils/dateHelpers';
 import { getItem, removeItem } from '../utils/safeStorage';
 
-export function useSync({ loadData, resetters }) {
+export function useSync({ resetters }) {
   const { user, authReady, isVisitor } = useAuth();
+  const backend = useBackend();
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [offlineMode, _setOfflineMode] = useState(false);
   const [syncTrigger, setSyncTrigger] = useState(0);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [syncError, setSyncError] = useState(null);
 
   const setOfflineMode = useCallback((value) => {
     setOfflineServiceMode(value);
@@ -39,14 +41,9 @@ export function useSync({ loadData, resetters }) {
 
   useEffect(() => {
     if (!user) {
-      resetters.setItems([]);
-      resetters.setTotals({});
-      resetters.setMetronomePractices([]);
-      resetters.setNotes([]);
-      resetters.setReportLogs([]);
-      resetters.setWeekLogs([]);
-      resetters.setMonthLogs([]);
-      resetters.setYearLogs([]);
+      // Data (items/totals/practices/notes/logs) is reactive via liveQuery and
+      // signOut wipes Dexie, so the data UI clears itself. We only reset the
+      // ephemeral metronome/sequencer/multimeter engine state and navigation.
       resetters.setSequencerBpm(120);
       resetters.setSequencerSoundType('click');
       resetters.setSequencerSlots([]);
@@ -68,11 +65,8 @@ export function useSync({ loadData, resetters }) {
     prevIsVisitorRef.current = isVisitor;
     // Visitor logged off: isVisitor went true→false, no user
     if (wasVisitor && !isVisitor && !user) {
+      // Data clears via liveQuery + the Dexie wipe in exitVisitorModeLogOff.
       resetters.setActiveTab('practice');
-      resetters.setItems([]);
-      resetters.setTotals({});
-      resetters.setMetronomePractices([]);
-      resetters.setNotes([]);
       resetters.setSequencerBpm(120);
       resetters.setSequencerSoundType('click');
       resetters.setSequencerSlots([]);
@@ -98,6 +92,7 @@ export function useSync({ loadData, resetters }) {
 
     const init = async () => {
       setIsSyncing(true);
+      setSyncError(null);
       try {
         // Initial-load auto-enter offline: if the device is plainly offline
         // when sync starts, flip into offline mode so the banner shows and
@@ -119,12 +114,12 @@ export function useSync({ loadData, resetters }) {
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await Promise.all([
-          initTimezone(firebaseBackend, user.id),
-          initPriorHours(firebaseBackend, user.id),
-          firebaseBackend.pullAll(user.id),
-          firebaseBackend.pullAllNotes(user.id),
-          firebaseBackend.pullAllPractices(user.id),
-          firebaseBackend.pullAllGoals(user.id),
+          initTimezone(backend, user.id),
+          initPriorHours(backend, user.id),
+          backend.pullAll(user.id),
+          backend.pullAllNotes(user.id),
+          backend.pullAllPractices(user.id),
+          backend.pullAllGoals(user.id),
         ]);
         if (getOfflineMode()) {
           return;
@@ -141,12 +136,12 @@ export function useSync({ loadData, resetters }) {
         }
         if (legacyGoalRaw) removeItem('drummate_goal');
         // flushSyncQueue replays queued offline edits to cloud AND restores
-        // local Dexie to match payload, so loadData below reads the final
-        // post-merge state. Keep the sync overlay up until this is done —
+        // local Dexie to match payload, so the reactive UI settles on the
+        // final post-merge state. Keep the sync overlay up until this is done —
         // otherwise the UI flickers between pull-overwritten old state and
         // queue-applied new state.
-        await firebaseBackend.flushSyncQueue(user.id);
-        await firebaseBackend.pushAllLocal(user.id);
+        await backend.flushSyncQueue(user.id);
+        await backend.pushAllLocal(user.id);
         // Auto-archive any goals whose endDate has passed.
         const todayStr = getTodayString();
         const allGoalsForArchive = await db.goals.toArray();
@@ -154,28 +149,27 @@ export function useSync({ loadData, resetters }) {
         for (const g of expiredGoals) {
           await archiveGoal(g.uid);
           const fresh = await getGoalByUid(g.uid);
-          if (fresh) await firebaseBackend.pushGoal(fresh, user.id);
+          if (fresh) await backend.pushGoal(fresh, user.id);
         }
       } catch (err) {
         console.error('Sync init failed:', err);
+        if (!cancelled) setSyncError(err?.message || 'sync_failed');
       } finally {
-        // loadData is the single source of truth for UI state. Run it
-        // whether sync succeeded, failed, or short-circuited (offline).
-        // Guard with !cancelled: if sign-out fired the cleanup, the !user
-        // useEffect already cleared state. Calling loadData() here after
-        // that clear (but before wipeAllLocalData finishes) would repopulate
-        // React state with the previous user's Dexie rows.
+        // UI reads are reactive (useLiveData / useReports subscribe to Dexie
+        // via liveQuery), so the pulls above already propagated to the UI by
+        // writing Dexie — no manual refetch needed. Just drop the overlay.
         if (!cancelled) {
-          await loadData();
           setIsSyncing(false);
         }
       }
       // Subscribe AFTER local state is reconciled — its initial snapshot
-      // will see local == cloud and won't trigger a flicker. Stored in a
+      // will see local == cloud and won't trigger a flicker. The callback is
+      // a no-op: subscribeToChanges writes adopted remote changes to Dexie,
+      // and liveQuery re-emits from those writes automatically. Stored in a
       // ref so handleEnterOfflineMode can tear it down without re-running
       // the effect.
       if (!cancelled && !getOfflineMode()) {
-        subscriptionRef.current = firebaseBackend.subscribeToChanges(loadData);
+        subscriptionRef.current = backend.subscribeToChanges(() => {});
       }
     };
     init();
@@ -188,7 +182,7 @@ export function useSync({ loadData, resetters }) {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authReady, loadData, syncTrigger, setOfflineMode]);
+  }, [user, authReady, syncTrigger, setOfflineMode, backend]);
 
   const handleEnterOfflineMode = useCallback(() => {
     // Tear down the live Firestore listener so it can't overwrite local
@@ -220,6 +214,7 @@ export function useSync({ loadData, resetters }) {
     isSyncing, offlineMode, setOfflineMode,
     pendingModalOpen, setPendingModalOpen,
     goOnlineToast,
+    syncError, setSyncError,
     handleEnterOfflineMode, handleGoOnline,
   };
 }

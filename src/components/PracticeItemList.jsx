@@ -107,7 +107,6 @@ function PracticeItemList({
   onMergeItem,
   focusedItemId,
   onFocusChange,
-  goalRefreshKey,
   compactMode = false,
   timeUnit,
 }) {
@@ -614,7 +613,7 @@ function PracticeItemList({
 
   return (
     <div className="flex flex-col gap-3">
-      <GoalBanner refreshKey={goalRefreshKey} timeUnit={timeUnit} />
+      <GoalBanner timeUnit={timeUnit} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
           <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide px-1">

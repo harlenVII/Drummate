@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import {
   getPractices,
   addPractice as dbAddPractice,
@@ -7,12 +8,12 @@ import {
   deletePractice as dbDeletePractice,
   updatePracticeOrder,
 } from '../services/database';
-import firebaseBackend from '../services/backends/firebaseBackend';
 
 export function useMetronomePractices({
-  metronomePractices, items, loadData, handleStart, saveAndStop, activeItemId,
+  metronomePractices, items, handleStart, saveAndStop, activeItemId,
 }) {
   const { user } = useAuth();
+  const backend = useBackend();
 
   // Run-view state persisted in App so it survives tab switches.
   const [runningPracticeUid, setRunningPracticeUid] = useState(null);
@@ -24,24 +25,22 @@ export function useMetronomePractices({
   const handleAddPractice = useCallback(
     async (data) => {
       const record = await dbAddPractice(data);
-      await loadData();
       if (user) {
-        firebaseBackend.pushPractice({ ...record }, user.id).catch(console.error);
+        backend.pushPractice({ ...record }, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [user, backend],
   );
 
   const handleUpdatePractice = useCallback(
     async (id, data) => {
       await dbUpdatePractice(id, data);
-      await loadData();
       if (user) {
         const updated = await getPractices().then((ps) => ps.find((p) => p.id === id));
-        if (updated) firebaseBackend.pushPractice(updated, user.id).catch(console.error);
+        if (updated) backend.pushPractice(updated, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [user, backend],
   );
 
   const handleDeletePractice = useCallback(
@@ -54,24 +53,22 @@ export function useMetronomePractices({
         setPracticeRunComplete(false);
       }
       await dbDeletePractice(id);
-      await loadData();
       if (user) {
-        firebaseBackend.pushDeletePractice(uid, user.id).catch(console.error);
+        backend.pushDeletePractice(uid, user.id).catch(console.error);
       }
     },
-    [loadData, user, runningPracticeUid],
+    [user, runningPracticeUid, backend],
   );
 
   const handleReorderPractices = useCallback(
     async (orderedIds) => {
       await updatePracticeOrder(orderedIds);
-      await loadData();
       if (user) {
         const updated = await getPractices();
-        firebaseBackend.pushPracticeReorder(updated, user.id).catch(console.error);
+        backend.pushPracticeReorder(updated, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [user, backend],
   );
 
   const handleStartPractice = useCallback(async (uid) => {

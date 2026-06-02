@@ -5,56 +5,46 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from 'firebase/auth';
-import {
-  collection, query, where, getDocs, getDoc, setDoc, updateDoc, deleteDoc,
-  onSnapshot, serverTimestamp, doc,
-} from 'firebase/firestore';
+import { getFirestore } from './firestoreAccess';
 import { getFirebaseApp } from '../firebase';
 import { db } from '../database';
 import { legacyDateToLoggedAt } from '../../utils/tzDateHelpers.js';
 import { getOfflineMode } from '../offlineService';
 import { runWithOfflineQueue } from './offlineQueue';
+import { reconcileSnapshot, applyChange } from './reconcile';
+import { noteCodec, practiceCodec, goalCodec, itemCodec, logCodec } from './codecs';
 
 function normalizeUser(fbUser) {
   if (!fbUser) return null;
   return { id: fbUser.uid, email: fbUser.email, name: fbUser.displayName || null };
 }
 
-function resolveLoggedAt(remote) {
-  if (typeof remote.logged_at === 'number') return remote.logged_at;
-  if (remote.date) return legacyDateToLoggedAt(remote.date);
-  // Malformed remote doc (no date, no logged_at). Return null so the
-  // local row is visibly broken rather than getting a phantom Date.now()
-  // stamp that masquerades as a real practice instant.
-  return null;
-}
-
 // --- Helpers ---
 
 function itemsRef(userId) {
-  const { db: firestore } = getFirebaseApp();
-  return collection(firestore, 'users', userId, 'practice_items');
+  const fs = getFirestore();
+  return fs.collection(fs.getDb(), 'users', userId, 'practice_items');
 }
 
 function logsRef(userId) {
-  const { db: firestore } = getFirebaseApp();
-  return collection(firestore, 'users', userId, 'practice_logs');
+  const fs = getFirestore();
+  return fs.collection(fs.getDb(), 'users', userId, 'practice_logs');
 }
 
 function notesRef(userId) {
-  const { db: firestore } = getFirebaseApp();
-  return collection(firestore, 'users', userId, 'notes');
+  const fs = getFirestore();
+  return fs.collection(fs.getDb(), 'users', userId, 'notes');
 }
 
 function practicesRef(userId) {
-  const { db: firestore } = getFirebaseApp();
-  return collection(firestore, 'users', userId, 'metronomePractices');
+  const fs = getFirestore();
+  return fs.collection(fs.getDb(), 'users', userId, 'metronomePractices');
 }
 
 function goalsRef(userId) {
   if (!userId) throw new Error('goalsRef requires userId');
-  const { db: firestore } = getFirebaseApp();
-  return collection(firestore, 'users', userId, 'goals');
+  const fs = getFirestore();
+  return fs.collection(fs.getDb(), 'users', userId, 'goals');
 }
 
 // --- Offline sync queue (reuses Dexie syncQueue table) ---
@@ -77,15 +67,10 @@ function withOfflineQueue(action, buildPayload, onlineFn) {
 
 async function replayNotePayload(p, userId) {
   if (!(p.uid && p.itemUid !== undefined && p.body !== undefined)) return false;
-  await setDoc(doc(notesRef(userId), p.uid), {
-    uid: p.uid,
-    item_uid: p.itemUid,
-    date: p.date,
-    body: p.body ?? '',
-    trashed: !!p.trashed,
-    trashed_at: p.trashedAt || '',
-    created_at: p.createdAt || '',
-    updated_at: serverTimestamp(),
+  const fs = getFirestore();
+  await fs.setDoc(fs.doc(notesRef(userId), p.uid), {
+    ...noteCodec.toRemote(p),
+    updated_at: fs.serverTimestamp(),
   }, { merge: true });
   const localNote = await db.notes.where('uid').equals(p.uid).first();
   if (localNote) {
@@ -102,7 +87,8 @@ async function replayNotePayload(p, userId) {
 
 async function replayPracticePayload(p, userId) {
   if (!(p.uid && p.startBpm !== undefined)) return false;
-  await setDoc(doc(practicesRef(userId), p.uid), {
+  const fs = getFirestore();
+  await fs.setDoc(fs.doc(practicesRef(userId), p.uid), {
     uid: p.uid,
     name: p.name,
     start_bpm: p.startBpm,
@@ -139,18 +125,10 @@ async function replayPracticePayload(p, userId) {
 
 async function replayGoalPayload(p, userId) {
   if (!(p.uid && p.startDate && p.endDate && p.targetHours !== undefined)) return false;
-  await setDoc(doc(goalsRef(userId), p.uid), {
-    uid: p.uid,
-    name: p.name ?? '',
-    start_date: p.startDate,
-    end_date: p.endDate,
-    target_hours: p.targetHours,
-    archived: !!p.archived,
-    archived_at: p.archivedAt ?? null,
-    pinned: !!p.pinned,
-    created_at: p.createdAt || 0,
-    sort_order: p.sortOrder ?? 0,
-    updated_at: serverTimestamp(),
+  const fs = getFirestore();
+  await fs.setDoc(fs.doc(goalsRef(userId), p.uid), {
+    ...goalCodec.toRemote(p),
+    updated_at: fs.serverTimestamp(),
   }, { merge: true });
   const localGoal = await db.goals.where('uid').equals(p.uid).first();
   if (localGoal) {
@@ -234,17 +212,18 @@ const firebaseBackend = {
       'create_item',
       () => ({ uid: localItem.uid, name: localItem.name, displayName: localItem.name }),
       async () => {
+        const fs = getFirestore();
         const data = {
           uid: localItem.uid,
           name: localItem.name,
           category: localItem.category ?? 'fundamentals',
-          created: serverTimestamp(),
+          created: fs.serverTimestamp(),
         };
         if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
         data.archived = localItem.archived ?? false;
         data.trashed = localItem.trashed ?? false;
         data.trashed_at = localItem.trashedAt || '';
-        await setDoc(doc(itemsRef(userId), localItem.uid), data, { merge: true });
+        await fs.setDoc(fs.doc(itemsRef(userId), localItem.uid), data, { merge: true });
 
         if (localItem.id != null && !localItem.syncedOnce) {
           await db.practiceItems.update(localItem.id, { syncedOnce: true });
@@ -270,15 +249,16 @@ const firebaseBackend = {
         const item = await db.practiceItems.get(localLog.itemId);
         if (!item) return;
         const itemUid = localLog.itemUid || item.uid;
-        const logDocRef = doc(logsRef(userId), localLog.uid);
-        await setDoc(logDocRef, {
+        const fs = getFirestore();
+        const logDocRef = fs.doc(logsRef(userId), localLog.uid);
+        await fs.setDoc(logDocRef, {
           uid: localLog.uid,
           item_uid: itemUid,
           item_name: item.name,
           date: localLog.date,
           duration: localLog.duration,
           logged_at: localLog.loggedAt ?? legacyDateToLoggedAt(localLog.date),
-          created: serverTimestamp(),
+          created: fs.serverTimestamp(),
         }, { merge: true });
         if (localLog.id != null && !localLog.syncedOnce) {
           await db.practiceLogs.update(localLog.id, { syncedOnce: true });
@@ -312,7 +292,8 @@ const firebaseBackend = {
         };
       },
       async () => {
-        await setDoc(doc(notesRef(userId), localNote.uid), {
+        const fs = getFirestore();
+        await fs.setDoc(fs.doc(notesRef(userId), localNote.uid), {
           uid: localNote.uid,
           item_uid: localNote.itemUid,
           date: localNote.date,
@@ -320,7 +301,7 @@ const firebaseBackend = {
           trashed: !!localNote.trashed,
           trashed_at: localNote.trashedAt || '',
           created_at: localNote.createdAt || '',
-          updated_at: serverTimestamp(),
+          updated_at: fs.serverTimestamp(),
         }, { merge: true });
         if (localNote.id != null && !localNote.syncedOnce) {
           await db.notes.update(localNote.id, { syncedOnce: true });
@@ -334,7 +315,8 @@ const firebaseBackend = {
       'delete_note',
       () => ({ uid: noteUid }),
       async () => {
-        await deleteDoc(doc(notesRef(userId), noteUid));
+        const fs = getFirestore();
+        await fs.deleteDoc(fs.doc(notesRef(userId), noteUid));
       },
     );
   },
@@ -364,7 +346,8 @@ const firebaseBackend = {
       'push_practice',
       enrichedPracticePayload,
       async () => {
-        await setDoc(doc(practicesRef(userId), localPractice.uid), {
+        const fs = getFirestore();
+        await fs.setDoc(fs.doc(practicesRef(userId), localPractice.uid), {
           uid: localPractice.uid,
           name: localPractice.name,
           start_bpm: localPractice.startBpm,
@@ -409,7 +392,8 @@ const firebaseBackend = {
       'push_goal',
       enrichedGoalPayload,
       async () => {
-        await setDoc(doc(goalsRef(userId), localGoal.uid), {
+        const fs = getFirestore();
+        await fs.setDoc(fs.doc(goalsRef(userId), localGoal.uid), {
           uid: localGoal.uid,
           name: localGoal.name ?? '',
           start_date: localGoal.startDate,
@@ -420,7 +404,7 @@ const firebaseBackend = {
           pinned: !!localGoal.pinned,
           created_at: localGoal.createdAt || 0,
           sort_order: localGoal.sortOrder ?? 0,
-          updated_at: serverTimestamp(),
+          updated_at: fs.serverTimestamp(),
         }, { merge: true });
 
         if (localGoal.id != null && !localGoal.syncedOnce) {
@@ -435,7 +419,8 @@ const firebaseBackend = {
       'delete_goal_permanent',
       () => ({ uid: goalUid }),
       async () => {
-        await deleteDoc(doc(goalsRef(userId), goalUid));
+        const fs = getFirestore();
+        await fs.deleteDoc(fs.doc(goalsRef(userId), goalUid));
       },
     );
   },
@@ -448,7 +433,8 @@ const firebaseBackend = {
         return { uid, name: local?.name };
       },
       async () => {
-        await deleteDoc(doc(practicesRef(userId), uid));
+        const fs = getFirestore();
+        await fs.deleteDoc(fs.doc(practicesRef(userId), uid));
       },
     );
   },
@@ -458,8 +444,9 @@ const firebaseBackend = {
       'reorder_practices',
       () => ({ practices: practices.map(({ uid, sortOrder }) => ({ uid, sortOrder })) }),
       async () => {
+        const fs = getFirestore();
         for (const p of practices) {
-          await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
+          await fs.updateDoc(fs.doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
         }
       },
     );
@@ -473,17 +460,18 @@ const firebaseBackend = {
         return { uid, displayName: local?.name };
       },
       async () => {
-        const logQ = query(logsRef(userId), where('item_uid', '==', uid));
-        const logSnap = await getDocs(logQ);
+        const fs = getFirestore();
+        const logQ = fs.query(logsRef(userId), fs.where('item_uid', '==', uid));
+        const logSnap = await fs.getDocs(logQ);
         for (const logDoc of logSnap.docs) {
-          await deleteDoc(logDoc.ref);
+          await fs.deleteDoc(logDoc.ref);
         }
-        const noteQ = query(notesRef(userId), where('item_uid', '==', uid));
-        const noteSnap = await getDocs(noteQ);
+        const noteQ = fs.query(notesRef(userId), fs.where('item_uid', '==', uid));
+        const noteSnap = await fs.getDocs(noteQ);
         for (const noteDoc of noteSnap.docs) {
-          await deleteDoc(noteDoc.ref);
+          await fs.deleteDoc(noteDoc.ref);
         }
-        await deleteDoc(doc(itemsRef(userId), uid));
+        await fs.deleteDoc(fs.doc(itemsRef(userId), uid));
       },
     );
   },
@@ -496,13 +484,14 @@ const firebaseBackend = {
         return { uid, newName, previousName: local?.name };
       },
       async () => {
-        await setDoc(doc(itemsRef(userId), uid), { name: newName }, { merge: true });
+        const fs = getFirestore();
+        await fs.setDoc(fs.doc(itemsRef(userId), uid), { name: newName }, { merge: true });
 
         // Update denormalized item_name on this item's logs (human-readable hint).
-        const q = query(logsRef(userId), where('item_uid', '==', uid));
-        const snap = await getDocs(q);
+        const q = fs.query(logsRef(userId), fs.where('item_uid', '==', uid));
+        const snap = await fs.getDocs(q);
         for (const logDoc of snap.docs) {
-          await updateDoc(logDoc.ref, { item_name: newName });
+          await fs.updateDoc(logDoc.ref, { item_name: newName });
         }
       },
     );
@@ -513,10 +502,11 @@ const firebaseBackend = {
       'reorder',
       () => ({ items: items.map(({ uid, sortOrder, category }) => ({ uid, sortOrder, category })) }),
       async () => {
+        const fs = getFirestore();
         for (const item of items) {
           const updates = { sort_order: item.sortOrder };
           if (item.category != null) updates.category = item.category;
-          await updateDoc(doc(itemsRef(userId), item.uid), updates);
+          await fs.updateDoc(fs.doc(itemsRef(userId), item.uid), updates);
         }
       },
     );
@@ -530,7 +520,8 @@ const firebaseBackend = {
         return { uid, archived: !!archived, displayName: local?.name };
       },
       async () => {
-        await updateDoc(doc(itemsRef(userId), uid), { archived: !!archived });
+        const fs = getFirestore();
+        await fs.updateDoc(fs.doc(itemsRef(userId), uid), { archived: !!archived });
       },
     );
   },
@@ -543,7 +534,8 @@ const firebaseBackend = {
         return { uid, trashed: !!trashed, trashedAt: trashedAt || '', displayName: local?.name };
       },
       async () => {
-        await updateDoc(doc(itemsRef(userId), uid), {
+        const fs = getFirestore();
+        await fs.updateDoc(fs.doc(itemsRef(userId), uid), {
           trashed: !!trashed,
           trashed_at: trashedAt || '',
         });
@@ -559,20 +551,23 @@ const firebaseBackend = {
         return { uid, category, displayName: local?.name };
       },
       async () => {
-        await updateDoc(doc(itemsRef(userId), uid), { category });
+        const fs = getFirestore();
+        await fs.updateDoc(fs.doc(itemsRef(userId), uid), { category });
       },
     );
   },
 
   async getUserSettings(userId) {
-    const ref = doc(getFirebaseApp().db, 'users', userId);
-    const snap = await getDoc(ref);
+    const fs = getFirestore();
+    const ref = fs.doc(fs.getDb(), 'users', userId);
+    const snap = await fs.getDoc(ref);
     return snap.exists() ? snap.data() : {};
   },
 
   async setUserSetting(userId, key, value) {
-    const ref = doc(getFirebaseApp().db, 'users', userId);
-    await setDoc(ref, { [key]: value }, { merge: true });
+    const fs = getFirestore();
+    const ref = fs.doc(fs.getDb(), 'users', userId);
+    await fs.setDoc(ref, { [key]: value }, { merge: true });
   },
 
   async mergeItems(sourceUid, targetUid, targetName, userId) {
@@ -584,20 +579,21 @@ const firebaseBackend = {
         return { sourceUid, targetUid, targetName, previousName: sourceLocal?.name };
       },
       async () => {
-        const logQ = query(logsRef(userId), where('item_uid', '==', sourceUid));
-        const logSnap = await getDocs(logQ);
+        const fs = getFirestore();
+        const logQ = fs.query(logsRef(userId), fs.where('item_uid', '==', sourceUid));
+        const logSnap = await fs.getDocs(logQ);
         for (const logDoc of logSnap.docs) {
-          await updateDoc(logDoc.ref, {
+          await fs.updateDoc(logDoc.ref, {
             item_uid: targetUid,
             item_name: targetName,
           });
         }
-        const noteQ = query(notesRef(userId), where('item_uid', '==', sourceUid));
-        const noteSnap = await getDocs(noteQ);
+        const noteQ = fs.query(notesRef(userId), fs.where('item_uid', '==', sourceUid));
+        const noteSnap = await fs.getDocs(noteQ);
         for (const noteDoc of noteSnap.docs) {
-          await updateDoc(noteDoc.ref, { item_uid: targetUid });
+          await fs.updateDoc(noteDoc.ref, { item_uid: targetUid });
         }
-        await deleteDoc(doc(itemsRef(userId), sourceUid));
+        await fs.deleteDoc(fs.doc(itemsRef(userId), sourceUid));
       },
     );
   },
@@ -607,9 +603,10 @@ const firebaseBackend = {
     // Fire both network requests in parallel — they're independent. The
     // loops still run sequentially (items first, then logs) because the
     // logs loop looks up parent items in the just-updated Dexie state.
+    const fs = getFirestore();
     const [itemsSnap, logsSnap] = await Promise.all([
-      getDocs(itemsRef(userId)),
-      getDocs(logsRef(userId)),
+      fs.getDocs(itemsRef(userId)),
+      fs.getDocs(logsRef(userId)),
     ]);
     if (itemsSnap.metadata.fromCache) {
       // Server unreachable — snapshot is from the offline cache.
@@ -628,7 +625,7 @@ const firebaseBackend = {
         const localByName = await db.practiceItems.where('name').equals(data.name).first();
         const uid = localByName?.uid || crypto.randomUUID();
 
-        await setDoc(doc(itemsRef(userId), uid), {
+        await fs.setDoc(fs.doc(itemsRef(userId), uid), {
           uid,
           name: data.name,
           category: data.category ?? 'fundamentals',
@@ -636,16 +633,16 @@ const firebaseBackend = {
           archived: data.archived ?? false,
           trashed: data.trashed ?? false,
           trashed_at: data.trashed_at || '',
-          created: serverTimestamp(),
+          created: fs.serverTimestamp(),
         }, { merge: true });
 
         // Backfill item_uid on this item's existing logs in Firestore.
-        const logsByName = await getDocs(query(logsRef(userId), where('item_name', '==', data.name)));
+        const logsByName = await fs.getDocs(fs.query(logsRef(userId), fs.where('item_name', '==', data.name)));
         for (const logDoc of logsByName.docs) {
-          await updateDoc(logDoc.ref, { item_uid: uid });
+          await fs.updateDoc(logDoc.ref, { item_uid: uid });
         }
 
-        await deleteDoc(docSnap.ref);
+        await fs.deleteDoc(docSnap.ref);
 
         if (localByName && !localByName.uid) {
           await db.practiceItems.update(localByName.id, { uid, syncedOnce: true });
@@ -668,34 +665,9 @@ const firebaseBackend = {
         }
       }
 
-      if (!local) {
-        await db.practiceItems.add({
-          uid: data.uid,
-          name: data.name,
-          category: data.category ?? 'fundamentals',
-          sortOrder: data.sort_order ?? 0,
-          archived: data.archived ?? false,
-          trashed: data.trashed ?? false,
-          trashedAt: data.trashed_at || null,
-          syncedOnce: true,
-        });
-      } else {
-        const updates = {};
-        if (data.name != null && local.name !== data.name) updates.name = data.name;
-        if (data.sort_order != null && local.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
-        if (data.archived != null && local.archived !== data.archived) updates.archived = data.archived;
-        if (data.trashed != null && local.trashed !== data.trashed) {
-          updates.trashed = data.trashed;
-          updates.trashedAt = data.trashed_at || null;
-        }
-        if (data.category !== undefined && local.category !== data.category) {
-          updates.category = data.category;
-        }
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.practiceItems.update(local.id, updates);
-        }
-      }
+      const { action, fields } = itemCodec.diff(data, local);
+      if (action === 'add') await db.practiceItems.add(fields);
+      else if (action === 'update') await db.practiceItems.update(local.id, fields);
 
       remoteUids.add(data.uid);
     }
@@ -741,30 +713,12 @@ const firebaseBackend = {
 
       const existing = logsByUid.get(data.uid);
       if (existing) {
-        const fields = {};
-        if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
-          fields.itemUid = localItem.uid;
-          fields.itemId = localItem.id;
-        }
-        const remoteLoggedAt = resolveLoggedAt(data);
-        if (remoteLoggedAt != null && existing.loggedAt !== remoteLoggedAt) {
-          fields.loggedAt = remoteLoggedAt;
-          fields.date = data.date;
-        }
-        if (!existing.syncedOnce) fields.syncedOnce = true;
-        if (Object.keys(fields).length > 0) logsToUpdate.push({ id: existing.id, fields });
+        const { action, fields } = logCodec.diff(data, existing, localItem);
+        if (action === 'update') logsToUpdate.push({ id: existing.id, fields });
         continue;
       }
 
-      logsToAdd.push({
-        itemId: localItem.id,
-        itemUid: localItem.uid,
-        date: data.date,
-        duration: data.duration,
-        uid: data.uid,
-        loggedAt: resolveLoggedAt(data),
-        syncedOnce: true,
-      });
+      logsToAdd.push(logCodec.toLocal(data, localItem));
     }
 
     if (logsToAdd.length > 0 || logsToUpdate.length > 0) {
@@ -794,173 +748,15 @@ const firebaseBackend = {
   },
 
   async pullAllNotes(userId) {
-    const snap = await getDocs(notesRef(userId));
-    if (snap.metadata.fromCache) {
-      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
-      return;
-    }
-    const remoteUids = new Set();
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      if (!data.uid) continue;
-      remoteUids.add(data.uid);
-
-      const local = await db.notes.where('uid').equals(data.uid).first();
-      const fields = {
-        uid: data.uid,
-        itemUid: data.item_uid,
-        date: data.date,
-        body: data.body ?? '',
-        trashed: !!data.trashed,
-        trashedAt: data.trashed_at || null,
-        createdAt: data.created_at || '',
-        syncedOnce: true,
-      };
-
-      if (!local) {
-        await db.notes.add(fields);
-      } else {
-        const updates = {};
-        if (data.item_uid && local.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
-        if (data.date != null && local.date !== data.date) updates.date = data.date;
-        if (data.body != null && local.body !== data.body) updates.body = data.body;
-        if (data.trashed != null && local.trashed !== !!data.trashed) {
-          updates.trashed = !!data.trashed;
-          updates.trashedAt = data.trashed_at || null;
-        }
-        if (data.created_at && !local.createdAt) updates.createdAt = data.created_at;
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.notes.update(local.id, updates);
-        }
-      }
-    }
-
-    // Reconcile deletes: a local note that has been synced before but is
-    // missing remotely was deleted on another device.
-    const allLocal = await db.notes.toArray();
-    for (const local of allLocal) {
-      if (local.syncedOnce && !remoteUids.has(local.uid)) {
-        await db.notes.delete(local.id);
-      }
-    }
+    return reconcileSnapshot(noteCodec, await getFirestore().getDocs(notesRef(userId)));
   },
 
   async pullAllPractices(userId) {
-    const snap = await getDocs(practicesRef(userId));
-    if (snap.metadata.fromCache) {
-      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
-      return;
-    }
-    const remoteUids = new Set();
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      if (!data.uid) continue;
-      remoteUids.add(data.uid);
-
-      const fields = {
-        uid: data.uid,
-        name: data.name ?? '',
-        startBpm: data.start_bpm ?? 60,
-        endBpm: data.end_bpm ?? 60,
-        bpmIncrement: data.bpm_increment ?? 1,
-        barsPerStep: data.bars_per_step ?? 1,
-        timeSignature: {
-          beats: data.time_signature_beats ?? 4,
-          noteValue: data.time_signature_note_value ?? 4,
-        },
-        subdivision: data.subdivision ?? 'quarter',
-        soundType: data.sound_type ?? 'click',
-        linkedItemUid: data.linked_item_uid ?? null,
-        sortOrder: data.sort_order ?? 0,
-        createdAt: data.created_at || '',
-        updatedAt: data.updated_at || '',
-        syncedOnce: true,
-      };
-
-      const local = await db.metronomePractices.where('uid').equals(data.uid).first();
-      if (!local) {
-        await db.metronomePractices.add(fields);
-      } else {
-        const updates = {};
-        for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
-                         'subdivision', 'soundType', 'linkedItemUid', 'sortOrder', 'createdAt', 'updatedAt']) {
-          if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-        }
-        if (local.timeSignature?.beats !== fields.timeSignature.beats ||
-            local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
-          updates.timeSignature = fields.timeSignature;
-        }
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.metronomePractices.update(local.id, updates);
-        }
-      }
-    }
-
-    // Reconcile deletes: any local that synced before but is now missing
-    // remotely was deleted on another device.
-    const allLocal = await db.metronomePractices.toArray();
-    for (const local of allLocal) {
-      if (local.syncedOnce && !remoteUids.has(local.uid)) {
-        await db.metronomePractices.delete(local.id);
-      }
-    }
+    return reconcileSnapshot(practiceCodec, await getFirestore().getDocs(practicesRef(userId)));
   },
 
   async pullAllGoals(userId) {
-    const snap = await getDocs(goalsRef(userId));
-    if (snap.metadata.fromCache) {
-      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
-      return;
-    }
-    const remoteUids = new Set();
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      if (!data.uid) continue;
-      remoteUids.add(data.uid);
-
-      const fields = {
-        uid: data.uid,
-        name: data.name ?? '',
-        startDate: data.start_date,
-        endDate: data.end_date,
-        targetHours: data.target_hours,
-        archived: !!data.archived,
-        archivedAt: data.archived_at ?? null,
-        pinned: !!data.pinned,
-        createdAt: data.created_at || 0,
-        sortOrder: data.sort_order ?? 0,
-        syncedOnce: true,
-      };
-
-      const local = await db.goals.where('uid').equals(data.uid).first();
-      if (!local) {
-        await db.goals.add(fields);
-      } else {
-        const updates = {};
-        for (const k of ['name', 'startDate', 'endDate', 'targetHours',
-                         'archived', 'archivedAt', 'pinned', 'createdAt', 'sortOrder']) {
-          if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-        }
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.goals.update(local.id, updates);
-        }
-      }
-    }
-
-    // Reconcile deletes: a local goal that synced before but is missing
-    // remotely was deleted on another device.
-    const allLocal = await db.goals.toArray();
-    for (const local of allLocal) {
-      if (local.syncedOnce && !remoteUids.has(local.uid)) {
-        await db.goals.delete(local.id);
-      }
-    }
+    return reconcileSnapshot(goalCodec, await getFirestore().getDocs(goalsRef(userId)));
   },
 
   async pushAllLocalNotes(userId) {
@@ -1025,6 +821,7 @@ const firebaseBackend = {
   },
 
   async flushSyncQueue(userId) {
+    const fs = getFirestore();
     const pending = await db.syncQueue.toArray();
     for (const entry of pending) {
       try {
@@ -1047,7 +844,7 @@ const firebaseBackend = {
           for (const item of entry.payload.items) {
             const updates = { sort_order: item.sortOrder };
             if (item.category != null) updates.category = item.category;
-            await updateDoc(doc(itemsRef(userId), item.uid), updates);
+            await fs.updateDoc(fs.doc(itemsRef(userId), item.uid), updates);
             const local = await db.practiceItems.where('uid').equals(item.uid).first();
             if (local) {
               const localUpdates = { sortOrder: item.sortOrder };
@@ -1102,7 +899,7 @@ const firebaseBackend = {
           await firebaseBackend.pushDeletePractice(entry.payload.uid, userId);
         } else if (entry.action === 'reorder_practices') {
           for (const p of entry.payload.practices) {
-            await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
+            await fs.updateDoc(fs.doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
             const local = await db.metronomePractices.where('uid').equals(p.uid).first();
             if (local && local.sortOrder !== p.sortOrder) {
               await db.metronomePractices.update(local.id, { sortOrder: p.sortOrder });
@@ -1132,7 +929,8 @@ const firebaseBackend = {
     const userId = auth.currentUser?.uid;
     if (!userId) return () => {};
 
-    const unsubItems = onSnapshot(itemsRef(userId), async (snap) => {
+    const fs = getFirestore();
+    const unsubItems = fs.onSnapshot(itemsRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
         const data = change.doc.data();
 
@@ -1161,20 +959,9 @@ const firebaseBackend = {
             });
             onDataChanged();
           } else {
-            const updates = {};
-            if (data.name != null && existing.name !== data.name) updates.name = data.name;
-            if (data.sort_order != null && existing.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
-            if (data.archived != null && existing.archived !== data.archived) updates.archived = data.archived;
-            if (data.trashed != null && existing.trashed !== data.trashed) {
-              updates.trashed = data.trashed;
-              updates.trashedAt = data.trashed_at || null;
-            }
-            if (data.category !== undefined && existing.category !== data.category) {
-              updates.category = data.category;
-            }
-            if (!existing.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.practiceItems.update(existing.id, updates);
+            const { action, fields } = itemCodec.diff(data, existing);
+            if (action === 'update') {
+              await db.practiceItems.update(existing.id, fields);
               onDataChanged();
             }
           }
@@ -1191,7 +978,7 @@ const firebaseBackend = {
       }
     });
 
-    const unsubLogs = onSnapshot(logsRef(userId), async (snap) => {
+    const unsubLogs = fs.onSnapshot(logsRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
         const data = change.doc.data();
         if (!data.uid) continue;
@@ -1217,15 +1004,7 @@ const firebaseBackend = {
           }
           if (!localItem) continue;
 
-          await db.practiceLogs.add({
-            itemId: localItem.id,
-            itemUid: localItem.uid,
-            date: data.date,
-            duration: data.duration,
-            uid: data.uid,
-            loggedAt: resolveLoggedAt(data),
-            syncedOnce: true,
-          });
+          await db.practiceLogs.add(logCodec.toLocal(data, localItem));
           onDataChanged();
         } else if (change.type === 'modified') {
           const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
@@ -1236,18 +1015,9 @@ const firebaseBackend = {
             localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
           }
           if (!localItem) continue;
-          const updates = {};
-          if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
-            updates.itemUid = localItem.uid;
-            updates.itemId = localItem.id;
-          }
-          const remoteLoggedAt = resolveLoggedAt(data);
-          if (remoteLoggedAt != null && existing.loggedAt !== remoteLoggedAt) {
-            updates.loggedAt = remoteLoggedAt;
-            updates.date = data.date;
-          }
-          if (Object.keys(updates).length > 0) {
-            await db.practiceLogs.update(existing.id, updates);
+          const { action, fields } = logCodec.diff(data, existing, localItem);
+          if (action === 'update') {
+            await db.practiceLogs.update(existing.id, fields);
             onDataChanged();
           }
         } else if (change.type === 'removed') {
@@ -1260,159 +1030,21 @@ const firebaseBackend = {
       }
     });
 
-    const unsubNotes = onSnapshot(notesRef(userId), async (snap) => {
+    const unsubNotes = getFirestore().onSnapshot(notesRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
-        const data = change.doc.data();
-        if (!data.uid) continue;
-
-        // See items handler — combined to reconcile fields on initial
-        // snapshot too, so queued push_note replays propagate.
-        if (change.type === 'added' || change.type === 'modified') {
-          const existing = await db.notes.where('uid').equals(data.uid).first();
-          if (!existing) {
-            await db.notes.add({
-              uid: data.uid,
-              itemUid: data.item_uid,
-              date: data.date,
-              body: data.body ?? '',
-              trashed: !!data.trashed,
-              trashedAt: data.trashed_at || null,
-              createdAt: data.created_at || '',
-              syncedOnce: true,
-            });
-            onDataChanged();
-          } else {
-            const updates = {};
-            // Remap itemUid if it changed (cross-device merge — mirrors logs gotcha #15).
-            if (data.item_uid && existing.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
-            if (data.date != null && existing.date !== data.date) updates.date = data.date;
-            if (data.body != null && existing.body !== data.body) updates.body = data.body;
-            if (data.trashed != null && existing.trashed !== !!data.trashed) {
-              updates.trashed = !!data.trashed;
-              updates.trashedAt = data.trashed_at || null;
-            }
-            if (!existing.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.notes.update(existing.id, updates);
-              onDataChanged();
-            }
-          }
-        } else if (change.type === 'removed') {
-          const existing = await db.notes.where('uid').equals(data.uid).first();
-          if (existing) {
-            await db.notes.delete(existing.id);
-            onDataChanged();
-          }
-        }
+        await applyChange(noteCodec, change, { onChange: onDataChanged });
       }
     });
 
-    const unsubPractices = onSnapshot(practicesRef(userId), async (snap) => {
+    const unsubPractices = getFirestore().onSnapshot(practicesRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
-        const data = change.doc.data();
-        if (!data.uid) continue;
-
-        const buildFields = () => ({
-          uid: data.uid,
-          name: data.name ?? '',
-          startBpm: data.start_bpm ?? 60,
-          endBpm: data.end_bpm ?? 60,
-          bpmIncrement: data.bpm_increment ?? 1,
-          barsPerStep: data.bars_per_step ?? 1,
-          timeSignature: {
-            beats: data.time_signature_beats ?? 4,
-            noteValue: data.time_signature_note_value ?? 4,
-          },
-          subdivision: data.subdivision ?? 'quarter',
-          soundType: data.sound_type ?? 'click',
-          linkedItemUid: data.linked_item_uid ?? null,
-          sortOrder: data.sort_order ?? 0,
-          createdAt: data.created_at || '',
-          updatedAt: data.updated_at || '',
-          syncedOnce: true,
-        });
-
-        // See items handler — combined to reconcile fields on initial
-        // snapshot too, so queued push_practice replays propagate.
-        if (change.type === 'added' || change.type === 'modified') {
-          const local = await db.metronomePractices.where('uid').equals(data.uid).first();
-          if (!local) {
-            await db.metronomePractices.add(buildFields());
-            onDataChanged();
-          } else {
-            const fields = buildFields();
-            const updates = {};
-            for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
-                             'subdivision', 'soundType', 'linkedItemUid', 'sortOrder', 'createdAt', 'updatedAt']) {
-              if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-            }
-            if (local.timeSignature?.beats !== fields.timeSignature.beats ||
-                local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
-              updates.timeSignature = fields.timeSignature;
-            }
-            if (!local.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.metronomePractices.update(local.id, updates);
-              onDataChanged();
-            }
-          }
-        } else if (change.type === 'removed') {
-          const existing = await db.metronomePractices.where('uid').equals(data.uid).first();
-          if (existing) {
-            await db.metronomePractices.delete(existing.id);
-            onDataChanged();
-          }
-        }
+        await applyChange(practiceCodec, change, { onChange: onDataChanged });
       }
     });
 
-    const unsubGoals = onSnapshot(goalsRef(userId), async (snap) => {
+    const unsubGoals = getFirestore().onSnapshot(goalsRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
-        const data = change.doc.data();
-        if (!data.uid) continue;
-
-        const buildFields = () => ({
-          uid: data.uid,
-          name: data.name ?? '',
-          startDate: data.start_date,
-          endDate: data.end_date,
-          targetHours: data.target_hours,
-          archived: !!data.archived,
-          archivedAt: data.archived_at ?? null,
-          pinned: !!data.pinned,
-          createdAt: data.created_at || 0,
-          sortOrder: data.sort_order ?? 0,
-          syncedOnce: true,
-        });
-
-        // Combined added/modified handling — Firestore's initial snapshot
-        // reports our own writes as 'added', so a separate 'added' branch
-        // would skip reconciling field updates from queued push_goal replays.
-        if (change.type === 'added' || change.type === 'modified') {
-          const local = await db.goals.where('uid').equals(data.uid).first();
-          if (!local) {
-            await db.goals.add(buildFields());
-            onDataChanged();
-          } else {
-            const fields = buildFields();
-            const updates = {};
-            for (const k of ['name', 'startDate', 'endDate', 'targetHours',
-                             'archived', 'archivedAt', 'pinned', 'createdAt', 'sortOrder']) {
-              if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-            }
-            if (!local.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.goals.update(local.id, updates);
-              onDataChanged();
-            }
-          }
-        } else if (change.type === 'removed') {
-          const existing = await db.goals.where('uid').equals(data.uid).first();
-          if (existing) {
-            await db.goals.delete(existing.id);
-            onDataChanged();
-          }
-        }
+        await applyChange(goalCodec, change, { onChange: onDataChanged });
       }
     });
 

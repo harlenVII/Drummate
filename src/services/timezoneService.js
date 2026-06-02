@@ -22,8 +22,8 @@ function readCache() {
 
 // Module contract: `initTimezone` must be called once on auth resolve,
 // before any UI surface that can call `setTimezone` becomes interactive.
-// Callers (App.jsx) chain `loadData()` after `initTimezone` so the order
-// is enforced by the auth effect — there is no in-flight guard here.
+// The sync init effect runs `initTimezone` before the reactive UI settles,
+// so the order is enforced by the auth effect — there is no in-flight guard here.
 let currentTz = readCache() ?? DEFAULT_TZ;
 
 export function getTimezone() {

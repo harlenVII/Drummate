@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMetronomeState } from './hooks/useMetronomeState';
 import PracticeItemList from './components/PracticeItemList';
 import MetronomeTab from './components/MetronomeTab';
@@ -8,7 +8,6 @@ import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
-import firebaseBackend from './services/backends/firebaseBackend';
 import AuthScreen from './components/AuthScreen';
 import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
 import FloatingPracticeWidget from './components/FloatingPracticeWidget';
@@ -18,6 +17,7 @@ import EditTimeModal from './components/EditTimeModal';
 import NotesPage from './components/NotesPage';
 import { useUiPreferences } from './hooks/useUiPreferences';
 import { useAppData } from './hooks/useAppData';
+import { useLiveData } from './hooks/useLiveData';
 import { usePracticeTimer } from './hooks/usePracticeTimer';
 import { usePracticeItems } from './hooks/usePracticeItems';
 import { useMetronomePractices } from './hooks/useMetronomePractices';
@@ -44,14 +44,14 @@ function App() {
     compactMode, setCompactMode,
     theme, setTheme,
   } = useUiPreferences();
-  const {
-    items, setItems, totals, setTotals,
-    metronomePractices, setMetronomePractices,
-    notes, setNotes, goalRefreshKey, loadData, refreshNotes,
-  } = useAppData();
+  // Reactive reads from Dexie (items/totals/practices/notes). Mutations made by
+  // the hooks below propagate to the UI automatically via liveQuery.
+  const { items, totals, practices: metronomePractices, notes, refreshTotals } = useLiveData();
+  // Side-effect-only hook: runs the expired-trash purge on mount.
+  useAppData();
   const metronome = useMetronomeState();
 
-  const timer = usePracticeTimer({ loadData, metronome });
+  const timer = usePracticeTimer({ metronome });
   const {
     activeItemId, elapsedTime,
     focusedPracticeItemId, setFocusedPracticeItemId,
@@ -76,20 +76,19 @@ function App() {
     handleAddItem, handleRenameItem, handleDeleteItem, handleRestoreItem,
     handlePermanentDelete, handleArchiveItem, handleSetItemCategory,
     handleMergeItem, handleReorder,
-  } = usePracticeItems({ items, loadData, activeItemId, clearActiveTimer: timer.clearActiveTimer });
+  } = usePracticeItems({ items, activeItemId, clearActiveTimer: timer.clearActiveTimer });
 
   const practices = useMetronomePractices({
-    metronomePractices, items, loadData, handleStart, saveAndStop, activeItemId,
+    metronomePractices, items, handleStart, saveAndStop, activeItemId,
   });
 
-  // reportSubpageNavRef breaks the wiring cycle between useReports and useNavigation:
-  // useNavigation owns setReportSubpage, but useReports needs onNavigateToSubpage which
-  // calls setReportSubpage. We forward the call through a stable ref that gets assigned
-  // after nav is created below.
-  const reportSubpageNavRef = useRef(() => {});
+  // reportSubpage is lifted here so both useReports (needs setReportSubpage for drill-down
+  // click handlers) and useNavigation (needs to read/write reportSubpage for keyboard
+  // shortcuts and tab-change resets) can share it without depending on each other.
+  const [reportSubpage, setReportSubpage] = useState('daily');
+
   const reports = useReports({
-    loadData,
-    onNavigateToSubpage: (subpage) => reportSubpageNavRef.current(subpage),
+    onNavigateToSubpage: setReportSubpage,
     items,
   });
   const {
@@ -98,12 +97,13 @@ function App() {
     handleManualTimeAdjust,
   } = reports;
 
-  const nav = useNavigation({ reports, metronome, practices });
-  reportSubpageNavRef.current = (subpage) => nav.setReportSubpage(subpage); // eslint-disable-line react-hooks/refs
+  const nav = useNavigation({
+    reports, metronome, practices,
+    reportSubpage, setReportSubpage,
+  });
   const {
     activeTab, setActiveTab,
     metronomeSubpage, setMetronomeSubpage,
-    reportSubpage, setReportSubpage,
     notesSubpage, setNotesSubpage,
     handleTabChange, handleSubpageChange,
   } = nav;
@@ -123,13 +123,7 @@ function App() {
   } = voice;
 
   const sync = useSync({
-    loadData,
     resetters: {
-      setItems, setTotals, setMetronomePractices, setNotes,
-      setReportLogs: reports.setReportLogs,
-      setWeekLogs: reports.setWeekLogs,
-      setMonthLogs: reports.setMonthLogs,
-      setYearLogs: reports.setYearLogs,
       setSequencerBpm: metronome.setSequencerBpm,
       setSequencerSoundType: metronome.setSequencerSoundType,
       setSequencerSlots: metronome.setSequencerSlots,
@@ -143,7 +137,7 @@ function App() {
   });
   const {
     isSyncing, offlineMode, pendingModalOpen, setPendingModalOpen,
-    goOnlineToast, handleEnterOfflineMode, handleGoOnline,
+    goOnlineToast, syncError, setSyncError, handleEnterOfflineMode, handleGoOnline,
   } = sync;
 
   // Auto-disable Kokoro TTS when neither AI Coach nor Hands-Free is on
@@ -175,6 +169,20 @@ function App() {
           onShowPending={() => setPendingModalOpen(true)}
           onGoOnline={handleGoOnline}
         />
+      )}
+      {syncError && (
+        <div
+          className="flex items-center justify-between gap-3 bg-red-600 text-white text-sm px-4 py-2"
+          role="alert"
+        >
+          <span>{t('sync.error')}</span>
+          <button
+            onClick={() => setSyncError(null)}
+            className="font-medium underline underline-offset-2"
+          >
+            {t('common.dismiss')}
+          </button>
+        </div>
       )}
       {isSyncing && (
         <div
@@ -217,7 +225,6 @@ function App() {
               onReorder={handleReorder}
               focusedItemId={focusedPracticeItemId}
               onFocusChange={setFocusedPracticeItemId}
-              goalRefreshKey={goalRefreshKey}
               compactMode={compactMode}
               timeUnit={timeUnit}
             />
@@ -245,7 +252,6 @@ function App() {
               groupByCategory={groupByCategory}
               compactMode={compactMode}
               user={user}
-              firebaseBackend={firebaseBackend}
             />
           )}
 
@@ -253,7 +259,6 @@ function App() {
             <NotesPage
               items={items}
               user={user}
-              firebaseBackend={firebaseBackend}
               defaultItemUid={
                 focusedPracticeItemId != null
                   ? items.find(i => i.id === focusedPracticeItemId)?.uid
@@ -262,7 +267,6 @@ function App() {
               notesSubpage={notesSubpage}
               onSubpageChange={setNotesSubpage}
               notes={notes}
-              onNotesRefresh={refreshNotes}
               compactMode={compactMode}
             />
           )}
@@ -298,7 +302,7 @@ function App() {
         listeningState={listeningState}
         voiceTranscript={voiceTranscript}
         userId={user?.id}
-        onTimezoneChange={loadData}
+        onTimezoneChange={refreshTotals}
         offlineMode={offlineMode}
         onEnterOfflineMode={handleEnterOfflineMode}
         onGoOnline={handleGoOnline}
