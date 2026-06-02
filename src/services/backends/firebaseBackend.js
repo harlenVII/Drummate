@@ -11,9 +11,8 @@ import { db } from '../database';
 import { legacyDateToLoggedAt } from '../../utils/tzDateHelpers.js';
 import { getOfflineMode } from '../offlineService';
 import { runWithOfflineQueue } from './offlineQueue';
-import { resolveLoggedAt } from './resolveLoggedAt';
 import { reconcileSnapshot, applyChange } from './reconcile';
-import { noteCodec, practiceCodec, goalCodec } from './codecs';
+import { noteCodec, practiceCodec, goalCodec, itemCodec, logCodec } from './codecs';
 
 function normalizeUser(fbUser) {
   if (!fbUser) return null;
@@ -681,34 +680,9 @@ const firebaseBackend = {
         }
       }
 
-      if (!local) {
-        await db.practiceItems.add({
-          uid: data.uid,
-          name: data.name,
-          category: data.category ?? 'fundamentals',
-          sortOrder: data.sort_order ?? 0,
-          archived: data.archived ?? false,
-          trashed: data.trashed ?? false,
-          trashedAt: data.trashed_at || null,
-          syncedOnce: true,
-        });
-      } else {
-        const updates = {};
-        if (data.name != null && local.name !== data.name) updates.name = data.name;
-        if (data.sort_order != null && local.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
-        if (data.archived != null && local.archived !== data.archived) updates.archived = data.archived;
-        if (data.trashed != null && local.trashed !== data.trashed) {
-          updates.trashed = data.trashed;
-          updates.trashedAt = data.trashed_at || null;
-        }
-        if (data.category !== undefined && local.category !== data.category) {
-          updates.category = data.category;
-        }
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.practiceItems.update(local.id, updates);
-        }
-      }
+      const { action, fields } = itemCodec.diff(data, local);
+      if (action === 'add') await db.practiceItems.add(fields);
+      else if (action === 'update') await db.practiceItems.update(local.id, fields);
 
       remoteUids.add(data.uid);
     }
@@ -754,30 +728,12 @@ const firebaseBackend = {
 
       const existing = logsByUid.get(data.uid);
       if (existing) {
-        const fields = {};
-        if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
-          fields.itemUid = localItem.uid;
-          fields.itemId = localItem.id;
-        }
-        const remoteLoggedAt = resolveLoggedAt(data);
-        if (remoteLoggedAt != null && existing.loggedAt !== remoteLoggedAt) {
-          fields.loggedAt = remoteLoggedAt;
-          fields.date = data.date;
-        }
-        if (!existing.syncedOnce) fields.syncedOnce = true;
-        if (Object.keys(fields).length > 0) logsToUpdate.push({ id: existing.id, fields });
+        const { action, fields } = logCodec.diff(data, existing, localItem);
+        if (action === 'update') logsToUpdate.push({ id: existing.id, fields });
         continue;
       }
 
-      logsToAdd.push({
-        itemId: localItem.id,
-        itemUid: localItem.uid,
-        date: data.date,
-        duration: data.duration,
-        uid: data.uid,
-        loggedAt: resolveLoggedAt(data),
-        syncedOnce: true,
-      });
+      logsToAdd.push(logCodec.toLocal(data, localItem));
     }
 
     if (logsToAdd.length > 0 || logsToUpdate.length > 0) {
@@ -1018,20 +974,9 @@ const firebaseBackend = {
             });
             onDataChanged();
           } else {
-            const updates = {};
-            if (data.name != null && existing.name !== data.name) updates.name = data.name;
-            if (data.sort_order != null && existing.sortOrder !== data.sort_order) updates.sortOrder = data.sort_order;
-            if (data.archived != null && existing.archived !== data.archived) updates.archived = data.archived;
-            if (data.trashed != null && existing.trashed !== data.trashed) {
-              updates.trashed = data.trashed;
-              updates.trashedAt = data.trashed_at || null;
-            }
-            if (data.category !== undefined && existing.category !== data.category) {
-              updates.category = data.category;
-            }
-            if (!existing.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.practiceItems.update(existing.id, updates);
+            const { action, fields } = itemCodec.diff(data, existing);
+            if (action === 'update') {
+              await db.practiceItems.update(existing.id, fields);
               onDataChanged();
             }
           }
@@ -1074,15 +1019,7 @@ const firebaseBackend = {
           }
           if (!localItem) continue;
 
-          await db.practiceLogs.add({
-            itemId: localItem.id,
-            itemUid: localItem.uid,
-            date: data.date,
-            duration: data.duration,
-            uid: data.uid,
-            loggedAt: resolveLoggedAt(data),
-            syncedOnce: true,
-          });
+          await db.practiceLogs.add(logCodec.toLocal(data, localItem));
           onDataChanged();
         } else if (change.type === 'modified') {
           const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
@@ -1093,18 +1030,9 @@ const firebaseBackend = {
             localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
           }
           if (!localItem) continue;
-          const updates = {};
-          if (existing.itemUid !== localItem.uid || existing.itemId !== localItem.id) {
-            updates.itemUid = localItem.uid;
-            updates.itemId = localItem.id;
-          }
-          const remoteLoggedAt = resolveLoggedAt(data);
-          if (remoteLoggedAt != null && existing.loggedAt !== remoteLoggedAt) {
-            updates.loggedAt = remoteLoggedAt;
-            updates.date = data.date;
-          }
-          if (Object.keys(updates).length > 0) {
-            await db.practiceLogs.update(existing.id, updates);
+          const { action, fields } = logCodec.diff(data, existing, localItem);
+          if (action === 'update') {
+            await db.practiceLogs.update(existing.id, fields);
             onDataChanged();
           }
         } else if (change.type === 'removed') {
