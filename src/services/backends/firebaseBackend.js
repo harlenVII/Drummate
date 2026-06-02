@@ -13,6 +13,7 @@ import { getFirebaseApp } from '../firebase';
 import { db } from '../database';
 import { legacyDateToLoggedAt } from '../../utils/tzDateHelpers.js';
 import { getOfflineMode } from '../offlineService';
+import { runWithOfflineQueue } from './offlineQueue';
 
 function normalizeUser(fbUser) {
   if (!fbUser) return null;
@@ -60,6 +61,12 @@ function goalsRef(userId) {
 
 async function queueSync(action, payload) {
   await db.syncQueue.add({ action, payload });
+}
+
+// Binds runWithOfflineQueue to this module's queueSync. `buildPayload` is the
+// single enriched payload used for BOTH the offline and catch-fallback enqueue.
+function withOfflineQueue(action, buildPayload, onlineFn) {
+  return runWithOfflineQueue({ action, buildPayload, onlineFn, queueFn: queueSync });
 }
 
 // --- Backend ---
@@ -122,86 +129,61 @@ const firebaseBackend = {
       console.error('pushItem: missing uid', localItem);
       return;
     }
-    if (getOfflineMode()) {
-      await queueSync('create_item', {
-        uid: localItem.uid,
-        name: localItem.name,
-        displayName: localItem.name,
-      });
-      return;
-    }
-    try {
-      const data = {
-        uid: localItem.uid,
-        name: localItem.name,
-        category: localItem.category ?? 'fundamentals',
-        created: serverTimestamp(),
-      };
-      if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
-      data.archived = localItem.archived ?? false;
-      data.trashed = localItem.trashed ?? false;
-      data.trashed_at = localItem.trashedAt || '';
-      await setDoc(doc(itemsRef(userId), localItem.uid), data, { merge: true });
+    await withOfflineQueue(
+      'create_item',
+      () => ({ uid: localItem.uid, name: localItem.name, displayName: localItem.name }),
+      async () => {
+        const data = {
+          uid: localItem.uid,
+          name: localItem.name,
+          category: localItem.category ?? 'fundamentals',
+          created: serverTimestamp(),
+        };
+        if (localItem.sortOrder != null) data.sort_order = localItem.sortOrder;
+        data.archived = localItem.archived ?? false;
+        data.trashed = localItem.trashed ?? false;
+        data.trashed_at = localItem.trashedAt || '';
+        await setDoc(doc(itemsRef(userId), localItem.uid), data, { merge: true });
 
-      // Mark local as synced so pullAll's deletion reconciliation is safe.
-      if (localItem.id != null && !localItem.syncedOnce) {
-        await db.practiceItems.update(localItem.id, { syncedOnce: true });
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('create_item', { uid: localItem.uid, name: localItem.name });
-      } else {
-        throw err;
-      }
-    }
+        if (localItem.id != null && !localItem.syncedOnce) {
+          await db.practiceItems.update(localItem.id, { syncedOnce: true });
+        }
+      },
+    );
   },
 
   async pushLog(localLog, userId) {
-    if (getOfflineMode()) {
-      const item = await db.practiceItems.get(localLog.itemId);
-      await queueSync('create_log', {
-        itemUid: localLog.itemUid || item?.uid,
-        itemName: item?.name,
-        date: localLog.date,
-        duration: localLog.duration,
-        uid: localLog.uid,
-      });
-      return;
-    }
-    try {
-      const item = await db.practiceItems.get(localLog.itemId);
-      if (!item) return;
-
-      const itemUid = localLog.itemUid || item.uid;
-
-      const logDocRef = doc(logsRef(userId), localLog.uid);
-      await setDoc(logDocRef, {
-        uid: localLog.uid,
-        item_uid: itemUid,
-        item_name: item.name,
-        date: localLog.date,
-        duration: localLog.duration,
-        logged_at: localLog.loggedAt ?? legacyDateToLoggedAt(localLog.date),
-        created: serverTimestamp(),
-      }, { merge: true });
-
-      if (localLog.id != null && !localLog.syncedOnce) {
-        await db.practiceLogs.update(localLog.id, { syncedOnce: true });
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
+    await withOfflineQueue(
+      'create_log',
+      async () => {
         const item = await db.practiceItems.get(localLog.itemId);
-        await queueSync('create_log', {
+        return {
           itemUid: localLog.itemUid || item?.uid,
           itemName: item?.name,
           date: localLog.date,
           duration: localLog.duration,
           uid: localLog.uid,
-        });
-      } else {
-        throw err;
-      }
-    }
+        };
+      },
+      async () => {
+        const item = await db.practiceItems.get(localLog.itemId);
+        if (!item) return;
+        const itemUid = localLog.itemUid || item.uid;
+        const logDocRef = doc(logsRef(userId), localLog.uid);
+        await setDoc(logDocRef, {
+          uid: localLog.uid,
+          item_uid: itemUid,
+          item_name: item.name,
+          date: localLog.date,
+          duration: localLog.duration,
+          logged_at: localLog.loggedAt ?? legacyDateToLoggedAt(localLog.date),
+          created: serverTimestamp(),
+        }, { merge: true });
+        if (localLog.id != null && !localLog.syncedOnce) {
+          await db.practiceLogs.update(localLog.id, { syncedOnce: true });
+        }
+      },
+    );
   },
 
   async pushNote(localNote, userId) {
@@ -213,66 +195,47 @@ const firebaseBackend = {
       console.error('pushNote: missing itemUid', localNote);
       return;
     }
-    if (getOfflineMode()) {
-      const item = await db.practiceItems.where('uid').equals(localNote.itemUid).first();
-      await queueSync('push_note', {
-        uid: localNote.uid,
-        itemUid: localNote.itemUid,
-        itemName: item?.name,
-        date: localNote.date,
-        body: localNote.body ?? '',
-        trashed: !!localNote.trashed,
-        trashedAt: localNote.trashedAt || '',
-        createdAt: localNote.createdAt || '',
-      });
-      return;
-    }
-    try {
-      await setDoc(doc(notesRef(userId), localNote.uid), {
-        uid: localNote.uid,
-        item_uid: localNote.itemUid,
-        date: localNote.date,
-        body: localNote.body ?? '',
-        trashed: !!localNote.trashed,
-        trashed_at: localNote.trashedAt || '',
-        created_at: localNote.createdAt || '',
-        updated_at: serverTimestamp(),
-      }, { merge: true });
-
-      if (localNote.id != null && !localNote.syncedOnce) {
-        await db.notes.update(localNote.id, { syncedOnce: true });
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('push_note', {
+    await withOfflineQueue(
+      'push_note',
+      async () => {
+        const item = await db.practiceItems.where('uid').equals(localNote.itemUid).first();
+        return {
           uid: localNote.uid,
           itemUid: localNote.itemUid,
+          itemName: item?.name,
           date: localNote.date,
           body: localNote.body ?? '',
           trashed: !!localNote.trashed,
           trashedAt: localNote.trashedAt || '',
           createdAt: localNote.createdAt || '',
-        });
-      } else {
-        throw err;
-      }
-    }
+        };
+      },
+      async () => {
+        await setDoc(doc(notesRef(userId), localNote.uid), {
+          uid: localNote.uid,
+          item_uid: localNote.itemUid,
+          date: localNote.date,
+          body: localNote.body ?? '',
+          trashed: !!localNote.trashed,
+          trashed_at: localNote.trashedAt || '',
+          created_at: localNote.createdAt || '',
+          updated_at: serverTimestamp(),
+        }, { merge: true });
+        if (localNote.id != null && !localNote.syncedOnce) {
+          await db.notes.update(localNote.id, { syncedOnce: true });
+        }
+      },
+    );
   },
 
   async deleteNoteRemote(noteUid, userId) {
-    if (getOfflineMode()) {
-      await queueSync('delete_note', { uid: noteUid });
-      return;
-    }
-    try {
-      await deleteDoc(doc(notesRef(userId), noteUid));
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('delete_note', { uid: noteUid });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'delete_note',
+      () => ({ uid: noteUid }),
+      async () => {
+        await deleteDoc(doc(notesRef(userId), noteUid));
+      },
+    );
   },
 
   async pushPractice(localPractice, userId) {
@@ -296,38 +259,32 @@ const firebaseBackend = {
       createdAt: localPractice.createdAt || '',
       updatedAt: localPractice.updatedAt || '',
     });
-    if (getOfflineMode()) {
-      await queueSync('push_practice', enrichedPracticePayload());
-      return;
-    }
-    try {
-      await setDoc(doc(practicesRef(userId), localPractice.uid), {
-        uid: localPractice.uid,
-        name: localPractice.name,
-        start_bpm: localPractice.startBpm,
-        end_bpm: localPractice.endBpm,
-        bpm_increment: localPractice.bpmIncrement,
-        bars_per_step: localPractice.barsPerStep,
-        time_signature_beats: localPractice.timeSignature.beats,
-        time_signature_note_value: localPractice.timeSignature.noteValue,
-        subdivision: localPractice.subdivision,
-        sound_type: localPractice.soundType,
-        linked_item_uid: localPractice.linkedItemUid ?? null,
-        sort_order: localPractice.sortOrder ?? 0,
-        created_at: localPractice.createdAt || '',
-        updated_at: localPractice.updatedAt || '',
-      }, { merge: true });
+    await withOfflineQueue(
+      'push_practice',
+      enrichedPracticePayload,
+      async () => {
+        await setDoc(doc(practicesRef(userId), localPractice.uid), {
+          uid: localPractice.uid,
+          name: localPractice.name,
+          start_bpm: localPractice.startBpm,
+          end_bpm: localPractice.endBpm,
+          bpm_increment: localPractice.bpmIncrement,
+          bars_per_step: localPractice.barsPerStep,
+          time_signature_beats: localPractice.timeSignature.beats,
+          time_signature_note_value: localPractice.timeSignature.noteValue,
+          subdivision: localPractice.subdivision,
+          sound_type: localPractice.soundType,
+          linked_item_uid: localPractice.linkedItemUid ?? null,
+          sort_order: localPractice.sortOrder ?? 0,
+          created_at: localPractice.createdAt || '',
+          updated_at: localPractice.updatedAt || '',
+        }, { merge: true });
 
-      if (localPractice.id != null && !localPractice.syncedOnce) {
-        await db.metronomePractices.update(localPractice.id, { syncedOnce: true });
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('push_practice', enrichedPracticePayload());
-      } else {
-        throw err;
-      }
-    }
+        if (localPractice.id != null && !localPractice.syncedOnce) {
+          await db.metronomePractices.update(localPractice.id, { syncedOnce: true });
+        }
+      },
+    );
   },
 
   async pushGoal(localGoal, userId) {
@@ -347,244 +304,163 @@ const firebaseBackend = {
       createdAt: localGoal.createdAt || 0,
       sortOrder: localGoal.sortOrder ?? 0,
     });
-    if (getOfflineMode()) {
-      await queueSync('push_goal', enrichedGoalPayload());
-      return;
-    }
-    try {
-      await setDoc(doc(goalsRef(userId), localGoal.uid), {
-        uid: localGoal.uid,
-        name: localGoal.name ?? '',
-        start_date: localGoal.startDate,
-        end_date: localGoal.endDate,
-        target_hours: localGoal.targetHours,
-        archived: !!localGoal.archived,
-        archived_at: localGoal.archivedAt ?? null,
-        pinned: !!localGoal.pinned,
-        created_at: localGoal.createdAt || 0,
-        sort_order: localGoal.sortOrder ?? 0,
-        updated_at: serverTimestamp(),
-      }, { merge: true });
+    await withOfflineQueue(
+      'push_goal',
+      enrichedGoalPayload,
+      async () => {
+        await setDoc(doc(goalsRef(userId), localGoal.uid), {
+          uid: localGoal.uid,
+          name: localGoal.name ?? '',
+          start_date: localGoal.startDate,
+          end_date: localGoal.endDate,
+          target_hours: localGoal.targetHours,
+          archived: !!localGoal.archived,
+          archived_at: localGoal.archivedAt ?? null,
+          pinned: !!localGoal.pinned,
+          created_at: localGoal.createdAt || 0,
+          sort_order: localGoal.sortOrder ?? 0,
+          updated_at: serverTimestamp(),
+        }, { merge: true });
 
-      if (localGoal.id != null && !localGoal.syncedOnce) {
-        await db.goals.update(localGoal.id, { syncedOnce: true });
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('push_goal', enrichedGoalPayload());
-      } else {
-        throw err;
-      }
-    }
+        if (localGoal.id != null && !localGoal.syncedOnce) {
+          await db.goals.update(localGoal.id, { syncedOnce: true });
+        }
+      },
+    );
   },
 
   async deleteGoalRemote(goalUid, userId) {
-    if (getOfflineMode()) {
-      await queueSync('delete_goal_permanent', { uid: goalUid });
-      return;
-    }
-    try {
-      await deleteDoc(doc(goalsRef(userId), goalUid));
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('delete_goal_permanent', { uid: goalUid });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'delete_goal_permanent',
+      () => ({ uid: goalUid }),
+      async () => {
+        await deleteDoc(doc(goalsRef(userId), goalUid));
+      },
+    );
   },
 
   async pushDeletePractice(uid, userId) {
-    if (getOfflineMode()) {
-      const local = await db.metronomePractices.where('uid').equals(uid).first();
-      await queueSync('delete_practice', {
-        uid,
-        name: local?.name,
-      });
-      return;
-    }
-    try {
-      await deleteDoc(doc(practicesRef(userId), uid));
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('delete_practice', { uid });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'delete_practice',
+      async () => {
+        const local = await db.metronomePractices.where('uid').equals(uid).first();
+        return { uid, name: local?.name };
+      },
+      async () => {
+        await deleteDoc(doc(practicesRef(userId), uid));
+      },
+    );
   },
 
   async pushPracticeReorder(practices, userId) {
-    if (getOfflineMode()) {
-      await queueSync('reorder_practices', {
-        practices: practices.map(({ uid, sortOrder }) => ({ uid, sortOrder })),
-      });
-      return;
-    }
-    try {
-      for (const p of practices) {
-        await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('reorder_practices', {
-          practices: practices.map(p => ({ uid: p.uid, sortOrder: p.sortOrder })),
-        });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'reorder_practices',
+      () => ({ practices: practices.map(({ uid, sortOrder }) => ({ uid, sortOrder })) }),
+      async () => {
+        for (const p of practices) {
+          await updateDoc(doc(practicesRef(userId), p.uid), { sort_order: p.sortOrder });
+        }
+      },
+    );
   },
 
   async pushDeleteItem(uid, userId) {
-    if (getOfflineMode()) {
-      const local = await db.practiceItems.where('uid').equals(uid).first();
-      await queueSync('delete_item', {
-        uid,
-        displayName: local?.name,
-      });
-      return;
-    }
-    try {
-      const logQ = query(logsRef(userId), where('item_uid', '==', uid));
-      const logSnap = await getDocs(logQ);
-      for (const logDoc of logSnap.docs) {
-        await deleteDoc(logDoc.ref);
-      }
-      const noteQ = query(notesRef(userId), where('item_uid', '==', uid));
-      const noteSnap = await getDocs(noteQ);
-      for (const noteDoc of noteSnap.docs) {
-        await deleteDoc(noteDoc.ref);
-      }
-      await deleteDoc(doc(itemsRef(userId), uid));
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('delete_item', { uid });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'delete_item',
+      async () => {
+        const local = await db.practiceItems.where('uid').equals(uid).first();
+        return { uid, displayName: local?.name };
+      },
+      async () => {
+        const logQ = query(logsRef(userId), where('item_uid', '==', uid));
+        const logSnap = await getDocs(logQ);
+        for (const logDoc of logSnap.docs) {
+          await deleteDoc(logDoc.ref);
+        }
+        const noteQ = query(notesRef(userId), where('item_uid', '==', uid));
+        const noteSnap = await getDocs(noteQ);
+        for (const noteDoc of noteSnap.docs) {
+          await deleteDoc(noteDoc.ref);
+        }
+        await deleteDoc(doc(itemsRef(userId), uid));
+      },
+    );
   },
 
   async pushRenameItem(uid, newName, userId) {
-    if (getOfflineMode()) {
-      const local = await db.practiceItems.where('uid').equals(uid).first();
-      await queueSync('rename_item', {
-        uid,
-        newName,
-        previousName: local?.name,
-      });
-      return;
-    }
-    try {
-      await setDoc(doc(itemsRef(userId), uid), { name: newName }, { merge: true });
+    await withOfflineQueue(
+      'rename_item',
+      async () => {
+        const local = await db.practiceItems.where('uid').equals(uid).first();
+        return { uid, newName, previousName: local?.name };
+      },
+      async () => {
+        await setDoc(doc(itemsRef(userId), uid), { name: newName }, { merge: true });
 
-      // Update denormalized item_name on this item's logs (human-readable hint).
-      const q = query(logsRef(userId), where('item_uid', '==', uid));
-      const snap = await getDocs(q);
-      for (const logDoc of snap.docs) {
-        await updateDoc(logDoc.ref, { item_name: newName });
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('rename_item', { uid, newName });
-      } else {
-        throw err;
-      }
-    }
+        // Update denormalized item_name on this item's logs (human-readable hint).
+        const q = query(logsRef(userId), where('item_uid', '==', uid));
+        const snap = await getDocs(q);
+        for (const logDoc of snap.docs) {
+          await updateDoc(logDoc.ref, { item_name: newName });
+        }
+      },
+    );
   },
 
   async pushReorder(items, userId) {
-    if (getOfflineMode()) {
-      await queueSync('reorder', {
-        items: items.map(({ uid, sortOrder, category }) => ({ uid, sortOrder, category })),
-      });
-      return;
-    }
-    try {
-      for (const item of items) {
-        const updates = { sort_order: item.sortOrder };
-        if (item.category != null) updates.category = item.category;
-        await updateDoc(doc(itemsRef(userId), item.uid), updates);
-      }
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('reorder', {
-          items: items.map(i => ({
-            uid: i.uid, sortOrder: i.sortOrder, category: i.category,
-          })),
-        });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'reorder',
+      () => ({ items: items.map(({ uid, sortOrder, category }) => ({ uid, sortOrder, category })) }),
+      async () => {
+        for (const item of items) {
+          const updates = { sort_order: item.sortOrder };
+          if (item.category != null) updates.category = item.category;
+          await updateDoc(doc(itemsRef(userId), item.uid), updates);
+        }
+      },
+    );
   },
 
   async pushArchiveItem(uid, archived, userId) {
-    if (getOfflineMode()) {
-      const local = await db.practiceItems.where('uid').equals(uid).first();
-      await queueSync('archive_item', {
-        uid,
-        archived: !!archived,
-        displayName: local?.name,
-      });
-      return;
-    }
-    try {
-      await updateDoc(doc(itemsRef(userId), uid), { archived: !!archived });
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('archive_item', { uid, archived: !!archived });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'archive_item',
+      async () => {
+        const local = await db.practiceItems.where('uid').equals(uid).first();
+        return { uid, archived: !!archived, displayName: local?.name };
+      },
+      async () => {
+        await updateDoc(doc(itemsRef(userId), uid), { archived: !!archived });
+      },
+    );
   },
 
   async pushTrashItem(uid, trashed, trashedAt, userId) {
-    if (getOfflineMode()) {
-      const local = await db.practiceItems.where('uid').equals(uid).first();
-      await queueSync('trash_item', {
-        uid,
-        trashed: !!trashed,
-        trashedAt: trashedAt || '',
-        displayName: local?.name,
-      });
-      return;
-    }
-    try {
-      await updateDoc(doc(itemsRef(userId), uid), {
-        trashed: !!trashed,
-        trashed_at: trashedAt || '',
-      });
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('trash_item', { uid, trashed: !!trashed, trashedAt: trashedAt || '' });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'trash_item',
+      async () => {
+        const local = await db.practiceItems.where('uid').equals(uid).first();
+        return { uid, trashed: !!trashed, trashedAt: trashedAt || '', displayName: local?.name };
+      },
+      async () => {
+        await updateDoc(doc(itemsRef(userId), uid), {
+          trashed: !!trashed,
+          trashed_at: trashedAt || '',
+        });
+      },
+    );
   },
 
   async pushSetCategory(uid, category, userId) {
-    if (getOfflineMode()) {
-      const local = await db.practiceItems.where('uid').equals(uid).first();
-      await queueSync('set_category', {
-        uid,
-        category,
-        displayName: local?.name,
-      });
-      return;
-    }
-    try {
-      await updateDoc(doc(itemsRef(userId), uid), { category });
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('set_category', { uid, category });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'set_category',
+      async () => {
+        const local = await db.practiceItems.where('uid').equals(uid).first();
+        return { uid, category, displayName: local?.name };
+      },
+      async () => {
+        await updateDoc(doc(itemsRef(userId), uid), { category });
+      },
+    );
   },
 
   async getUserSettings(userId) {
@@ -600,38 +476,29 @@ const firebaseBackend = {
 
   async mergeItems(sourceUid, targetUid, targetName, userId) {
     if (sourceUid === targetUid) return;
-    if (getOfflineMode()) {
-      const sourceLocal = await db.practiceItems.where('uid').equals(sourceUid).first();
-      await queueSync('merge_items', {
-        sourceUid,
-        targetUid,
-        targetName,
-        previousName: sourceLocal?.name,
-      });
-      return;
-    }
-    try {
-      const logQ = query(logsRef(userId), where('item_uid', '==', sourceUid));
-      const logSnap = await getDocs(logQ);
-      for (const logDoc of logSnap.docs) {
-        await updateDoc(logDoc.ref, {
-          item_uid: targetUid,
-          item_name: targetName,
-        });
-      }
-      const noteQ = query(notesRef(userId), where('item_uid', '==', sourceUid));
-      const noteSnap = await getDocs(noteQ);
-      for (const noteDoc of noteSnap.docs) {
-        await updateDoc(noteDoc.ref, { item_uid: targetUid });
-      }
-      await deleteDoc(doc(itemsRef(userId), sourceUid));
-    } catch (err) {
-      if (!navigator.onLine) {
-        await queueSync('merge_items', { sourceUid, targetUid, targetName });
-      } else {
-        throw err;
-      }
-    }
+    await withOfflineQueue(
+      'merge_items',
+      async () => {
+        const sourceLocal = await db.practiceItems.where('uid').equals(sourceUid).first();
+        return { sourceUid, targetUid, targetName, previousName: sourceLocal?.name };
+      },
+      async () => {
+        const logQ = query(logsRef(userId), where('item_uid', '==', sourceUid));
+        const logSnap = await getDocs(logQ);
+        for (const logDoc of logSnap.docs) {
+          await updateDoc(logDoc.ref, {
+            item_uid: targetUid,
+            item_name: targetName,
+          });
+        }
+        const noteQ = query(notesRef(userId), where('item_uid', '==', sourceUid));
+        const noteSnap = await getDocs(noteQ);
+        for (const noteDoc of noteSnap.docs) {
+          await updateDoc(noteDoc.ref, { item_uid: targetUid });
+        }
+        await deleteDoc(doc(itemsRef(userId), sourceUid));
+      },
+    );
   },
 
   // Sync — pull
