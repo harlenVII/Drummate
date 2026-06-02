@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import firebaseBackend from '../services/backends/firebaseBackend';
+import { useBackend } from './BackendContext';
 import { wipeAllLocalData } from '../services/database';
 
 const VISITOR_KEY = 'drummate_visitor';
@@ -14,14 +14,15 @@ function readVisitorFlag() {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => firebaseBackend.getUser());
+  const backend = useBackend();
+  const [user, setUser] = useState(() => backend.getUser());
   const [isVisitor, setIsVisitor] = useState(() => readVisitorFlag());
   const [sessionExpired, setSessionExpired] = useState(false);
   // Only the online + cached-user path needs async work (token revalidation)
   // before auth is "ready". Offline or signed-out, we know synchronously at
   // mount that we can start ready and trust the lazily-initialized `user`.
   const [authReady, setAuthReady] = useState(
-    () => !firebaseBackend.getUser() || !navigator.onLine
+    () => !backend.getUser() || !navigator.onLine
   );
 
   useEffect(() => {
@@ -29,23 +30,23 @@ export function AuthProvider({ children }) {
     // The authReady initializer already covered the offline/signed-out cases,
     // and `user` already holds the cached value, so neither needs a setState
     // here — which is what keeps this effect free of cascading renders.
-    if (firebaseBackend.getUser() && navigator.onLine) {
-      firebaseBackend.refreshAuth()
+    if (backend.getUser() && navigator.onLine) {
+      backend.refreshAuth()
         .then((refreshedUser) => setUser(refreshedUser))
         .catch((err) => {
-          if (firebaseBackend.isAbortError(err)) return;
-          if (firebaseBackend.isNetworkError?.(err)) return; // keep cached user
-          firebaseBackend.signOut();
+          if (backend.isAbortError(err)) return;
+          if (backend.isNetworkError?.(err)) return; // keep cached user
+          backend.signOut();
           setUser(null);
           setSessionExpired(true);
         })
         .finally(() => setAuthReady(true));
     }
 
-    return firebaseBackend.onAuthChange((newUser) => {
+    return backend.onAuthChange((newUser) => {
       setUser(newUser);
     });
-  }, []);
+  }, [backend]);
 
   const enterVisitorMode = useCallback(async () => {
     await wipeAllLocalData();
@@ -76,9 +77,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUpAsVisitor = useCallback(async (email, password, name) => {
-    const newUser = await firebaseBackend.signUp(email, password, name);
+    const newUser = await backend.signUp(email, password, name);
     try {
-      await firebaseBackend.pushAllLocal(newUser.id);
+      await backend.pushAllLocal(newUser.id);
     } catch (err) {
       console.error('visitor migration push failed', err);
     }
@@ -89,21 +90,21 @@ export function AuthProvider({ children }) {
     }
     setIsVisitor(false);
     setUser(newUser);
-  }, []);
+  }, [backend]);
 
   const signIn = useCallback(async (email, password) => {
     setSessionExpired(false);
-    const newUser = await firebaseBackend.signIn(email, password);
+    const newUser = await backend.signIn(email, password);
     setUser(newUser);
-  }, []);
+  }, [backend]);
 
   const signUp = useCallback(async (email, password, name) => {
-    const newUser = await firebaseBackend.signUp(email, password, name);
+    const newUser = await backend.signUp(email, password, name);
     setUser(newUser);
-  }, []);
+  }, [backend]);
 
   const signOut = useCallback(async () => {
-    firebaseBackend.signOut();
+    backend.signOut();
     await wipeAllLocalData();
     try {
       globalThis.localStorage?.removeItem('drummate_prior_hours');
@@ -118,7 +119,7 @@ export function AuthProvider({ children }) {
       // ignore
     }
     setUser(null);
-  }, []);
+  }, [backend]);
 
   return (
     <AuthContext.Provider
