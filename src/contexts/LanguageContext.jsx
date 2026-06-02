@@ -307,6 +307,8 @@ const translations = {
       noDataThisYear: 'No practice this year',
       weeklyTrend: 'Weekly Trend',
       monthlyTrend: 'Monthly Trend',
+      dailyTrend: 'Daily Trend',
+      weekShort: 'W{n}',
       practiceDays: 'Practice Days',
       weekdays: {
         mon: 'Mon',
@@ -739,6 +741,8 @@ const translations = {
       noDataThisYear: '本年无练习记录',
       weeklyTrend: '每周趋势',
       monthlyTrend: '每月趋势',
+      dailyTrend: '每日趋势',
+      weekShort: '第{n}周',
       practiceDays: '练习天数',
       weekdays: {
         mon: '一',
