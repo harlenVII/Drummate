@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import { getOfflineMode, setOfflineMode as setOfflineServiceMode } from '../services/offlineService';
-import firebaseBackend from '../services/backends/firebaseBackend';
 import {
   db,
   insertGoalRecord,
@@ -16,6 +16,7 @@ import { getItem, removeItem } from '../utils/safeStorage';
 
 export function useSync({ loadData, resetters }) {
   const { user, authReady, isVisitor } = useAuth();
+  const backend = useBackend();
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [offlineMode, _setOfflineMode] = useState(false);
@@ -121,12 +122,12 @@ export function useSync({ loadData, resetters }) {
         // applied while this device was offline) BEFORE pushing local state up.
         // The syncedOnce flag in pullAll handles offline-deletion cleanup.
         await Promise.all([
-          initTimezone(firebaseBackend, user.id),
-          initPriorHours(firebaseBackend, user.id),
-          firebaseBackend.pullAll(user.id),
-          firebaseBackend.pullAllNotes(user.id),
-          firebaseBackend.pullAllPractices(user.id),
-          firebaseBackend.pullAllGoals(user.id),
+          initTimezone(backend, user.id),
+          initPriorHours(backend, user.id),
+          backend.pullAll(user.id),
+          backend.pullAllNotes(user.id),
+          backend.pullAllPractices(user.id),
+          backend.pullAllGoals(user.id),
         ]);
         if (getOfflineMode()) {
           return;
@@ -147,8 +148,8 @@ export function useSync({ loadData, resetters }) {
         // post-merge state. Keep the sync overlay up until this is done —
         // otherwise the UI flickers between pull-overwritten old state and
         // queue-applied new state.
-        await firebaseBackend.flushSyncQueue(user.id);
-        await firebaseBackend.pushAllLocal(user.id);
+        await backend.flushSyncQueue(user.id);
+        await backend.pushAllLocal(user.id);
         // Auto-archive any goals whose endDate has passed.
         const todayStr = getTodayString();
         const allGoalsForArchive = await db.goals.toArray();
@@ -156,7 +157,7 @@ export function useSync({ loadData, resetters }) {
         for (const g of expiredGoals) {
           await archiveGoal(g.uid);
           const fresh = await getGoalByUid(g.uid);
-          if (fresh) await firebaseBackend.pushGoal(fresh, user.id);
+          if (fresh) await backend.pushGoal(fresh, user.id);
         }
       } catch (err) {
         console.error('Sync init failed:', err);
@@ -178,7 +179,7 @@ export function useSync({ loadData, resetters }) {
       // ref so handleEnterOfflineMode can tear it down without re-running
       // the effect.
       if (!cancelled && !getOfflineMode()) {
-        subscriptionRef.current = firebaseBackend.subscribeToChanges(loadData);
+        subscriptionRef.current = backend.subscribeToChanges(loadData);
       }
     };
     init();
@@ -191,7 +192,7 @@ export function useSync({ loadData, resetters }) {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authReady, loadData, syncTrigger, setOfflineMode]);
+  }, [user, authReady, loadData, syncTrigger, setOfflineMode, backend]);
 
   const handleEnterOfflineMode = useCallback(() => {
     // Tear down the live Firestore listener so it can't overwrite local

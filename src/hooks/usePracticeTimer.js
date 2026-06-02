@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import { db, addLog } from '../services/database';
-import firebaseBackend from '../services/backends/firebaseBackend';
 import { getItem, setItem, removeItem } from '../utils/safeStorage';
 
 export function usePracticeTimer({ loadData, metronome }) {
   const { user } = useAuth();
+  const backend = useBackend();
   // metronome provides: bpm, timeSignature, subdivision, soundType,
   //   setBpm, setTimeSignature, setSubdivision, setSoundType,
   //   isPlaying, setIsPlaying, engineRef
@@ -104,14 +105,14 @@ export function usePracticeTimer({ loadData, metronome }) {
       setElapsedTime(0);
       if (user) {
         const log = await db.practiceLogs.get(logId);
-        firebaseBackend.pushLog(log, user.id).catch(console.error);
+        backend.pushLog(log, user.id).catch(console.error);
       }
     } else {
       setActiveItemId(null);
       setElapsedTime(0);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeItemId, elapsedTime, stopTimer, loadData, user, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType, metronome.isPlaying]);
+  }, [activeItemId, elapsedTime, stopTimer, loadData, user, backend, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType, metronome.isPlaying]);
 
   const handleStart = useCallback(
     async (itemId) => {
@@ -125,7 +126,7 @@ export function usePracticeTimer({ loadData, metronome }) {
           const logId = await addLog(activeItemId, elapsedTime);
           if (user) {
             const log = await db.practiceLogs.get(logId);
-            firebaseBackend.pushLog(log, user.id).catch(console.error);
+            backend.pushLog(log, user.id).catch(console.error);
           }
         }
       }
@@ -152,7 +153,7 @@ export function usePracticeTimer({ loadData, metronome }) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, elapsedTime, stopTimer, loadData, user, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType],
+    [activeItemId, elapsedTime, stopTimer, loadData, user, backend, metronome.bpm, metronome.timeSignature, metronome.subdivision, metronome.soundType],
   );
 
   const handleStop = useCallback(async () => {

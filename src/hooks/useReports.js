@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import {
   db,
   addAdjustmentLog,
@@ -7,7 +8,6 @@ import {
   getLogsByDate,
   getLogsByDateRange,
 } from '../services/database';
-import firebaseBackend from '../services/backends/firebaseBackend';
 import {
   getTodayString,
   shiftDate,
@@ -21,6 +21,7 @@ import {
 
 export function useReports({ loadData, onNavigateToSubpage, items = [] }) {
   const { user } = useAuth();
+  const backend = useBackend();
 
   const [reportDate, setReportDate] = useState(getTodayString());
   const [reportLogs, setReportLogs] = useState([]);
@@ -74,9 +75,9 @@ export function useReports({ loadData, onNavigateToSubpage, items = [] }) {
     ]);
     if (user) {
       const log = await db.practiceLogs.get(logId);
-      firebaseBackend.pushLog(log, user.id).catch(console.error);
+      backend.pushLog(log, user.id).catch(console.error);
     }
-  }, [loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user]);
+  }, [loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user, backend]);
 
   const handleEditTime = useCallback((itemId, itemName, currentSeconds) => {
     setEditTimeModal({ itemId, itemName, currentSeconds });
@@ -96,10 +97,10 @@ export function useReports({ loadData, onNavigateToSubpage, items = [] }) {
     ]);
     if (user) {
       await Promise.all(
-        updated.map(log => firebaseBackend.pushLog(log, user.id).catch(console.error))
+        updated.map(log => backend.pushLog(log, user.id).catch(console.error))
       );
     }
-  }, [reportLogs, reportDate, loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user]);
+  }, [reportLogs, reportDate, loadReportData, loadWeekData, loadMonthData, loadYearData, weekStart, monthStart, yearStart, loadData, user, backend]);
 
   const handleAddTime = useCallback((itemId) => {
     const item = items.find(i => i.id === itemId);

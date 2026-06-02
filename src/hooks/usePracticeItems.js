@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
   db,
@@ -12,10 +13,10 @@ import {
   setItemCategory,
   mergeItem,
 } from '../services/database';
-import firebaseBackend from '../services/backends/firebaseBackend';
 
 export function usePracticeItems({ items, loadData, activeItemId, clearActiveTimer }) {
   const { user } = useAuth();
+  const backend = useBackend();
   const { t } = useLanguage();
 
   const handleAddItem = useCallback(
@@ -30,10 +31,10 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       const newItem = await addItem(name, category);
       await loadData();
       if (user) {
-        firebaseBackend.pushItem(newItem, user.id).catch(console.error);
+        backend.pushItem(newItem, user.id).catch(console.error);
       }
     },
-    [items, loadData, user, t],
+    [items, loadData, user, t, backend],
   );
 
   const handleRenameItem = useCallback(
@@ -42,10 +43,10 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       await renameItem(id, newName);
       await loadData();
       if (user && item) {
-        firebaseBackend.pushRenameItem(item.uid, newName, user.id).catch(console.error);
+        backend.pushRenameItem(item.uid, newName, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [loadData, user, backend],
   );
 
   const handleDeleteItem = useCallback(
@@ -55,11 +56,11 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       await trashItem(id);
       await loadData();
       if (user && item) {
-        firebaseBackend.pushTrashItem(item.uid, true, new Date().toISOString(), user.id).catch(console.error);
+        backend.pushTrashItem(item.uid, true, new Date().toISOString(), user.id).catch(console.error);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, clearActiveTimer, loadData, user],
+    [activeItemId, clearActiveTimer, loadData, user, backend],
   );
 
   const handleRestoreItem = useCallback(
@@ -68,10 +69,10 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       await restoreItem(id);
       await loadData();
       if (user && item) {
-        firebaseBackend.pushTrashItem(item.uid, false, null, user.id).catch(console.error);
+        backend.pushTrashItem(item.uid, false, null, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [loadData, user, backend],
   );
 
   const handlePermanentDelete = useCallback(
@@ -81,11 +82,11 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       await deleteItem(id);
       await loadData();
       if (user && item) {
-        firebaseBackend.pushDeleteItem(item.uid, user.id).catch(console.error);
+        backend.pushDeleteItem(item.uid, user.id).catch(console.error);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, clearActiveTimer, loadData, user],
+    [activeItemId, clearActiveTimer, loadData, user, backend],
   );
 
   const handleArchiveItem = useCallback(
@@ -95,11 +96,11 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       await archiveItem(id, archived);
       await loadData();
       if (user && item) {
-        firebaseBackend.pushArchiveItem(item.uid, archived, user.id).catch(console.error);
+        backend.pushArchiveItem(item.uid, archived, user.id).catch(console.error);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeItemId, clearActiveTimer, loadData, user],
+    [activeItemId, clearActiveTimer, loadData, user, backend],
   );
 
   const handleSetItemCategory = useCallback(
@@ -108,10 +109,10 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       await setItemCategory(id, category);
       await loadData();
       if (user && item) {
-        firebaseBackend.pushSetCategory(item.uid, category, user.id).catch(console.error);
+        backend.pushSetCategory(item.uid, category, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [loadData, user, backend],
   );
 
   const handleMergeItem = useCallback(
@@ -126,12 +127,12 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
       }
       await loadData();
       if (user && result) {
-        firebaseBackend
+        backend
           .mergeItems(result.sourceUid, result.targetUid, result.targetName, user.id)
           .catch(console.error);
       }
     },
-    [loadData, user],
+    [loadData, user, backend],
   );
 
   const handleReorder = useCallback(
@@ -154,10 +155,10 @@ export function usePracticeItems({ items, loadData, activeItemId, clearActiveTim
         const reorderedItems = await Promise.all(
           normalized.map(({ id }) => db.practiceItems.get(id))
         );
-        firebaseBackend.pushReorder(reorderedItems, user.id).catch(console.error);
+        backend.pushReorder(reorderedItems, user.id).catch(console.error);
       }
     },
-    [loadData, user],
+    [loadData, user, backend],
   );
 
   return {

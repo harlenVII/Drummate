@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import {
   getItems,
   getTodaysLogs,
@@ -7,11 +8,11 @@ import {
   getAllNotes,
   purgeExpiredTrash,
 } from '../services/database';
-import firebaseBackend from '../services/backends/firebaseBackend';
 import { getTodayString } from '../utils/dateHelpers';
 
 export function useAppData() {
   const { user } = useAuth();
+  const backend = useBackend();
 
   const [items, setItems] = useState([]);
   const [totals, setTotals] = useState({});
@@ -52,16 +53,16 @@ export function useAppData() {
         await loadData();
         if (user) {
           for (const item of expiredItems) {
-            firebaseBackend.pushDeleteItem(item.uid, user.id).catch(console.error);
+            backend.pushDeleteItem(item.uid, user.id).catch(console.error);
           }
           for (const note of expiredNotes) {
-            firebaseBackend.deleteNoteRemote(note.uid, user.id).catch(console.error);
+            backend.deleteNoteRemote(note.uid, user.id).catch(console.error);
           }
         }
       }
     };
     purge();
-  }, [loadData, user]);
+  }, [loadData, user, backend]);
 
   // Refresh practice data when the calendar day changes (app left open past midnight)
   useEffect(() => {
