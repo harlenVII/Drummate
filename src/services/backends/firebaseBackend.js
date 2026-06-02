@@ -12,6 +12,8 @@ import { legacyDateToLoggedAt } from '../../utils/tzDateHelpers.js';
 import { getOfflineMode } from '../offlineService';
 import { runWithOfflineQueue } from './offlineQueue';
 import { resolveLoggedAt } from './resolveLoggedAt';
+import { reconcileSnapshot, applyChange } from './reconcile';
+import { noteCodec, practiceCodec, goalCodec } from './codecs';
 
 function normalizeUser(fbUser) {
   if (!fbUser) return null;
@@ -805,176 +807,15 @@ const firebaseBackend = {
   },
 
   async pullAllNotes(userId) {
-    const fs = getFirestore();
-    const snap = await fs.getDocs(notesRef(userId));
-    if (snap.metadata.fromCache) {
-      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
-      return;
-    }
-    const remoteUids = new Set();
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      if (!data.uid) continue;
-      remoteUids.add(data.uid);
-
-      const local = await db.notes.where('uid').equals(data.uid).first();
-      const fields = {
-        uid: data.uid,
-        itemUid: data.item_uid,
-        date: data.date,
-        body: data.body ?? '',
-        trashed: !!data.trashed,
-        trashedAt: data.trashed_at || null,
-        createdAt: data.created_at || '',
-        syncedOnce: true,
-      };
-
-      if (!local) {
-        await db.notes.add(fields);
-      } else {
-        const updates = {};
-        if (data.item_uid && local.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
-        if (data.date != null && local.date !== data.date) updates.date = data.date;
-        if (data.body != null && local.body !== data.body) updates.body = data.body;
-        if (data.trashed != null && local.trashed !== !!data.trashed) {
-          updates.trashed = !!data.trashed;
-          updates.trashedAt = data.trashed_at || null;
-        }
-        if (data.created_at && !local.createdAt) updates.createdAt = data.created_at;
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.notes.update(local.id, updates);
-        }
-      }
-    }
-
-    // Reconcile deletes: a local note that has been synced before but is
-    // missing remotely was deleted on another device.
-    const allLocal = await db.notes.toArray();
-    for (const local of allLocal) {
-      if (local.syncedOnce && !remoteUids.has(local.uid)) {
-        await db.notes.delete(local.id);
-      }
-    }
+    return reconcileSnapshot(noteCodec, await getFirestore().getDocs(notesRef(userId)));
   },
 
   async pullAllPractices(userId) {
-    const fs = getFirestore();
-    const snap = await fs.getDocs(practicesRef(userId));
-    if (snap.metadata.fromCache) {
-      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
-      return;
-    }
-    const remoteUids = new Set();
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      if (!data.uid) continue;
-      remoteUids.add(data.uid);
-
-      const fields = {
-        uid: data.uid,
-        name: data.name ?? '',
-        startBpm: data.start_bpm ?? 60,
-        endBpm: data.end_bpm ?? 60,
-        bpmIncrement: data.bpm_increment ?? 1,
-        barsPerStep: data.bars_per_step ?? 1,
-        timeSignature: {
-          beats: data.time_signature_beats ?? 4,
-          noteValue: data.time_signature_note_value ?? 4,
-        },
-        subdivision: data.subdivision ?? 'quarter',
-        soundType: data.sound_type ?? 'click',
-        linkedItemUid: data.linked_item_uid ?? null,
-        sortOrder: data.sort_order ?? 0,
-        createdAt: data.created_at || '',
-        updatedAt: data.updated_at || '',
-        syncedOnce: true,
-      };
-
-      const local = await db.metronomePractices.where('uid').equals(data.uid).first();
-      if (!local) {
-        await db.metronomePractices.add(fields);
-      } else {
-        const updates = {};
-        for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
-                         'subdivision', 'soundType', 'linkedItemUid', 'sortOrder', 'createdAt', 'updatedAt']) {
-          if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-        }
-        if (local.timeSignature?.beats !== fields.timeSignature.beats ||
-            local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
-          updates.timeSignature = fields.timeSignature;
-        }
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.metronomePractices.update(local.id, updates);
-        }
-      }
-    }
-
-    // Reconcile deletes: any local that synced before but is now missing
-    // remotely was deleted on another device.
-    const allLocal = await db.metronomePractices.toArray();
-    for (const local of allLocal) {
-      if (local.syncedOnce && !remoteUids.has(local.uid)) {
-        await db.metronomePractices.delete(local.id);
-      }
-    }
+    return reconcileSnapshot(practiceCodec, await getFirestore().getDocs(practicesRef(userId)));
   },
 
   async pullAllGoals(userId) {
-    const fs = getFirestore();
-    const snap = await fs.getDocs(goalsRef(userId));
-    if (snap.metadata.fromCache) {
-      // Cached/offline snapshot — skip reconciliation to avoid false deletions.
-      return;
-    }
-    const remoteUids = new Set();
-
-    for (const docSnap of snap.docs) {
-      const data = docSnap.data();
-      if (!data.uid) continue;
-      remoteUids.add(data.uid);
-
-      const fields = {
-        uid: data.uid,
-        name: data.name ?? '',
-        startDate: data.start_date,
-        endDate: data.end_date,
-        targetHours: data.target_hours,
-        archived: !!data.archived,
-        archivedAt: data.archived_at ?? null,
-        pinned: !!data.pinned,
-        createdAt: data.created_at || 0,
-        sortOrder: data.sort_order ?? 0,
-        syncedOnce: true,
-      };
-
-      const local = await db.goals.where('uid').equals(data.uid).first();
-      if (!local) {
-        await db.goals.add(fields);
-      } else {
-        const updates = {};
-        for (const k of ['name', 'startDate', 'endDate', 'targetHours',
-                         'archived', 'archivedAt', 'pinned', 'createdAt', 'sortOrder']) {
-          if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-        }
-        if (!local.syncedOnce) updates.syncedOnce = true;
-        if (Object.keys(updates).length > 0) {
-          await db.goals.update(local.id, updates);
-        }
-      }
-    }
-
-    // Reconcile deletes: a local goal that synced before but is missing
-    // remotely was deleted on another device.
-    const allLocal = await db.goals.toArray();
-    for (const local of allLocal) {
-      if (local.syncedOnce && !remoteUids.has(local.uid)) {
-        await db.goals.delete(local.id);
-      }
-    }
+    return reconcileSnapshot(goalCodec, await getFirestore().getDocs(goalsRef(userId)));
   },
 
   async pushAllLocalNotes(userId) {
@@ -1276,159 +1117,21 @@ const firebaseBackend = {
       }
     });
 
-    const unsubNotes = fs.onSnapshot(notesRef(userId), async (snap) => {
+    const unsubNotes = getFirestore().onSnapshot(notesRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
-        const data = change.doc.data();
-        if (!data.uid) continue;
-
-        // See items handler — combined to reconcile fields on initial
-        // snapshot too, so queued push_note replays propagate.
-        if (change.type === 'added' || change.type === 'modified') {
-          const existing = await db.notes.where('uid').equals(data.uid).first();
-          if (!existing) {
-            await db.notes.add({
-              uid: data.uid,
-              itemUid: data.item_uid,
-              date: data.date,
-              body: data.body ?? '',
-              trashed: !!data.trashed,
-              trashedAt: data.trashed_at || null,
-              createdAt: data.created_at || '',
-              syncedOnce: true,
-            });
-            onDataChanged();
-          } else {
-            const updates = {};
-            // Remap itemUid if it changed (cross-device merge — mirrors logs gotcha #15).
-            if (data.item_uid && existing.itemUid !== data.item_uid) updates.itemUid = data.item_uid;
-            if (data.date != null && existing.date !== data.date) updates.date = data.date;
-            if (data.body != null && existing.body !== data.body) updates.body = data.body;
-            if (data.trashed != null && existing.trashed !== !!data.trashed) {
-              updates.trashed = !!data.trashed;
-              updates.trashedAt = data.trashed_at || null;
-            }
-            if (!existing.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.notes.update(existing.id, updates);
-              onDataChanged();
-            }
-          }
-        } else if (change.type === 'removed') {
-          const existing = await db.notes.where('uid').equals(data.uid).first();
-          if (existing) {
-            await db.notes.delete(existing.id);
-            onDataChanged();
-          }
-        }
+        await applyChange(noteCodec, change, { onChange: onDataChanged });
       }
     });
 
-    const unsubPractices = fs.onSnapshot(practicesRef(userId), async (snap) => {
+    const unsubPractices = getFirestore().onSnapshot(practicesRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
-        const data = change.doc.data();
-        if (!data.uid) continue;
-
-        const buildFields = () => ({
-          uid: data.uid,
-          name: data.name ?? '',
-          startBpm: data.start_bpm ?? 60,
-          endBpm: data.end_bpm ?? 60,
-          bpmIncrement: data.bpm_increment ?? 1,
-          barsPerStep: data.bars_per_step ?? 1,
-          timeSignature: {
-            beats: data.time_signature_beats ?? 4,
-            noteValue: data.time_signature_note_value ?? 4,
-          },
-          subdivision: data.subdivision ?? 'quarter',
-          soundType: data.sound_type ?? 'click',
-          linkedItemUid: data.linked_item_uid ?? null,
-          sortOrder: data.sort_order ?? 0,
-          createdAt: data.created_at || '',
-          updatedAt: data.updated_at || '',
-          syncedOnce: true,
-        });
-
-        // See items handler — combined to reconcile fields on initial
-        // snapshot too, so queued push_practice replays propagate.
-        if (change.type === 'added' || change.type === 'modified') {
-          const local = await db.metronomePractices.where('uid').equals(data.uid).first();
-          if (!local) {
-            await db.metronomePractices.add(buildFields());
-            onDataChanged();
-          } else {
-            const fields = buildFields();
-            const updates = {};
-            for (const k of ['name', 'startBpm', 'endBpm', 'bpmIncrement', 'barsPerStep',
-                             'subdivision', 'soundType', 'linkedItemUid', 'sortOrder', 'createdAt', 'updatedAt']) {
-              if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-            }
-            if (local.timeSignature?.beats !== fields.timeSignature.beats ||
-                local.timeSignature?.noteValue !== fields.timeSignature.noteValue) {
-              updates.timeSignature = fields.timeSignature;
-            }
-            if (!local.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.metronomePractices.update(local.id, updates);
-              onDataChanged();
-            }
-          }
-        } else if (change.type === 'removed') {
-          const existing = await db.metronomePractices.where('uid').equals(data.uid).first();
-          if (existing) {
-            await db.metronomePractices.delete(existing.id);
-            onDataChanged();
-          }
-        }
+        await applyChange(practiceCodec, change, { onChange: onDataChanged });
       }
     });
 
-    const unsubGoals = fs.onSnapshot(goalsRef(userId), async (snap) => {
+    const unsubGoals = getFirestore().onSnapshot(goalsRef(userId), async (snap) => {
       for (const change of snap.docChanges()) {
-        const data = change.doc.data();
-        if (!data.uid) continue;
-
-        const buildFields = () => ({
-          uid: data.uid,
-          name: data.name ?? '',
-          startDate: data.start_date,
-          endDate: data.end_date,
-          targetHours: data.target_hours,
-          archived: !!data.archived,
-          archivedAt: data.archived_at ?? null,
-          pinned: !!data.pinned,
-          createdAt: data.created_at || 0,
-          sortOrder: data.sort_order ?? 0,
-          syncedOnce: true,
-        });
-
-        // Combined added/modified handling — Firestore's initial snapshot
-        // reports our own writes as 'added', so a separate 'added' branch
-        // would skip reconciling field updates from queued push_goal replays.
-        if (change.type === 'added' || change.type === 'modified') {
-          const local = await db.goals.where('uid').equals(data.uid).first();
-          if (!local) {
-            await db.goals.add(buildFields());
-            onDataChanged();
-          } else {
-            const fields = buildFields();
-            const updates = {};
-            for (const k of ['name', 'startDate', 'endDate', 'targetHours',
-                             'archived', 'archivedAt', 'pinned', 'createdAt', 'sortOrder']) {
-              if (fields[k] !== undefined && local[k] !== fields[k]) updates[k] = fields[k];
-            }
-            if (!local.syncedOnce) updates.syncedOnce = true;
-            if (Object.keys(updates).length > 0) {
-              await db.goals.update(local.id, updates);
-              onDataChanged();
-            }
-          }
-        } else if (change.type === 'removed') {
-          const existing = await db.goals.where('uid').equals(data.uid).first();
-          if (existing) {
-            await db.goals.delete(existing.id);
-            onDataChanged();
-          }
-        }
+        await applyChange(goalCodec, change, { onChange: onDataChanged });
       }
     });
 

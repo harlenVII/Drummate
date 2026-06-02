@@ -246,6 +246,70 @@ describe('subscribeToChanges', () => {
     expect(log.itemId).toBe(idB);
     unsub();
   });
+
+  it('goals listener: add → modified (archived) → removed via reconciler', async () => {
+    const onChange = vi.fn();
+    const unsub = subscribe(onChange);
+    await fs.__settle();
+
+    // added
+    fs.__emit(goalsPath, [{ type: 'added', id: 'g1', data: { uid: 'g1', name: 'G', start_date: '2026-01-01', end_date: '2026-12-31', target_hours: 50, archived: false, archived_at: null, pinned: false, created_at: 0, sort_order: 0 } }]);
+    await fs.__settle();
+    let local = await db.goals.where('uid').equals('g1').first();
+    expect(local).toBeTruthy();
+    expect(local.startDate).toBe('2026-01-01');
+    expect(local.targetHours).toBe(50);
+    expect(onChange).toHaveBeenCalled();
+
+    // modified — flip archived
+    onChange.mockClear();
+    fs.__emit(goalsPath, [{ type: 'modified', id: 'g1', data: { uid: 'g1', name: 'G', start_date: '2026-01-01', end_date: '2026-12-31', target_hours: 50, archived: true, archived_at: null, pinned: false, created_at: 0, sort_order: 0 } }]);
+    await fs.__settle();
+    local = await db.goals.where('uid').equals('g1').first();
+    expect(local.archived).toBe(true);
+    expect(onChange).toHaveBeenCalled();
+
+    // removed
+    onChange.mockClear();
+    fs.__emit(goalsPath, [{ type: 'removed', id: 'g1', data: { uid: 'g1' } }]);
+    await fs.__settle();
+    expect(await db.goals.where('uid').equals('g1').first()).toBeUndefined();
+    expect(onChange).toHaveBeenCalled();
+
+    unsub();
+  });
+
+  it('notes listener: add → modified (body) → removed via reconciler', async () => {
+    const onChange = vi.fn();
+    const unsub = subscribe(onChange);
+    await fs.__settle();
+
+    // added
+    fs.__emit(notesPath, [{ type: 'added', id: 'n1', data: { uid: 'n1', item_uid: 'itm1', date: '2026-05-01', body: 'first body', trashed: false, trashed_at: null, created_at: '2026-05-01' } }]);
+    await fs.__settle();
+    let local = await db.notes.where('uid').equals('n1').first();
+    expect(local).toBeTruthy();
+    expect(local.body).toBe('first body');
+    expect(local.itemUid).toBe('itm1');
+    expect(onChange).toHaveBeenCalled();
+
+    // modified — body change
+    onChange.mockClear();
+    fs.__emit(notesPath, [{ type: 'modified', id: 'n1', data: { uid: 'n1', item_uid: 'itm1', date: '2026-05-01', body: 'updated body', trashed: false, trashed_at: null, created_at: '2026-05-01' } }]);
+    await fs.__settle();
+    local = await db.notes.where('uid').equals('n1').first();
+    expect(local.body).toBe('updated body');
+    expect(onChange).toHaveBeenCalled();
+
+    // removed
+    onChange.mockClear();
+    fs.__emit(notesPath, [{ type: 'removed', id: 'n1', data: { uid: 'n1' } }]);
+    await fs.__settle();
+    expect(await db.notes.where('uid').equals('n1').first()).toBeUndefined();
+    expect(onChange).toHaveBeenCalled();
+
+    unsub();
+  });
 });
 
 describe('flushSyncQueue', () => {
