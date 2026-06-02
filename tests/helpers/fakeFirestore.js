@@ -3,6 +3,7 @@ export function createFakeFirestore({ fromCache = false } = {}) {
   // store: Map<collectionPath, Map<docId, data>>
   const store = new Map();
   const listeners = []; // { path, cb }
+  const pending = []; // every promise returned by a listener cb invocation
 
   const colPath = (segments) => segments.join('/');
   const getCol = (path) => {
@@ -66,9 +67,13 @@ export function createFakeFirestore({ fromCache = false } = {}) {
     },
     deleteDoc: async (ref) => { getCol(ref._path).delete(ref._id); },
     onSnapshot: (ref, cb) => {
-      listeners.push({ path: ref._path, cb });
-      cb(makeSnap(ref._path)); // initial snapshot, all 'added'
-      return () => {};
+      const entry = { path: ref._path, cb };
+      listeners.push(entry);
+      pending.push(Promise.resolve(cb(makeSnap(ref._path)))); // initial snapshot, all 'added'
+      return () => {
+        const i = listeners.indexOf(entry);
+        if (i !== -1) listeners.splice(i, 1);
+      };
     },
   };
 
@@ -87,7 +92,16 @@ export function createFakeFirestore({ fromCache = false } = {}) {
         type: c.type,
         doc: { id: c.id, ref: { _path: path, _id: c.id }, data: () => ({ ...c.data }) },
       }));
-      l.cb({ docs, metadata: { fromCache }, docChanges: () => docs });
+      pending.push(Promise.resolve(l.cb({ docs, metadata: { fromCache }, docChanges: () => docs })));
+    }
+  };
+  // Await every listener callback (initial snapshots + __emit) so tests can
+  // deterministically drain the chained Dexie writes inside the async callbacks.
+  // Drains iteratively because settling one callback may enqueue more.
+  impl.__settle = async () => {
+    while (pending.length) {
+      const batch = pending.splice(0, pending.length);
+      await Promise.allSettled(batch);
     }
   };
 

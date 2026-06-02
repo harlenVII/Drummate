@@ -18,19 +18,28 @@ const notesPath = `users/${UID}/notes`;
 const practicesPath = `users/${UID}/metronomePractices`;
 const goalsPath = `users/${UID}/goals`;
 
-const flush = () => new Promise((r) => setTimeout(r, 0));
-
 let fs;
+// Tracks an active subscription so afterEach can deterministically tear it down
+// and drain any in-flight listener writes before the next beforeEach clears tables.
+let activeUnsub = null;
+const subscribe = (onChange) => {
+  activeUnsub = firebaseBackend.subscribeToChanges(onChange);
+  return activeUnsub;
+};
 beforeEach(async () => {
   await Promise.all(db.tables.map((t) => t.clear()));
   fs = createFakeFirestore();
   setFirestoreImpl(fs);
 });
 afterEach(async () => {
-  // The fake's onSnapshot unsubscribe is a no-op, so a subscribe test's async
-  // listener callbacks can still be in-flight. Let them settle before the next
-  // beforeEach clears tables, otherwise a stray write lands in a cleared DB.
-  await flush();
+  // Tear down any active subscription (real unsubscribe), then drain every
+  // listener callback (initial snapshots + __emit) so no stray async Dexie
+  // write lands after the next beforeEach clears tables.
+  if (activeUnsub) {
+    activeUnsub();
+    activeUnsub = null;
+  }
+  if (fs && fs.__settle) await fs.__settle();
   setFirestoreImpl(); // reset to real SDK
 });
 
@@ -205,12 +214,12 @@ describe('subscribeToChanges', () => {
   it('reconciles a seeded item on initial snapshot and applies a modified change', async () => {
     fs.__seed(itemsPath, 'a', { uid: 'a', name: 'Original', category: 'fundamentals', sort_order: 0 });
     const onChange = vi.fn();
-    const unsub = firebaseBackend.subscribeToChanges(onChange);
-    await flush();
+    const unsub = subscribe(onChange);
+    await fs.__settle();
     expect((await db.practiceItems.where('uid').equals('a').first()).name).toBe('Original');
 
     fs.__emit(itemsPath, [{ type: 'modified', id: 'a', data: { uid: 'a', name: 'Renamed', sort_order: 0 } }]);
-    await flush();
+    await fs.__settle();
     expect((await db.practiceItems.where('uid').equals('a').first()).name).toBe('Renamed');
     expect(onChange).toHaveBeenCalled();
     unsub();
@@ -227,11 +236,11 @@ describe('subscribeToChanges', () => {
     fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-01', duration: 60, logged_at: 1700000000000 });
 
     const onChange = vi.fn();
-    const unsub = firebaseBackend.subscribeToChanges(onChange);
-    await flush();
+    const unsub = subscribe(onChange);
+    await fs.__settle();
 
     fs.__emit(logsPath, [{ type: 'modified', id: 'l1', data: { uid: 'l1', item_uid: 'b', item_name: 'B', date: '2026-05-01', duration: 60, logged_at: 1700000000000 } }]);
-    await flush();
+    await fs.__settle();
     const log = await db.practiceLogs.where('uid').equals('l1').first();
     expect(log.itemUid).toBe('b');
     expect(log.itemId).toBe(idB);
