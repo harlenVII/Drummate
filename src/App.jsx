@@ -8,7 +8,6 @@ import TabBar from './components/TabBar';
 import SettingsPanel from './components/SettingsPanel';
 import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
-import firebaseBackend from './services/backends/firebaseBackend';
 import AuthScreen from './components/AuthScreen';
 import FloatingVoiceIndicator from './components/FloatingVoiceIndicator';
 import FloatingPracticeWidget from './components/FloatingPracticeWidget';
@@ -259,7 +258,6 @@ function App() {
               groupByCategory={groupByCategory}
               compactMode={compactMode}
               user={user}
-              firebaseBackend={firebaseBackend}
             />
           )}
 
@@ -267,7 +265,6 @@ function App() {
             <NotesPage
               items={items}
               user={user}
-              firebaseBackend={firebaseBackend}
               defaultItemUid={
                 focusedPracticeItemId != null
                   ? items.find(i => i.id === focusedPracticeItemId)?.uid

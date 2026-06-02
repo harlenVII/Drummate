@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { liveQuery } from 'dexie';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useBackend } from '../contexts/BackendContext';
 import { getTimezone, setTimezone } from '../services/timezoneService';
 import { getPriorHours, setPriorHours } from '../services/priorPracticeService';
-import firebaseBackend from '../services/backends/firebaseBackend';
 import { db } from '../services/database';
 import VisitorSignUpModal from './VisitorSignUpModal';
 
@@ -142,6 +142,7 @@ function SettingsPanel({
 }) {
   const { t } = useLanguage();
   const { isVisitor, exitVisitorModeLogOff } = useAuth();
+  const backend = useBackend();
   const [showLogOffConfirm, setShowLogOffConfirm] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
@@ -152,7 +153,7 @@ function SettingsPanel({
   const handleTimezoneChange = async (e) => {
     const newTz = e.target.value;
     try {
-      await setTimezone(newTz, firebaseBackend, userId);
+      await setTimezone(newTz, backend, userId);
       if (onTimezoneChange) onTimezoneChange();
     } catch (err) {
       console.error('Failed to set timezone', err);
@@ -375,7 +376,7 @@ function SettingsPanel({
                   onBlur={() => {
                     const val = Math.floor(Math.max(0, Number(priorHoursInput) || 0));
                     setPriorHoursInput(String(val));
-                    setPriorHours(val, firebaseBackend, userId).catch(console.error);
+                    setPriorHours(val, backend, userId).catch(console.error);
                   }}
                   className="w-20 text-right bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />

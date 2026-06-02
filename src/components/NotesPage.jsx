@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useBackend } from '../contexts/BackendContext';
 import { daysUntilPurge } from '../utils/dateHelpers';
 import NotesByDate from './NotesByDate';
 import NotesByItem from './NotesByItem';
@@ -11,7 +12,6 @@ import {
 function NotesPage({
   items,
   user,
-  firebaseBackend,
   defaultItemUid,
   notesSubpage,
   onSubpageChange,
@@ -20,6 +20,7 @@ function NotesPage({
   compactMode = false,
 }) {
   const { t } = useLanguage();
+  const backend = useBackend();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
   const [showTrash, setShowTrash] = useState(false);
@@ -36,9 +37,9 @@ function NotesPage({
     onNotesRefresh();
     if (user) {
       const note = await db.notes.get(localId);
-      firebaseBackend.pushNote(note, user.id).catch(console.error);
+      backend.pushNote(note, user.id).catch(console.error);
     }
-  }, [user, firebaseBackend, onNotesRefresh]);
+  }, [user, backend, onNotesRefresh]);
 
   const handleEdit = useCallback(async ({ body }) => {
     if (!editingNote) return;
@@ -46,9 +47,9 @@ function NotesPage({
     onNotesRefresh();
     if (user) {
       const note = await db.notes.get(editingNote.id);
-      firebaseBackend.pushNote(note, user.id).catch(console.error);
+      backend.pushNote(note, user.id).catch(console.error);
     }
-  }, [editingNote, user, firebaseBackend, onNotesRefresh]);
+  }, [editingNote, user, backend, onNotesRefresh]);
 
   const handleDelete = useCallback(async () => {
     if (!editingNote) return;
@@ -56,9 +57,9 @@ function NotesPage({
     onNotesRefresh();
     if (user) {
       const note = await db.notes.get(editingNote.id);
-      firebaseBackend.pushNote(note, user.id).catch(console.error);
+      backend.pushNote(note, user.id).catch(console.error);
     }
-  }, [editingNote, user, firebaseBackend, onNotesRefresh]);
+  }, [editingNote, user, backend, onNotesRefresh]);
 
   const handleRestore = useCallback(async (note) => {
     await restoreNote(note.id);
@@ -66,9 +67,9 @@ function NotesPage({
     onNotesRefresh();
     if (user) {
       const updated = await db.notes.get(note.id);
-      firebaseBackend.pushNote(updated, user.id).catch(console.error);
+      backend.pushNote(updated, user.id).catch(console.error);
     }
-  }, [user, firebaseBackend, onNotesRefresh]);
+  }, [user, backend, onNotesRefresh]);
 
   const handlePermanentDelete = useCallback(async (note) => {
     if (!window.confirm(t('notes.confirmPermanentDelete'))) return;
@@ -76,9 +77,9 @@ function NotesPage({
     setTrashedNotes(prev => prev.filter(n => n.id !== note.id));
     onNotesRefresh();
     if (user) {
-      firebaseBackend.deleteNoteRemote(note.uid, user.id).catch(console.error);
+      backend.deleteNoteRemote(note.uid, user.id).catch(console.error);
     }
-  }, [user, firebaseBackend, onNotesRefresh, t]);
+  }, [user, backend, onNotesRefresh, t]);
 
   const openCreate = () => {
     setEditingNote(null);

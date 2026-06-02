@@ -11,7 +11,7 @@ export default function ReportTab({
   items,
   reports,
   timeUnit, groupByCategory, compactMode,
-  user, firebaseBackend,
+  user,
 }) {
   const { t } = useLanguage();
 
@@ -114,7 +114,6 @@ export default function ReportTab({
       {reportSubpage === 'goals' && (
         <GoalsPage
           user={user}
-          firebaseBackend={firebaseBackend}
           compactMode={compactMode}
           timeUnit={timeUnit}
         />
