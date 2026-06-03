@@ -88,22 +88,12 @@ async function replayNotePayload(p, userId) {
 async function replayPracticePayload(p, userId) {
   if (!(p.uid && p.startBpm !== undefined)) return false;
   const fs = getFirestore();
-  await fs.setDoc(fs.doc(practicesRef(userId), p.uid), {
-    uid: p.uid,
-    name: p.name,
-    start_bpm: p.startBpm,
-    end_bpm: p.endBpm,
-    bpm_increment: p.bpmIncrement,
-    bars_per_step: p.barsPerStep,
-    time_signature_beats: p.timeSignatureBeats,
-    time_signature_note_value: p.timeSignatureNoteValue,
-    subdivision: p.subdivision,
-    sound_type: p.soundType,
-    linked_item_uid: p.linkedItemUid ?? null,
-    sort_order: p.sortOrder ?? 0,
-    created_at: p.createdAt || '',
-    updated_at: p.updatedAt || '',
-  }, { merge: true });
+  // The enriched offline payload stores the time signature flat; reshape to the
+  // nested form practiceCodec.toRemote expects so the wire mapping has one source.
+  await fs.setDoc(fs.doc(practicesRef(userId), p.uid), practiceCodec.toRemote({
+    ...p,
+    timeSignature: { beats: p.timeSignatureBeats, noteValue: p.timeSignatureNoteValue },
+  }), { merge: true });
   const localPractice = await db.metronomePractices.where('uid').equals(p.uid).first();
   if (localPractice) {
     await db.metronomePractices.update(localPractice.id, {
@@ -347,22 +337,11 @@ const firebaseBackend = {
       enrichedPracticePayload,
       async () => {
         const fs = getFirestore();
-        await fs.setDoc(fs.doc(practicesRef(userId), localPractice.uid), {
-          uid: localPractice.uid,
-          name: localPractice.name,
-          start_bpm: localPractice.startBpm,
-          end_bpm: localPractice.endBpm,
-          bpm_increment: localPractice.bpmIncrement,
-          bars_per_step: localPractice.barsPerStep,
-          time_signature_beats: localPractice.timeSignature.beats,
-          time_signature_note_value: localPractice.timeSignature.noteValue,
-          subdivision: localPractice.subdivision,
-          sound_type: localPractice.soundType,
-          linked_item_uid: localPractice.linkedItemUid ?? null,
-          sort_order: localPractice.sortOrder ?? 0,
-          created_at: localPractice.createdAt || '',
-          updated_at: localPractice.updatedAt || '',
-        }, { merge: true });
+        await fs.setDoc(
+          fs.doc(practicesRef(userId), localPractice.uid),
+          practiceCodec.toRemote(localPractice),
+          { merge: true },
+        );
 
         if (localPractice.id != null && !localPractice.syncedOnce) {
           await db.metronomePractices.update(localPractice.id, { syncedOnce: true });

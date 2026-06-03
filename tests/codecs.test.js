@@ -96,6 +96,27 @@ describe('practiceCodec', () => {
     expect(r.fields).toEqual({ startBpm: 80 });
   });
 
+  // Pins the exact remote wire shape. pushPractice and flushSyncQueue's practice
+  // replay both route through toRemote, so this is the single source of truth for
+  // the Firestore field mapping — any drift here breaks sync.
+  it('toRemote flattens nested timeSignature to snake_case wire shape', () => {
+    const local = {
+      uid: 'p1', name: 'Warmup', startBpm: 80, endBpm: 120, bpmIncrement: 5,
+      barsPerStep: 2, timeSignature: { beats: 3, noteValue: 8 },
+      subdivision: 'eighth', soundType: 'beep', linkedItemUid: 'i1',
+      sortOrder: 3, createdAt: 'c', updatedAt: 'u',
+    };
+    expect(practiceCodec.toRemote(local)).toEqual(remote);
+  });
+
+  it('toRemote applies linked_item_uid / sort_order defaults', () => {
+    const out = practiceCodec.toRemote({ uid: 'p1', timeSignature: { beats: 4, noteValue: 4 } });
+    expect(out.linked_item_uid).toBeNull();
+    expect(out.sort_order).toBe(0);
+    expect(out.created_at).toBe('');
+    expect(out.updated_at).toBe('');
+  });
+
   it('diff with timeSignature changed -> update nested object', () => {
     const local = { ...practiceCodec.toLocal(remote), timeSignature: { beats: 4, noteValue: 4 } };
     const r = practiceCodec.diff(remote, local);
