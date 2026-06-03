@@ -17,10 +17,10 @@ vi.mock('../src/contexts/BackendContext', () => ({
 
 const PENDING_KEY = 'drummate_pending_log';
 
-function makeMetronome() {
+function makeMetronome(overrides = {}) {
   return {
     bpm: 120,
-    timeSignature: { beats: 4, noteValue: 4 },
+    timeSignature: [4, 4],
     subdivision: 'quarter',
     soundType: 'click',
     setBpm: vi.fn(),
@@ -30,6 +30,20 @@ function makeMetronome() {
     isPlaying: false,
     setIsPlaying: vi.fn(),
     engineRef: { current: null },
+    ...overrides,
+  };
+}
+
+function makeEngine(overrides = {}) {
+  return {
+    isPlaying: false,
+    sequencePatterns: null,
+    setBpm: vi.fn(),
+    setBeatsPerMeasure: vi.fn(),
+    setSubdivision: vi.fn(),
+    setSoundType: vi.fn(),
+    stop: vi.fn(),
+    ...overrides,
   };
 }
 
@@ -141,5 +155,70 @@ describe('auto-save on pagehide', () => {
     });
 
     expect(localStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Live metronome sync on item switch: starting an item with saved metronome
+// settings while the basic metronome is already playing pushes those settings
+// straight to the running engine (the Metronome component's sync effects are
+// unmounted while on the Practice tab, so they can't do it).
+// ---------------------------------------------------------------------------
+describe('live metronome sync on item switch', () => {
+  it('pushes the new item metronome settings to the running engine', async () => {
+    const item = await addItem('Paradiddle', 'fundamentals');
+    await db.practiceItems.update(item.id, {
+      metronomeSettings: { bpm: 90, timeSignature: [3, 4], subdivision: 'eighth', soundType: 'woodBlock' },
+    });
+
+    const engine = makeEngine({ isPlaying: true, sequencePatterns: null });
+    const metronome = makeMetronome({ isPlaying: true, engineRef: { current: engine } });
+    const { result } = renderHook(() => usePracticeTimer({ metronome }));
+
+    await act(async () => {
+      await result.current.handleStart(item.id);
+    });
+
+    expect(engine.setBpm).toHaveBeenCalledWith(90);
+    expect(engine.setBeatsPerMeasure).toHaveBeenCalledWith(3);
+    expect(engine.setSubdivision).toHaveBeenCalled();
+    expect(engine.setSoundType).toHaveBeenCalledWith('woodBlock');
+  });
+
+  it('does not touch the engine when a sequence is loaded (sequencer/multi-meter)', async () => {
+    const item = await addItem('Flam Tap', 'fundamentals');
+    await db.practiceItems.update(item.id, {
+      metronomeSettings: { bpm: 90, timeSignature: [3, 4], subdivision: 'eighth', soundType: 'woodBlock' },
+    });
+
+    const engine = makeEngine({ isPlaying: true, sequencePatterns: [[0], [0]] });
+    const metronome = makeMetronome({ isPlaying: true, engineRef: { current: engine } });
+    const { result } = renderHook(() => usePracticeTimer({ metronome }));
+
+    await act(async () => {
+      await result.current.handleStart(item.id);
+    });
+
+    expect(engine.setBpm).not.toHaveBeenCalled();
+    expect(engine.setBeatsPerMeasure).not.toHaveBeenCalled();
+    expect(engine.setSubdivision).not.toHaveBeenCalled();
+    expect(engine.setSoundType).not.toHaveBeenCalled();
+  });
+
+  it('does not touch the engine when it is not playing', async () => {
+    const item = await addItem('Buzz Roll', 'fundamentals');
+    await db.practiceItems.update(item.id, {
+      metronomeSettings: { bpm: 90, timeSignature: [3, 4], subdivision: 'eighth', soundType: 'woodBlock' },
+    });
+
+    const engine = makeEngine({ isPlaying: false, sequencePatterns: null });
+    const metronome = makeMetronome({ isPlaying: false, engineRef: { current: engine } });
+    const { result } = renderHook(() => usePracticeTimer({ metronome }));
+
+    await act(async () => {
+      await result.current.handleStart(item.id);
+    });
+
+    expect(engine.setBpm).not.toHaveBeenCalled();
   });
 });

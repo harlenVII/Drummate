@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBackend } from '../contexts/BackendContext';
 import { db, addLog } from '../services/database';
 import { getItem, setItem, removeItem } from '../utils/safeStorage';
+import { SUBDIVISIONS } from '../constants/subdivisions';
 
 export function usePracticeTimer({ metronome }) {
   const { user } = useAuth();
@@ -138,6 +139,25 @@ export function usePracticeTimer({ metronome }) {
         if (timeSignature != null) metronome.setTimeSignature(timeSignature);
         if (subdivision != null) metronome.setSubdivision(subdivision);
         if (soundType != null) metronome.setSoundType(soundType);
+
+        // The Metronome component's state→engine sync effects only run while
+        // that component is mounted (the metronome tab). When the user switches
+        // practice items from the Practice tab with the basic metronome already
+        // playing, the React state updates above never reach the running engine,
+        // so the audio keeps the old item's pattern until the metronome tab
+        // remounts. Push the new settings straight to the engine here so it
+        // updates live. Skip when a sequence is loaded — the sequencer/multi-
+        // meter own the engine in that mode and must not be clobbered.
+        const engine = metronome.engineRef.current;
+        if (engine?.isPlaying && !engine.sequencePatterns) {
+          if (bpm != null) engine.setBpm(bpm);
+          if (timeSignature != null) engine.setBeatsPerMeasure(timeSignature[0]);
+          if (subdivision != null) {
+            const sub = SUBDIVISIONS.find((s) => s.key === subdivision);
+            engine.setSubdivision(sub && sub.pattern ? sub.pattern : [0]);
+          }
+          if (soundType != null) engine.setSoundType(soundType);
+        }
       }
 
       setActiveItemId(itemId);
