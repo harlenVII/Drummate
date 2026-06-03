@@ -50,20 +50,20 @@ function NotesByDate({ items, notes, onEdit, compactMode = false }) {
   const hasMore = cutoff < groups.length;
 
   return (
-    <div className={`flex flex-col ${compactMode ? 'gap-3' : 'gap-6'}`}>
+    <div className={`flex flex-col ${compactMode ? 'gap-4' : 'gap-6'}`}>
       {visibleGroups.map(([date, notesForDate]) => (
         <section key={date}>
-          <h3 className={`text-sm font-semibold text-gray-500 dark:text-slate-400 ${compactMode ? 'mb-1' : 'mb-2'} sticky top-0 bg-gray-100 dark:bg-slate-900 py-1`}>
+          <h3 className={`text-sm font-semibold text-gray-500 dark:text-slate-400 ${compactMode ? 'mb-1.5' : 'mb-2'} sticky top-0 bg-gray-100 dark:bg-slate-900 py-1`}>
             {dateHeader(date)}
           </h3>
-          <div className={`flex flex-col ${compactMode ? 'gap-1' : 'gap-2'}`}>
+          <div className={`flex flex-col ${compactMode ? 'gap-2' : 'gap-2'}`}>
             {notesForDate.map(note => {
               const itemName = itemNameByUid.get(note.itemUid);
               return (
                 <button
                   key={note.id}
                   onClick={() => onEdit(note)}
-                  className={`text-left bg-white dark:bg-slate-800 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${compactMode ? 'rounded-md p-2' : 'rounded-lg p-3'}`}
+                  className={`text-left bg-white dark:bg-slate-800 shadow-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${compactMode ? 'rounded-md p-2.5' : 'rounded-lg p-3'}`}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 dark:bg-indigo-100 text-blue-700 dark:text-indigo-700 rounded-full">
