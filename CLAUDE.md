@@ -102,6 +102,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 | `E` / `C` | Language English / Chinese |
 | `L` / `D` | Theme Light / Dark |
 | `S` | Stop active practice timer |
+| `R` | Toggle today's Daily Report modal (copyable text; no navigation) |
 | `Space` | Toggle play/pause during metronome practice; dismiss Practice Complete screen |
 | `?` | Toggle shortcuts help modal |
 

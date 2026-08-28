@@ -31,6 +31,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
+import DailyReportModal from './components/DailyReportModal';
 
 import { setItem } from './utils/safeStorage';
 
@@ -148,7 +149,7 @@ function App() {
     }
   }, [aiCoachEnabled, handsFreeMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { showKeyboardHelp, setShowKeyboardHelp } = useKeyboardShortcuts({
+  const { showKeyboardHelp, setShowKeyboardHelp, showDailyReport, setShowDailyReport } = useKeyboardShortcuts({
     activeItemIdRef: timer.activeItemIdRef,
     nav,
     reports,
@@ -322,6 +323,13 @@ function App() {
       <KeyboardShortcutsModal
         isOpen={showKeyboardHelp}
         onClose={() => setShowKeyboardHelp(false)}
+      />
+
+      <DailyReportModal
+        isOpen={showDailyReport}
+        onClose={() => setShowDailyReport(false)}
+        items={items}
+        timeUnit={timeUnit}
       />
 
       {goOnlineToast && (
