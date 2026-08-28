@@ -85,6 +85,9 @@ export class MetronomeEngine {
     }
 
     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // [MDIAG] identity tag so logs reveal a context swapped out mid-start
+    MetronomeEngine._ctxSeq = (MetronomeEngine._ctxSeq || 0) + 1;
+    this.audioCtx._diagId = MetronomeEngine._ctxSeq;
 
     // AnalyserNode for monitoring audio flow (diagnostic).
     this._analyser = this.audioCtx.createAnalyser();
@@ -235,8 +238,49 @@ export class MetronomeEngine {
     } catch { /* ignore */ }
   }
 
+  // [MDIAG] Peak amplitude currently passing through the graph.
+  _checkAudioFlowing() {
+    if (!this._analyser) return 0;
+    const data = new Float32Array(this._analyser.fftSize);
+    this._analyser.getFloatTimeDomainData(data);
+    return data.reduce((max, v) => Math.max(max, Math.abs(v)), 0);
+  }
+
+  // [MDIAG] Snapshot of every layer between the scheduler and the speakers.
+  _diagSnapshot() {
+    const el = this._audioEl;
+    const stream = el && el.srcObject;
+    return {
+      ctxId: this.audioCtx?._diagId ?? null,
+      ctxState: this.audioCtx?.state ?? 'none',
+      ctxTime: this.audioCtx ? +this.audioCtx.currentTime.toFixed(3) : null,
+      isPlaying: this.isPlaying,
+      notesScheduled: this._diagNoteCount || 0,
+      analyserPeak: +this._checkAudioFlowing().toFixed(4),
+      elPaused: el?.paused,
+      elReadyState: el?.readyState,
+      elMuted: el?.muted,
+      elVolume: el?.volume,
+      elTime: el ? +el.currentTime.toFixed(2) : null,
+      streamId: stream?.id?.slice(0, 8) ?? null,
+      streamActive: stream?.active ?? null,
+      tracks: stream?.getAudioTracks?.().map((t) => `${t.readyState}/${t.enabled}`).join(',') ?? null,
+    };
+  }
+
   async start() {
-    if (this.isPlaying) return;
+    MetronomeEngine._startSeq = (MetronomeEngine._startSeq || 0) + 1;
+    MetronomeEngine._inFlight = (MetronomeEngine._inFlight || 0);
+    const _id = MetronomeEngine._startSeq;
+    const _log = (msg, extra) => console.log(`[MDIAG #${_id}] ${msg}`, { ...this._diagSnapshot(), ...extra });
+
+    _log('start() ENTER', { startsInFlight: MetronomeEngine._inFlight });
+    if (this.isPlaying) { _log('start() BAILED (already playing)'); return; }
+    MetronomeEngine._inFlight++;
+    if (MetronomeEngine._inFlight > 1) {
+      console.warn(`[MDIAG #${_id}] *** RE-ENTRANT START *** ${MetronomeEngine._inFlight} start() calls overlapping`);
+    }
+    this._diagNoteCount = 0;
 
     // ----------------------------------------------------------------
     // SYNCHRONOUS PHASE — everything here must stay within the user
@@ -275,8 +319,10 @@ export class MetronomeEngine {
     await new Promise((r) => setTimeout(r, 60));
     const t1 = this.audioCtx.currentTime;
 
+    _log(`clock probe t0=${t0.toFixed(4)} t1=${t1.toFixed(4)} advanced=${t1 !== t0}`);
+
     if (t1 === t0) {
-      console.warn('[Metronome] currentTime stuck, recreating AudioContext');
+      console.warn(`[MDIAG #${_id}] *** RECOVERY PATH TAKEN *** currentTime stuck, recreating AudioContext`);
       this.audioCtx.close().catch(() => {});
       this.audioCtx = null;
       this._analyser = null;
@@ -286,6 +332,7 @@ export class MetronomeEngine {
       this._audioEl.srcObject = this._streamDest.stream;
       await this.audioCtx.resume();
       await new Promise((r) => setTimeout(r, 60));
+      _log('after RECOVERY rebuild');
     }
 
     this.currentBeat = 0;
@@ -327,10 +374,15 @@ export class MetronomeEngine {
       this.timerID = setInterval(() => this._scheduler(), this._lookaheadMs);
     }
 
+    MetronomeEngine._inFlight--;
+    _log('start() COMPLETE');
+    setTimeout(() => _log('watchdog +600ms'), 600);
+    setTimeout(() => _log('watchdog +1500ms'), 1500);
   }
 
   stop() {
-    if (!this.isPlaying) return;
+    console.log('[MDIAG] stop() ENTER', { ...this._diagSnapshot(), startsInFlight: MetronomeEngine._inFlight || 0 });
+    if (!this.isPlaying) { console.warn('[MDIAG] *** stop() NO-OP *** isPlaying already false - a start() may be mid-flight and will keep running'); return; }
 
     clearTimeout(this._workerFallbackID);
 
@@ -493,6 +545,7 @@ export class MetronomeEngine {
     }
 
 
+    this._diagNoteCount = (this._diagNoteCount || 0) + 1;
     const source = this.audioCtx.createBufferSource();
     source.buffer = buffer;
     source.connect(this._analyser);
