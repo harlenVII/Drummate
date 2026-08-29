@@ -115,6 +115,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 - `buildBreakdown(items, logs)` in [src/utils/practiceStats.js](src/utils/practiceStats.js) — shared per-item report pipeline (totals → drop zeros → sort desc → fundamentals/songs split → grandTotal). All four report tabs (Daily/Weekly/Monthly/Yearly) use it; each does its own active/trashed log filtering first.
 - [src/utils/heatmap.js](src/utils/heatmap.js) — `computePercentiles(values)` + `intensityColor(seconds, buckets, isDark)`, shared by Monthly/Yearly heatmaps.
 - [src/utils/streaks.js](src/utils/streaks.js) — `computeLongestStreak(sortedDays)` and `computeCurrentStreak(daysSet, opts)`; back StatsReport (all-time) and YearlyReport (year-scoped, `anchorOnYesterday`+`minDate`).
+- [src/utils/reportText.js](src/utils/reportText.js) — `buildReportText(logs, startDate, endDate, items, t, timeUnit)` builds the copyable plain-text report body (date/total header, then fundamentals/songs sections); `formatReportDate` renders `YYYY/MM/DD`. Shared by `ReportGeneratorModal` (arbitrary range, Report → Stats) and `DailyReportModal` (today only, `R` shortcut) so the two cannot drift. Entries whose `itemId` is missing from `items` are dropped, so callers pass already-filtered (non-trashed) items.
 - `useIsDarkMode()` ([src/hooks/useIsDarkMode.js](src/hooks/useIsDarkMode.js)) — reactive dark-mode boolean via `themeService` pub/sub; use instead of reading `document.documentElement.classList`.
 
 ## Critical Patterns
