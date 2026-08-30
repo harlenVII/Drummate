@@ -105,6 +105,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 | `R` | Toggle today's Daily Report modal (copyable text; no navigation) |
 | `Space` | Toggle play/pause during metronome practice; dismiss Practice Complete screen |
 | `?` | Toggle shortcuts help modal |
+| `Enter` | Copy to clipboard while the Daily Report modal is open (modal-scoped, not in the `?` list) |
 
 ## Date Math Helpers
 

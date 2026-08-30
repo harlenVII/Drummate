@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getTodayString } from '../utils/dateHelpers';
 import { getLogsByDateRange } from '../services/database';
 import { buildReportText } from '../utils/reportText';
@@ -32,12 +32,26 @@ function DailyReportModal({ isOpen, onClose, items, timeUnit }) {
     return () => { cancelled = true; };
   }, [isOpen, items, timeUnit, t]);
 
+  const handleCopy = useCallback(async () => {
+    if (reportText === null) return;
+    try {
+      await navigator.clipboard.writeText(reportText);
+      setCopied(true);
+    } catch (err) {
+      console.error('DailyReportModal: clipboard write failed', err);
+    }
+  }, [reportText]);
+
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e) => { if (e.key === 'Escape') onClose(); };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+      // Buttons activate on Enter themselves; don't copy on top of a focused Close
+      else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') handleCopy();
+    };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, handleCopy]);
 
   if (!isOpen) return null;
 
@@ -63,14 +77,7 @@ function DailyReportModal({ isOpen, onClose, items, timeUnit }) {
               {reportText}
             </pre>
             <button
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(reportText);
-                  setCopied(true);
-                } catch (err) {
-                  console.error('DailyReportModal: clipboard write failed', err);
-                }
-              }}
+              onClick={handleCopy}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 copied
                   ? 'bg-teal-600 text-white'
