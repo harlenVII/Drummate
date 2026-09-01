@@ -170,6 +170,7 @@ Tailwind v4 only — no CSS modules, no inline styles. Mobile-first. System font
 **Audio / UI**
 - AudioContext must be created in a user gesture (Safari) — engine init on first play.
 - iOS silent-mode bypass: engine sets audio session category to `'playback'`.
+- **Metronome output goes through a `MediaStreamDestination` → `<audio>` element, not `AudioContext.destination`** (Safari silently disconnects the latter). Assigning `srcObject` runs the HTML media element load algorithm, which **pauses the element** — so every audio-graph rebuild must re-call `_audioEl.play()` afterwards. Miss it and the metronome looks fully active (clock running, notes scheduled, indicators animating) while producing no sound; `_diagSnapshot()` shows `analyserPeak > 0` with `elPaused: true`.
 - Starting a new practice item auto-saves the previous one if still running.
 
 **Data**
