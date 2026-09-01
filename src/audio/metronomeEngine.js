@@ -329,7 +329,12 @@ export class MetronomeEngine {
       this._streamDest = null;
       this._clickBuffers = null;
       this._initAudioContext();
-      this._audioEl.srcObject = this._streamDest.stream;
+      // _initAudioContext() assigned a fresh srcObject, and per the HTML media
+      // element load algorithm that assignment PAUSES the element.  The sink
+      // must be restarted here: without it the rebuilt graph renders at full
+      // amplitude into a paused <audio> and nothing reaches the speakers —
+      // an "active" metronome that is completely silent.
+      this._audioEl.play().catch(() => {});
       await this.audioCtx.resume();
       await new Promise((r) => setTimeout(r, 60));
       _log('after RECOVERY rebuild');
