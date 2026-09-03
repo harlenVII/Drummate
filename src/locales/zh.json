@@ -51,7 +51,6 @@
   "noSongsYet": "还没有歌曲",
   "addFirstItem": "添加你的第一个练习项目",
   "generateReport": "生成报告",
-  "dailyReport": "每日报告",
   "copyToClipboard": "复制到剪贴板",
   "copied": "已复制！",
   "close": "关闭",
@@ -375,7 +374,7 @@
     "endDate": "结束日期",
     "last7Days": "最近7天",
     "thisMonth": "本月",
-    "generate": "生成"
+    "changeRange": "更改日期范围"
   },
   "goal": {
     "title": "练习目标",

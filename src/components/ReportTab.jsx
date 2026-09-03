@@ -107,6 +107,7 @@ export default function ReportTab({
         <StatsReport
           items={nonTrashedItems}
           timeUnit={timeUnit}
+          groupByCategory={groupByCategory}
           compactMode={compactMode}
         />
       )}

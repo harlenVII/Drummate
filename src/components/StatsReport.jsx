@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import ReportGeneratorModal from './ReportGeneratorModal';
 import { getPriorHours } from '../services/priorPracticeService';
 
-function StatsReport({ items, timeUnit, compactMode = false }) {
+function StatsReport({ items, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const priorHours = getPriorHours();
   const [showModal, setShowModal] = useState(false);
@@ -93,6 +93,8 @@ function StatsReport({ items, timeUnit, compactMode = false }) {
         onClose={() => setShowModal(false)}
         items={items}
         timeUnit={timeUnit}
+        groupByCategory={groupByCategory}
+        rangeExpanded
       />
     </>
   );

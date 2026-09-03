@@ -102,10 +102,10 @@ Blocked when focus is in `<input>` or `<textarea>`.
 | `E` / `C` | Language English / Chinese |
 | `L` / `D` | Theme Light / Dark |
 | `S` | Stop active practice timer |
-| `R` | Toggle today's Daily Report modal (copyable text; no navigation) |
+| `R` | Toggle the report modal seeded to today (copyable text; no navigation) |
 | `Space` | Toggle play/pause during metronome practice; dismiss Practice Complete screen |
 | `?` | Toggle shortcuts help modal |
-| `Enter` | Copy to clipboard while the Daily Report modal is open (modal-scoped, not in the `?` list) |
+| `Enter` | Copy to clipboard while the report modal is open (modal-scoped, not in the `?` list; skipped when focus is on a button or date input) |
 
 ## Date Math Helpers
 
@@ -116,7 +116,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 - `buildBreakdown(items, logs)` in [src/utils/practiceStats.js](src/utils/practiceStats.js) — shared per-item report pipeline (totals → drop zeros → sort desc → fundamentals/songs split → grandTotal). All four report tabs (Daily/Weekly/Monthly/Yearly) use it; each does its own active/trashed log filtering first.
 - [src/utils/heatmap.js](src/utils/heatmap.js) — `computePercentiles(values)` + `intensityColor(seconds, buckets, isDark)`, shared by Monthly/Yearly heatmaps.
 - [src/utils/streaks.js](src/utils/streaks.js) — `computeLongestStreak(sortedDays)` and `computeCurrentStreak(daysSet, opts)`; back StatsReport (all-time) and YearlyReport (year-scoped, `anchorOnYesterday`+`minDate`).
-- [src/utils/reportText.js](src/utils/reportText.js) — `buildReportText(logs, startDate, endDate, items, t, timeUnit)` builds the copyable plain-text report body (date/total header, then fundamentals/songs sections); `formatReportDate` renders `YYYY/MM/DD`. Shared by `ReportGeneratorModal` (arbitrary range, Report → Stats) and `DailyReportModal` (today only, `R` shortcut) so the two cannot drift. Entries whose `itemId` is missing from `items` are dropped, so callers pass already-filtered (non-trashed) items.
+- [src/utils/reportText.js](src/utils/reportText.js) — `buildReportText({ logs, startDate, endDate, items, t, timeUnit, groupByCategory })` builds the copyable plain-text report body (date/total header, then either fundamentals/songs sections or a flat list); `formatReportDate` renders `YYYY/MM/DD`. Sole consumer is `ReportGeneratorModal`. Entries whose `itemId` is missing from `items` are dropped — the modal filters trashed items itself, so callers pass raw `items`.
 - `useIsDarkMode()` ([src/hooks/useIsDarkMode.js](src/hooks/useIsDarkMode.js)) — reactive dark-mode boolean via `themeService` pub/sub; use instead of reading `document.documentElement.classList`.
 
 ## Critical Patterns
@@ -125,6 +125,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 - **Metronome ↔ Sequencer switch**: stop playback → `setSequence(null)` → clear beat indicators → disable NoSleep. Prevents engine state conflicts.
 - **Drag-and-drop (practice items)**: `@dnd-kit/sortable`, two `SortableContext` instances (one per category) in one `DndContext`. `handleDragEnd` → `onReorder([{id, category}])` → DB transaction → `backend.pushReorder` with per-item category (cross-section drags atomic on remote).
 - **Drag-and-drop (goals)**: Single `SortableContext` for Current goals only. `handleDragEnd` calls `setLocalOrder(newUids)` and `setActiveDragId(null)` **synchronously before any await** so React batches them into a single render — the `SortableContext` sees the new order when dnd-kit clears drag state, eliminating snap-back. `localOrder` is cleared after `updateGoalOrder` resolves (liveQuery has fired by then). `DragOverlay` shows a floating clone with `shadow-2xl` and a slight rotation; the source slot shows opacity 0.
+- **Report modal**: `ReportGeneratorModal` is the ONLY report modal, behind all three entry points — the `R` shortcut (App.jsx, today, collapsed), the Daily view's "Generate Report" button (the viewed `reportDate`, collapsed), and the Stats view's button (today, `rangeExpanded`). Callers seed it with `initialStartDate`/`initialEndDate`/`rangeExpanded`; collapsed mode shows a one-line range summary plus a "Change range" toggle that reveals the presets and `DatePicker`s. There is no Generate button: the text rebuilds on open and on every range change. Do not reintroduce a per-view report modal or a second text builder — those two drifted on `groupByCategory` before being consolidated.
 - **Trash**: soft via `trashed: true` + `trashedAt`. `purgeExpiredTrash(TRASH_RETENTION_DAYS)` runs on app load. Restore clears `trashed` AND `archived`. The 30-day window is `TRASH_RETENTION_DAYS` in [src/constants/trash.js](src/constants/trash.js) (a dependency-free module to avoid a dateHelpers↔database cycle); the UI countdown (`daysUntilPurge`) and the purge share it so they cannot drift.
 - **NoSleep**: single global instance in `App.jsx`. Enable on start, disable on stop/tab switch. Never create multiple instances (iOS bugs).
 - **Floating practice widget**: top pill when `activeItemId != null && activeTab !== 'practice'`. Inner stop is a `role="button"` span (HTML disallows nested buttons).

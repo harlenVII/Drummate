@@ -31,7 +31,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import OfflineBanner from './components/OfflineBanner';
 import PendingChangesModal from './components/PendingChangesModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
-import DailyReportModal from './components/DailyReportModal';
+import ReportGeneratorModal from './components/ReportGeneratorModal';
 
 import { setItem } from './utils/safeStorage';
 
@@ -325,11 +325,12 @@ function App() {
         onClose={() => setShowKeyboardHelp(false)}
       />
 
-      <DailyReportModal
+      <ReportGeneratorModal
         isOpen={showDailyReport}
         onClose={() => setShowDailyReport(false)}
         items={items}
         timeUnit={timeUnit}
+        groupByCategory={groupByCategory}
       />
 
       {goOnlineToast && (

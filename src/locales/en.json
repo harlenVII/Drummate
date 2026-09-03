@@ -51,7 +51,6 @@
   "noSongsYet": "No songs yet",
   "addFirstItem": "Add your first practice item",
   "generateReport": "Generate Report",
-  "dailyReport": "Daily Report",
   "copyToClipboard": "Copy to Clipboard",
   "copied": "Copied!",
   "close": "Close",
@@ -375,7 +374,7 @@
     "endDate": "End Date",
     "last7Days": "Last 7 Days",
     "thisMonth": "This Month",
-    "generate": "Generate"
+    "changeRange": "Change range"
   },
   "goal": {
     "title": "Practice Goal",

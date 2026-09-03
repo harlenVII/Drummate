@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -6,29 +6,16 @@ import { buildBreakdown } from '../utils/practiceStats';
 import ReportItemCard from './ReportItemCard';
 import ReportNavHeader from './ReportNavHeader';
 import ReportItemBreakdown from './ReportItemBreakdown';
+import ReportGeneratorModal from './ReportGeneratorModal';
 
 function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, onEditTime, onAddTime, onMergeToYesterday, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [showItemPicker, setShowItemPicker] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showMergeConfirm, setShowMergeConfirm] = useState(false);
   const [merging, setMerging] = useState(false);
 
-  // Close modal on Escape key
-  useEffect(() => {
-    if (!showModal) return;
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setShowModal(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showModal]);
   // Build per-item breakdown (totals, split by category, grandTotal)
   const { breakdown, fundamentals, songs, grandTotal } = buildBreakdown(items, reportLogs);
 
@@ -133,51 +120,22 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {/* Generate Report button */}
       {grandTotal > 0 && (
         <button
-          onClick={() => { setCopied(false); setShowModal(true); }}
+          onClick={() => setShowModal(true)}
           className="mt-1 px-4 py-2 bg-blue-600 dark:bg-indigo-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors"
         >
           {t('generateReport')}
         </button>
       )}
 
-      {/* Report modal */}
-      {showModal && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="bg-white dark:bg-slate-800 rounded-xl shadow-lg max-w-md w-full p-6 flex flex-col gap-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('dailyReport')}</h2>
-            <pre className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 text-sm text-gray-700 dark:text-slate-200 whitespace-pre-wrap select-text">
-              {generateReportText(reportDate, grandTotal, breakdown, t, timeUnit, groupByCategory)}
-            </pre>
-            <button
-              onClick={async () => {
-                await navigator.clipboard.writeText(
-                  generateReportText(reportDate, grandTotal, breakdown, t, timeUnit, groupByCategory)
-                );
-                setCopied(true);
-              }}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                copied
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-blue-600 dark:bg-indigo-600 text-white hover:bg-blue-700 dark:hover:bg-indigo-700'
-              }`}
-            >
-              {copied ? t('copied') : t('copyToClipboard')}
-            </button>
-            <button
-              onClick={() => setShowModal(false)}
-              className="px-4 py-2 text-gray-500 dark:text-slate-400 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-            >
-              {t('close')}
-            </button>
-          </div>
-        </div>
-      )}
+      <ReportGeneratorModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        items={items}
+        timeUnit={timeUnit}
+        groupByCategory={groupByCategory}
+        initialStartDate={reportDate}
+        initialEndDate={reportDate}
+      />
 
       {/* Item picker modal */}
       {showItemPicker && (
@@ -274,44 +232,6 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       )}
     </div>
   );
-}
-
-function generateReportText(reportDate, grandTotal, breakdown, t, timeUnit, groupByCategory) {
-  const [year, month, day] = reportDate.split('-');
-  const formattedDate = `${year}/${month}/${day}`;
-  const fmt = (d) => `${formatDuration(d, timeUnit)} ${t(timeUnit)}`;
-
-  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
-  const songs = breakdown.filter((e) => e.category === 'songs');
-
-  const lines = [
-    `${t('date')}: ${formattedDate}`,
-    `${t('total')}: ${fmt(grandTotal)}`,
-  ];
-
-  if (groupByCategory) {
-    if (fundamentals.length > 0) {
-      lines.push('');
-      lines.push(`${t('categories.fundamentals')}:`);
-      for (const entry of fundamentals) {
-        lines.push(`${entry.name}: ${fmt(entry.duration)}`);
-      }
-    }
-    if (songs.length > 0) {
-      lines.push('');
-      lines.push(`${t('categories.songs')}:`);
-      for (const entry of songs) {
-        lines.push(`${entry.name}: ${fmt(entry.duration)}`);
-      }
-    }
-  } else {
-    lines.push('');
-    for (const entry of breakdown) {
-      lines.push(`${entry.name}: ${fmt(entry.duration)}`);
-    }
-  }
-
-  return lines.join('\n');
 }
 
 export default DailyReport;

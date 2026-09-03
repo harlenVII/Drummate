@@ -1,9 +1,9 @@
 import { formatDuration } from './formatTime';
 
-// Shared report-text builder. Used by ReportGeneratorModal (arbitrary date range)
-// and DailyReportModal (today only, opened with the R shortcut).
+// Shared report-text builder. Sole consumer is ReportGeneratorModal, which backs all
+// three report entry points (R shortcut, Daily view button, Stats view range export).
 
-export function buildReportText(logs, startDate, endDate, items, t, timeUnit) {
+export function buildReportText({ logs, startDate, endDate, items, t, timeUnit, groupByCategory = true }) {
   const totals = {};
   for (const log of logs) {
     totals[log.itemId] = (totals[log.itemId] || 0) + log.duration;
@@ -26,28 +26,32 @@ export function buildReportText(logs, startDate, endDate, items, t, timeUnit) {
       ? formatReportDate(startDate)
       : `${formatReportDate(startDate)} – ${formatReportDate(endDate)}`;
 
-  const fundamentals = breakdown.filter((e) => e.category === 'fundamentals' || !e.category);
-  const songs = breakdown.filter((e) => e.category === 'songs');
-
   const lines = [
     `${t('date')}: ${dateLabel}`,
     `${t('total')}: ${fmt(grandTotal)}`,
   ];
 
-  if (fundamentals.length > 0) {
+  const pushSection = (heading, entries) => {
+    if (entries.length === 0) return;
     lines.push('');
-    lines.push(`${t('categories.fundamentals')}:`);
-    for (const entry of fundamentals) {
+    if (heading) lines.push(heading);
+    for (const entry of entries) {
       lines.push(`${entry.name}: ${fmt(entry.duration)}`);
     }
-  }
+  };
 
-  if (songs.length > 0) {
-    lines.push('');
-    lines.push(`${t('categories.songs')}:`);
-    for (const entry of songs) {
-      lines.push(`${entry.name}: ${fmt(entry.duration)}`);
-    }
+  if (groupByCategory) {
+    // legacy items predate `category` and are reported as fundamentals
+    pushSection(
+      `${t('categories.fundamentals')}:`,
+      breakdown.filter((e) => e.category === 'fundamentals' || !e.category)
+    );
+    pushSection(
+      `${t('categories.songs')}:`,
+      breakdown.filter((e) => e.category === 'songs')
+    );
+  } else {
+    pushSection(null, breakdown);
   }
 
   return lines.join('\n');
