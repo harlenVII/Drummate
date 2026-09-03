@@ -14,12 +14,13 @@ export function useKeyboardShortcuts({
   const { language, toggleLanguage } = useLanguage();
   const languageRef = useRef(language);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
-  const [showDailyReport, setShowDailyReport] = useState(false);
+  // null = closed; otherwise the YYYY-MM-DD the report modal is seeded to
+  const [reportModalDate, setReportModalDate] = useState(null);
 
   useEffect(() => { languageRef.current = language; }, [language]);
 
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours,
-  // r = today's daily report modal (no navigation)
+  // r / y = report modal seeded to today / yesterday (no navigation)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -36,7 +37,15 @@ export function useKeyboardShortcuts({
       else if (e.code === 'KeyS') {
         if (activeItemIdRef.current != null) saveAndStop();
       }
-      else if (e.code === 'KeyR') setShowDailyReport(prev => !prev);
+      // Each key toggles its own date; the other key switches the date instead of closing
+      else if (e.code === 'KeyR') {
+        const today = getTodayString();
+        setReportModalDate(prev => (prev === today ? null : today));
+      }
+      else if (e.code === 'KeyY') {
+        const yesterday = shiftDate(getTodayString(), -1);
+        setReportModalDate(prev => (prev === yesterday ? null : yesterday));
+      }
       else if (e.code === 'KeyA') {
         if (nav.activeTabRef.current === 'metronome') setMetronomeAccentFirstBeat(prev => !prev);
       }
@@ -101,5 +110,5 @@ export function useKeyboardShortcuts({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nav.handleTabChange, nav.handleSubpageChange, nav.setReportSubpage, reports.handleReportDateChange, reports.handleWeekChange, reports.handleMonthChange, reports.handleYearChange, toggleLanguage, saveAndStop, setTheme, setMetronomeAccentFirstBeat, setTimeUnit]);
 
-  return { showKeyboardHelp, setShowKeyboardHelp, showDailyReport, setShowDailyReport };
+  return { showKeyboardHelp, setShowKeyboardHelp, reportModalDate, setReportModalDate };
 }

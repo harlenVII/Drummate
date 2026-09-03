@@ -149,7 +149,7 @@ function App() {
     }
   }, [aiCoachEnabled, handsFreeMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { showKeyboardHelp, setShowKeyboardHelp, showDailyReport, setShowDailyReport } = useKeyboardShortcuts({
+  const { showKeyboardHelp, setShowKeyboardHelp, reportModalDate, setReportModalDate } = useKeyboardShortcuts({
     activeItemIdRef: timer.activeItemIdRef,
     nav,
     reports,
@@ -326,11 +326,13 @@ function App() {
       />
 
       <ReportGeneratorModal
-        isOpen={showDailyReport}
-        onClose={() => setShowDailyReport(false)}
+        isOpen={reportModalDate !== null}
+        onClose={() => setReportModalDate(null)}
         items={items}
         timeUnit={timeUnit}
         groupByCategory={groupByCategory}
+        initialStartDate={reportModalDate}
+        initialEndDate={reportModalDate}
       />
 
       {goOnlineToast && (

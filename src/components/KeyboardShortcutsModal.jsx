@@ -8,6 +8,7 @@ const SHORTCUTS = [
   { keys: ['L', 'D'],           descEn: 'Theme: Light / Dark',                              descZh: '主题：浅色 / 深色' },
   { keys: ['S'],                descEn: 'Stop active timer',                                descZh: '停止计时器' },
   { keys: ['R'],                descEn: "Today's report (copyable)",                       descZh: '今日报告（可复制）' },
+  { keys: ['Y'],                descEn: "Yesterday's report (copyable)",                   descZh: '昨日报告（可复制）' },
   { keys: ['A'],                descEn: 'Toggle accent first beat (Metronome)',              descZh: '切换重音第一拍（节拍器）' },
   { keys: ['?'],                descEn: null,                                               descZh: null },
 ];
