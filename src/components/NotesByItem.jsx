@@ -19,12 +19,18 @@ function NotesByItem({ items, notes, onEdit, compactMode = false }) {
     [items],
   );
 
+  // Items with no notes are hidden — this view is a note browser, not an item list.
+  const itemsWithNotes = useMemo(
+    () => activeItems.filter(i => (notesByItemUid.get(i.uid)?.length ?? 0) > 0),
+    [activeItems, notesByItemUid],
+  );
+
   const sections = useMemo(() => {
     return {
-      fundamentals: activeItems.filter(i => (i.category ?? 'fundamentals') === 'fundamentals'),
-      songs: activeItems.filter(i => i.category === 'songs'),
+      fundamentals: itemsWithNotes.filter(i => (i.category ?? 'fundamentals') === 'fundamentals'),
+      songs: itemsWithNotes.filter(i => i.category === 'songs'),
     };
-  }, [activeItems]);
+  }, [itemsWithNotes]);
 
   const toggle = (uid) => {
     setExpanded(prev => {
@@ -88,6 +94,12 @@ function NotesByItem({ items, notes, onEdit, compactMode = false }) {
   if (activeItems.length === 0) {
     return (
       <p className="text-gray-500 dark:text-slate-400 text-center py-12">{t('notes.noActiveItems')}</p>
+    );
+  }
+
+  if (itemsWithNotes.length === 0) {
+    return (
+      <p className="text-gray-500 dark:text-slate-400 text-center py-12">{t('notes.emptyByDate')}</p>
     );
   }
 
