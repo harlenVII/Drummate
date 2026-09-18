@@ -20,7 +20,7 @@ export function useKeyboardShortcuts({
   useEffect(() => { languageRef.current = language; }, [language]);
 
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours,
-  // p = Metronome > Practice subpage,
+  // p = Metronome > Practice subpage, g = Report > Goals subpage,
   // r / y = report modal seeded to today / yesterday (no navigation)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -55,6 +55,11 @@ export function useKeyboardShortcuts({
       else if (e.code === 'KeyP') {
         nav.handleTabChange('metronome');
         if (nav.metronomeSubpageRef.current !== 'practice') nav.handleSubpageChange('practice');
+      }
+      // Jump straight to the Report tab's Goals subpage.
+      else if (e.code === 'KeyG') {
+        nav.handleTabChange('report');
+        nav.setReportSubpage('goals');
       }
       else if (e.key === '?') setShowKeyboardHelp(prev => !prev);
       else if (e.key === 'Tab') {

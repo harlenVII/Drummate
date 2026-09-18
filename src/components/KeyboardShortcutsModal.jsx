@@ -11,6 +11,7 @@ const SHORTCUTS = [
   { keys: ['Y'],                descEn: "Yesterday's report (copyable)",                   descZh: '昨日报告（可复制）' },
   { keys: ['A'],                descEn: 'Toggle accent first beat (Metronome)',              descZh: '切换重音第一拍（节拍器）' },
   { keys: ['P'],                descEn: 'Go to Metronome › Practice',                      descZh: '前往节拍器 › 练习' },
+  { keys: ['G'],                descEn: 'Go to Report › Goals',                          descZh: '前往报告 › 目标' },
   { keys: ['?'],                descEn: null,                                               descZh: null },
 ];
 
