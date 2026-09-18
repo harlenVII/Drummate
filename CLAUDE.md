@@ -101,6 +101,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 | `M` / `H` | Time unit minutes / hours |
 | `E` / `C` | Language English / Chinese |
 | `L` / `D` | Theme Light / Dark |
+| `P` | Jump to Metronome tab → Practice subpage (no-op if already there, so a running practice run is never reset) |
 | `S` | Stop active practice timer |
 | `R` | Toggle the report modal seeded to today (copyable text; no navigation) |
 | `Y` | Toggle the report modal seeded to yesterday |

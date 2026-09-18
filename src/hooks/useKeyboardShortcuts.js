@@ -20,6 +20,7 @@ export function useKeyboardShortcuts({
   useEffect(() => { languageRef.current = language; }, [language]);
 
   // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours,
+  // p = Metronome > Practice subpage,
   // r / y = report modal seeded to today / yesterday (no navigation)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -48,6 +49,12 @@ export function useKeyboardShortcuts({
       }
       else if (e.code === 'KeyA') {
         if (nav.activeTabRef.current === 'metronome') setMetronomeAccentFirstBeat(prev => !prev);
+      }
+      // Jump straight to the Metronome tab's Practice subpage. Skip the subpage
+      // call when already there — handleSubpageChange clears a running practice run.
+      else if (e.code === 'KeyP') {
+        nav.handleTabChange('metronome');
+        if (nav.metronomeSubpageRef.current !== 'practice') nav.handleSubpageChange('practice');
       }
       else if (e.key === '?') setShowKeyboardHelp(prev => !prev);
       else if (e.key === 'Tab') {
