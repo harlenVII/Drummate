@@ -3,13 +3,14 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const SHORTCUTS = [
   { keys: ['1', '2', '3', '4'], descEn: 'Switch to Practice / Metronome / Report / Notes', descZh: '切换到练习 / 节拍器 / 报告 / 笔记' },
-  { keys: ['M', 'H'],           descEn: 'Time unit: Minutes / Hours',                      descZh: '时间单位：分钟 / 小时' },
+  { keys: ['T'],                descEn: 'Toggle time unit: Minutes / Hours',               descZh: '切换时间单位：分钟 / 小时' },
   { keys: ['E', 'C'],           descEn: 'Language: English / Chinese',                      descZh: '语言：英文 / 中文' },
   { keys: ['L', 'D'],           descEn: 'Theme: Light / Dark',                              descZh: '主题：浅色 / 深色' },
   { keys: ['S'],                descEn: 'Stop active timer',                                descZh: '停止计时器' },
   { keys: ['R'],                descEn: "Today's report (copyable)",                       descZh: '今日报告（可复制）' },
   { keys: ['Y'],                descEn: "Yesterday's report (copyable)",                   descZh: '昨日报告（可复制）' },
   { keys: ['A'],                descEn: 'Toggle accent first beat (Metronome)',              descZh: '切换重音第一拍（节拍器）' },
+  { keys: ['M'],                descEn: 'Go to Metronome › Metronome',                     descZh: '前往节拍器 › 节拍器' },
   { keys: ['P'],                descEn: 'Go to Metronome › Practice',                      descZh: '前往节拍器 › 练习' },
   { keys: ['G'],                descEn: 'Go to Report › Goals',                          descZh: '前往报告 › 目标' },
   { keys: ['?'],                descEn: null,                                               descZh: null },

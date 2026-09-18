@@ -19,8 +19,9 @@ export function useKeyboardShortcuts({
 
   useEffect(() => { languageRef.current = language; }, [language]);
 
-  // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, m = minutes, h = hours,
-  // p = Metronome > Practice subpage, g = Report > Goals subpage,
+  // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, t = toggle minutes/hours,
+  // m = Metronome > Metronome subpage, p = Metronome > Practice subpage,
+  // g = Report > Goals subpage,
   // r / y = report modal seeded to today / yesterday (no navigation)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -29,8 +30,7 @@ export function useKeyboardShortcuts({
       else if (e.code === 'Digit2') nav.handleTabChange('metronome');
       else if (e.code === 'Digit3') nav.handleTabChange('report');
       else if (e.code === 'Digit4') nav.handleTabChange('notes');
-      else if (e.code === 'KeyM') setTimeUnit('minutes');
-      else if (e.code === 'KeyH') setTimeUnit('hours');
+      else if (e.code === 'KeyT') setTimeUnit(prev => (prev === 'minutes' ? 'hours' : 'minutes'));
       else if (e.code === 'KeyE') { if (languageRef.current !== 'en') toggleLanguage(); }
       else if (e.code === 'KeyC') { if (languageRef.current !== 'zh') toggleLanguage(); }
       else if (e.code === 'KeyL') setTheme('light');
@@ -55,6 +55,11 @@ export function useKeyboardShortcuts({
       else if (e.code === 'KeyP') {
         nav.handleTabChange('metronome');
         if (nav.metronomeSubpageRef.current !== 'practice') nav.handleSubpageChange('practice');
+      }
+      // Jump straight to the Metronome tab's Metronome subpage. Same guard as KeyP.
+      else if (e.code === 'KeyM') {
+        nav.handleTabChange('metronome');
+        if (nav.metronomeSubpageRef.current !== 'metronome') nav.handleSubpageChange('metronome');
       }
       // Jump straight to the Report tab's Goals subpage.
       else if (e.code === 'KeyG') {
