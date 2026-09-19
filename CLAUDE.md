@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Drummate is a PWA for drummers: practice tracking, reports, metronome with rhythm sequencer, and a Notes tab for dated journal entries attached to practice items. Stack: React 19, Vite 7, Tailwind v4, Dexie.js (IndexedDB) with Firebase cloud sync.
 
-**Key docs:** [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md), [docs/PROJECT_PLAN.md](./docs/PROJECT_PLAN.md)
+**Key docs:** [README.md](./README.md) (feature overview, roadmap), [docs/superpowers/plans/](./docs/superpowers/plans/) + [docs/superpowers/specs/](./docs/superpowers/specs/) (per-feature design docs). This file is the engineering reference.
 
 ## Commands
 
@@ -104,6 +104,7 @@ Blocked when focus is in `<input>` or `<textarea>`.
 | `M` | Jump to Metronome tab → Metronome subpage (same no-op guard as `P`) |
 | `P` | Jump to Metronome tab → Practice subpage (no-op if already there, so a running practice run is never reset) |
 | `G` | Jump to Report tab → Goals subpage |
+| `A` | Toggle accent on beat 1 (Metronome tab only) |
 | `S` | Stop active practice timer |
 | `R` | Toggle the report modal seeded to today (copyable text; no navigation) |
 | `Y` | Toggle the report modal seeded to yesterday |
