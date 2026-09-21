@@ -9,11 +9,28 @@ export function computePercentiles(values) {
   return { p25: at(0.25), p50: at(0.5), p75: at(0.75) };
 }
 
-// Cell fill color for a duration (seconds), bucketed by thresholds, theme-aware.
-export function intensityColor(seconds, { p25, p50, p75 }, isDark) {
-  if (seconds === 0) return isDark ? '#334155' : '#e2e8f0'; // slate-700 / slate-200
-  if (seconds <= p25) return isDark ? '#a5b4fc' : '#bfdbfe'; // indigo-300 / blue-200
-  if (seconds <= p50) return isDark ? '#6366f1' : '#60a5fa'; // indigo-500 / blue-400
-  if (seconds <= p75) return isDark ? '#4338ca' : '#2563eb'; // indigo-700 / blue-600
-  return isDark ? '#3730a3' : '#1e3a8a'; // indigo-800 / blue-900
+// Which of the five intensity levels a duration falls into. Shared by the fill
+// and text helpers so the two can never bucket differently.
+function level(seconds, { p25, p50, p75 }) {
+  if (seconds === 0) return 0;
+  if (seconds <= p25) return 1;
+  if (seconds <= p50) return 2;
+  if (seconds <= p75) return 3;
+  return 4;
+}
+
+// Cell fill for a duration (seconds). `palette` comes from buildHeatmapPalette
+// in utils/accentPalette, so the heatmap follows the active color scheme.
+export function intensityColor(seconds, buckets, palette) {
+  return [palette.empty, palette.l1, palette.l2, palette.l3, palette.l4][
+    level(seconds, buckets)
+  ];
+}
+
+// Text color that sits on that fill. This replaces a hex-keyed lookup map in
+// MonthlyReport, which silently broke once fills became scheme-dependent.
+export function intensityTextColor(seconds, buckets, palette) {
+  return [palette.emptyText, palette.l1Text, palette.l2Text, palette.l3Text, palette.l4Text][
+    level(seconds, buckets)
+  ];
 }
