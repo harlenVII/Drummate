@@ -68,6 +68,7 @@ All ops async. Date strings are `YYYY-MM-DD`. Deleting an item cascades to its l
 | `drummate_timezone` | IANA tz string | `'America/Los_Angeles'` | home timezone |
 | `drummate_pending_log` | JSON log | absent | crash-recovery log |
 | `drummate_compact_mode` | `'true'` \| `'false'` | `'false'` | compact mode (tightens padding, gaps, and radii across all major screens) |
+| `drummate_accent` | `'blue'` \| `'orange'` \| `'green'` | `'blue'` | accent color scheme |
 | `drummate_visitor` | `'true'` \| absent | absent | visitor (anonymous) mode flag |
 | `drummate_prior_hours` | integer string | `'0'` | prior practice hours offset added to lifetime total |
 
@@ -171,6 +172,40 @@ Do not use Playwright or any browser automation for verification. Instead, after
 
 Tailwind v4 only — no CSS modules, no inline styles. Mobile-first. System font stack (see [src/index.css](src/index.css)).
 
+**Accent color tokens:** Components never name a hue. Use `bg-accent-600`,
+`text-accent-600`, `ring-accent-500` etc. — the `--color-accent-*` ramp in
+[src/index.css](src/index.css) resolves per scheme (`data-accent` on `<html>`)
+and per mode (`.dark`), so `dark:` accent variants are almost never needed.
+`accent-600` is the primary interactive role and is contrast-guaranteed
+against white text; it is NOT Tailwind's 600 step in every scheme. The ramps
+live in [src/constants/accentPalettes.js](src/constants/accentPalettes.js) and
+are mirrored in `index.css` — **edit both**, `tests/colorSchemes.test.js`
+enforces that they match and that every scheme clears WCAG AA.
+
+Status colors (red/green/amber) are deliberately NOT part of the scheme system.
+JS-computed colors (SVG fills in charts and heatmaps) go through
+`resolveAccentRamp` in [src/utils/accentPalette.js](src/utils/accentPalette.js).
+
+One deliberate exception: the `songs` category badge in DailyReport.jsx stays
+`bg-purple-100 text-purple-600`. Category and status colors encode meaning, not brand, so
+they never follow the scheme. The project-wide gate is therefore
+`grep -rnE "(blue|indigo|violet)-[0-9]{2,3}" src/` — note it excludes `purple`.
+
+Two accepted deviations from the otherwise-strict "blue scheme is unchanged" rule, so they
+are not later reported as bugs:
+- `SettingsPanel.jsx` avatar gradient: was `from-indigo-500 to-violet-500`, now
+  `from-accent-500 to-accent-700`. There is no violet in the accent ramp, so the gradient
+  could not both follow the scheme and stay byte-identical. Coverage was chosen.
+- `SettingsPanel.jsx` focus ring: was `focus-visible:ring-indigo-500` in LIGHT mode, now
+  `ring-accent-500` (blue-500 in the blue scheme). This corrects a pre-existing
+  inconsistency — every other focus ring in the app uses blue in light, indigo in dark.
+
+When migrating colors, watch for OVER-migration as well as missed spots. The completion
+grep only catches colors that were NOT migrated. It cannot catch two previously-distinct
+colors collapsing onto the same token — which happened once here, leaving a conditional
+with two identical branches and silently erasing a UI distinction while every automated
+check stayed green. After a sweep, grep for ternaries whose branches are now identical.
+
 ## Gotchas
 
 **Audio / UI**
@@ -207,6 +242,9 @@ Pulls go first so device adopts remote truth (renames/deletes) before pushing lo
 **Boot / setup**
 - Backend interface compliance: new sync ops must be added to `firebaseBackend.js` and declared in `src/services/backends/backendInterface.js`. The singleton is injected via `BackendContext` (statically imported there — always bundled).
 - Theme is applied before React mounts: [src/services/themeService.js](src/services/themeService.js) is imported by [src/main.jsx](src/main.jsx) before `App` so the `dark` class is on `<html>` before first paint. Do not move this import below `App` or gate `applyTheme` behind React state.
+- `themeService` applies BOTH the `dark` class and the `data-accent` attribute
+  at module load, before React mounts. Do not gate either behind React state —
+  that reintroduces a flash of the wrong scheme on reload.
 
 **Testing**
 - DB tests use `import 'fake-indexeddb/auto'` and clear all tables in `beforeEach` (see [tests/database.test.js](tests/database.test.js), [tests/useLiveData.test.jsx](tests/useLiveData.test.jsx)). For TZ-dependent assertions, pin the zone with `await setTimezone('America/Los_Angeles')` in `beforeEach` — module TZ state persists across tests in the same file.

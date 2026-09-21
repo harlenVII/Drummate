@@ -75,7 +75,7 @@ Built with React 19, Vite 7, Tailwind CSS v4, Dexie.js (IndexedDB), and Firebase
 ### PWA & Internationalization
 - Installable on iOS / Android home screens
 - Service worker (Workbox) with runtime caching for the large ONNX / WASM models (30-day expiry)
-- Bilingual UI (English / 中文), light & dark themes, compact density mode
+- Bilingual UI (English / 中文), light & dark themes, selectable accent color scheme (blue / orange / green), compact density mode
 
 ## Getting Started
 
