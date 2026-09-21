@@ -44,6 +44,7 @@ function App() {
     groupByCategory, setGroupByCategory,
     compactMode, setCompactMode,
     theme, setTheme,
+    accent, setAccent,
   } = useUiPreferences();
   // Reactive reads from Dexie (items/totals/practices/notes). Mutations made by
   // the hooks below propagate to the UI automatically via liveQuery.
@@ -313,6 +314,8 @@ function App() {
         onToggleCompactMode={() => setCompactMode((v) => !v)}
         theme={theme}
         onThemeChange={setTheme}
+        accent={accent}
+        onAccentChange={setAccent}
       />
 
       <PendingChangesModal

@@ -7,6 +7,7 @@ import { getTimezone, setTimezone } from '../services/timezoneService';
 import { getPriorHours, setPriorHours } from '../services/priorPracticeService';
 import { db } from '../services/database';
 import VisitorSignUpModal from './VisitorSignUpModal';
+import { ACCENT_PALETTES } from '../constants/accentPalettes';
 
 // Curated 24-city list: one common city per UTC offset (plus Kolkata at +5:30
 // for India's population). Offsets shown are standard time; actual offset
@@ -71,12 +72,22 @@ function PillGroup({ options, value, onSelect }) {
         <button
           key={opt.value}
           onClick={() => value !== opt.value && onSelect(opt.value)}
-          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
             value === opt.value
               ? 'bg-white dark:bg-slate-800 text-gray-800 dark:text-slate-100 shadow-sm'
               : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
           }`}
         >
+          {opt.swatch && (
+            <span
+              aria-hidden="true"
+              className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10"
+              // Swatch color is per-option runtime data (one hex per accent scheme);
+              // Tailwind can't generate a class from a variable, so this is a
+              // deliberate, sanctioned exception to the Tailwind-only rule.
+              style={{ backgroundColor: opt.swatch }}
+            />
+          )}
           {opt.label}
         </button>
       ))}
@@ -113,6 +124,8 @@ function SettingsPanel({
   toggleLanguage,
   theme,
   onThemeChange,
+  accent,
+  onAccentChange,
   user,
   timeUnit,
   onToggleTimeUnit,
@@ -309,6 +322,21 @@ function SettingsPanel({
                 ]}
                 value={theme}
                 onSelect={(v) => onThemeChange(v)}
+              />
+            }
+          />
+
+          <Row
+            label={t('colorScheme')}
+            control={
+              <PillGroup
+                options={[
+                  { value: 'blue', label: t('colorSchemeBlue'), swatch: ACCENT_PALETTES.blue.light[600] },
+                  { value: 'orange', label: t('colorSchemeOrange'), swatch: ACCENT_PALETTES.orange.light[600] },
+                  { value: 'green', label: t('colorSchemeGreen'), swatch: ACCENT_PALETTES.green.light[600] },
+                ]}
+                value={accent}
+                onSelect={(v) => onAccentChange(v)}
               />
             }
           />

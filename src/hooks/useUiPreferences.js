@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getItem, setItem } from '../utils/safeStorage';
-import { getTheme, setTheme as setThemeService } from '../services/themeService';
+import {
+  getTheme, setTheme as setThemeService,
+  getAccent, setAccent as setAccentService,
+} from '../services/themeService';
 
 export function useUiPreferences() {
   const [timeUnit, setTimeUnit] = useState(() => {
@@ -15,6 +18,7 @@ export function useUiPreferences() {
     return getItem('drummate_compact_mode') === 'true';
   });
   const [theme, setThemeState] = useState(getTheme);
+  const [accent, setAccentState] = useState(getAccent);
 
   useEffect(() => {
     setItem('drummate_time_unit', timeUnit);
@@ -33,10 +37,16 @@ export function useUiPreferences() {
     setThemeState(next);
   }, []);
 
+  const setAccent = useCallback((next) => {
+    setAccentService(next);
+    setAccentState(next);
+  }, []);
+
   return {
     timeUnit, setTimeUnit,
     groupByCategory, setGroupByCategory,
     compactMode, setCompactMode,
     theme, setTheme,
+    accent, setAccent,
   };
 }

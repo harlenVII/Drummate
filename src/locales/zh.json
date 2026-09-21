@@ -229,6 +229,10 @@
   "theme": "主题",
   "themeLight": "浅色",
   "themeDark": "深色",
+  "colorScheme": "配色",
+  "colorSchemeBlue": "蓝色",
+  "colorSchemeOrange": "橙色",
+  "colorSchemeGreen": "绿色",
   "settingsSection": {
     "display": "显示",
     "reports": "报告",

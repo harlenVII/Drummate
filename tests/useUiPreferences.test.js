@@ -24,3 +24,22 @@ describe('useUiPreferences', () => {
     expect(result.current.groupByCategory).toBe(false);
   });
 });
+
+describe('useUiPreferences accent', () => {
+  it('defaults to blue and round-trips a change', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useUiPreferences());
+    expect(result.current.accent).toBe('blue');
+    act(() => result.current.setAccent('orange'));
+    expect(result.current.accent).toBe('orange');
+    expect(localStorage.getItem('drummate_accent')).toBe('orange');
+  });
+
+  it('does not disturb the theme axis', () => {
+    const { result } = renderHook(() => useUiPreferences());
+    act(() => result.current.setTheme('dark'));
+    act(() => result.current.setAccent('green'));
+    expect(result.current.theme).toBe('dark');
+    expect(result.current.accent).toBe('green');
+  });
+});
