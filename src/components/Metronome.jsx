@@ -175,7 +175,7 @@ function Metronome({
         className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors shadow-lg ${
           isPlaying
             ? 'bg-red-500 hover:bg-red-600 shadow-red-500/40'
-            : 'bg-blue-600 dark:bg-indigo-600 hover:bg-blue-700 dark:hover:bg-indigo-700 shadow-blue-600/40 dark:shadow-indigo-600/40'
+            : 'bg-accent-600 hover:bg-accent-700 shadow-accent-600/40'
         } text-white`}
       >
         {isPlaying ? (
@@ -197,7 +197,7 @@ function Metronome({
             onClick={() => setSoundType(key)}
             className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
               soundType === key
-                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
+                ? 'bg-accent-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -214,7 +214,7 @@ function Metronome({
             onClick={() => handleTimeSignatureChange([num, den])}
             className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
               timeSignature[0] === num && timeSignature[1] === den
-                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
+                ? 'bg-accent-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -231,7 +231,7 @@ function Metronome({
             onClick={() => handleSubdivisionChange(key)}
             className={`${compactMode ? 'py-1.5' : 'py-3'} rounded-lg text-sm font-medium transition-colors flex items-center justify-center ${
               subdivision === key
-                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
+                ? 'bg-accent-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
@@ -245,7 +245,7 @@ function Metronome({
         onClick={() => setAccentFirstBeat(!accentFirstBeat)}
         className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
           accentFirstBeat
-            ? 'bg-blue-600 dark:bg-indigo-600 text-white'
+            ? 'bg-accent-600 text-white'
             : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
         }`}
       >

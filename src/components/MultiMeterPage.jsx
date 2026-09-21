@@ -97,9 +97,9 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
         ${compactMode ? 'p-1.5 rounded-lg' : 'p-3 rounded-xl'} border-2
         transition-all duration-150
         ${isCurrentlyPlaying
-          ? 'border-blue-500 dark:border-indigo-500 bg-blue-50 dark:bg-indigo-50 dark:bg-indigo-900/40 scale-105 shadow-md'
+          ? 'border-accent-500 bg-accent-50 dark:bg-accent-900/40 scale-105 shadow-md'
           : isSelected
-            ? 'border-blue-400 dark:border-indigo-400 bg-blue-50 dark:bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-blue-300 dark:ring-indigo-300'
+            ? 'border-accent-400 bg-accent-50 dark:bg-accent-900/20 ring-2 ring-accent-300'
             : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
         }
         ${editing ? 'cursor-pointer' : ''}
@@ -110,13 +110,13 @@ function SortableSlot({ slot, index, isSelected, editing, isPlaying, playingSlot
       )}
 
       <span className={`text-[10px] font-bold mb-0.5 ${
-        isCurrentlyPlaying ? 'text-blue-600 dark:text-indigo-600' : 'text-gray-400 dark:text-slate-500'
+        isCurrentlyPlaying ? 'text-accent-600' : 'text-gray-400 dark:text-slate-500'
       }`}>
         {index + 1}
       </span>
 
       <span className={`text-sm font-semibold ${
-        isCurrentlyPlaying ? 'text-blue-700 dark:text-indigo-700' : 'text-gray-700 dark:text-slate-200'
+        isCurrentlyPlaying ? 'text-accent-700' : 'text-gray-700 dark:text-slate-200'
       }`}>
         {slot.beats}/{slot.noteValue}
       </span>
@@ -337,7 +337,7 @@ function MultiMeterPage({
                 if (!slot) return null;
                 return (
                   <div className="relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg cursor-grabbing">
-                    <span className="text-sm font-semibold text-blue-700 dark:text-indigo-700">{slot.beats}/{slot.noteValue}</span>
+                    <span className="text-sm font-semibold text-accent-700">{slot.beats}/{slot.noteValue}</span>
                   </div>
                 );
               })() : null}
@@ -363,12 +363,12 @@ function MultiMeterPage({
                 className={`relative ${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
                   slots.length >= MAX_SLOTS
                     ? 'bg-gray-100 dark:bg-slate-800 text-gray-300 dark:text-slate-600 cursor-not-allowed'
-                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-blue-50 dark:hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-blue-400 dark:hover:border-indigo-400'
+                    : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-accent-50 dark:hover:bg-accent-900/30 hover:border-accent-400'
                 }`}
               >
                 {beats}/{noteValue}
                 {slots.length < MAX_SLOTS && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 dark:bg-indigo-500 text-white
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent-500 text-white
                     rounded-full flex items-center justify-center text-[10px] font-bold">
                     +
                   </span>
@@ -392,7 +392,7 @@ function MultiMeterPage({
               ? 'bg-gray-300 dark:bg-slate-600 cursor-not-allowed'
               : isPlaying
                 ? 'bg-red-500 hover:bg-red-600 shadow-red-500/40'
-                : 'bg-blue-600 dark:bg-indigo-600 hover:bg-blue-700 dark:hover:bg-indigo-700 shadow-blue-600/40 dark:shadow-indigo-600/40'
+                : 'bg-accent-600 hover:bg-accent-700 shadow-accent-600/40'
           } text-white`}
       >
         {isPlaying ? (
@@ -414,7 +414,7 @@ function MultiMeterPage({
             onClick={() => setSoundType(key)}
             className={`${compactMode ? 'px-2 py-1' : 'px-3 py-1.5'} rounded-lg text-sm font-medium transition-colors ${
               soundType === key
-                ? 'bg-blue-600 dark:bg-indigo-600 text-white'
+                ? 'bg-accent-600 text-white'
                 : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-600'
             }`}
           >
