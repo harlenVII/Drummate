@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { cwd } from 'node:process';
 import { describe, it, expect } from 'vitest';
 import { ACCENTS, ACCENT_STEPS, ACCENT_PALETTES, DEFAULT_ACCENT } from '../src/constants/accentPalettes';
 
@@ -83,12 +84,12 @@ describe('accent palettes', () => {
 });
 
 describe('index.css token blocks', () => {
-  // Note: using process.cwd() for compatibility with different test environments
+  // Note: using cwd() fallback for compatibility with different test environments
   let cssPath;
   try {
     cssPath = fileURLToPath(new URL('../src/index.css', import.meta.url));
-  } catch (e) {
-    cssPath = `${process.cwd()}/src/index.css`;
+  } catch {
+    cssPath = `${cwd()}/src/index.css`;
   }
   const css = readFileSync(cssPath, 'utf8');
 
