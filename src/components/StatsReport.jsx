@@ -83,7 +83,7 @@ function StatsReport({ items, timeUnit, groupByCategory, compactMode = false }) 
 
       <button
         onClick={() => setShowModal(true)}
-        className={`mt-1 ${compactMode ? 'px-3 py-1' : 'px-4 py-2'} bg-blue-600 dark:bg-indigo-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors`}
+        className={`mt-1 ${compactMode ? 'px-3 py-1' : 'px-4 py-2'} bg-accent-600 text-white rounded-lg font-medium hover:bg-accent-700 transition-colors`}
       >
         {t('generateReport')}
       </button>

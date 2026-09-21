@@ -155,7 +155,7 @@ function ReportGeneratorModal({
             <span className="text-sm text-gray-700 dark:text-slate-200">{rangeLabel}</span>
             <button
               onClick={() => setShowRange(true)}
-              className="text-sm font-medium text-blue-600 dark:text-indigo-400 hover:underline"
+              className="text-sm font-medium text-accent-600 dark:text-accent-400 hover:underline"
             >
               {t('reportGenerator.changeRange')}
             </button>
@@ -174,8 +174,8 @@ function ReportGeneratorModal({
                     onClick={() => applyPreset(preset.start, preset.end)}
                     className={`flex-1 py-1.5 text-sm font-medium rounded-lg border transition-colors ${
                       active
-                        ? 'bg-blue-600 dark:bg-indigo-600 text-white border-blue-600 dark:border-indigo-600'
-                        : 'text-gray-600 dark:text-slate-400 border-gray-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-indigo-400 hover:text-blue-600 dark:hover:text-indigo-600 dark:hover:border-indigo-500 dark:hover:text-indigo-400'
+                        ? 'bg-accent-600 text-white border-accent-600'
+                        : 'text-gray-600 dark:text-slate-400 border-gray-300 dark:border-slate-600 hover:border-accent-400 dark:hover:border-accent-500 hover:text-accent-600'
                     }`}
                   >
                     {preset.label}
@@ -203,7 +203,7 @@ function ReportGeneratorModal({
                   dateFormat="yyyy/MM/dd"
                   calendarStartDay={1}
                   shouldCloseOnSelect
-                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500"
                   wrapperClassName="flex-1"
                   popperProps={{ strategy: 'fixed' }}
                 />
@@ -226,7 +226,7 @@ function ReportGeneratorModal({
                   dateFormat="yyyy/MM/dd"
                   calendarStartDay={1}
                   shouldCloseOnSelect
-                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+                  className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500"
                   wrapperClassName="flex-1"
                   popperProps={{ strategy: 'fixed' }}
                 />
@@ -246,7 +246,7 @@ function ReportGeneratorModal({
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 copied
                   ? 'bg-teal-600 text-white'
-                  : 'bg-blue-600 dark:bg-indigo-600 text-white hover:bg-blue-700 dark:hover:bg-indigo-700'
+                  : 'bg-accent-600 text-white hover:bg-accent-700'
               }`}
             >
               {copied ? t('copied') : t('copyToClipboard')}

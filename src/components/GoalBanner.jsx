@@ -59,7 +59,7 @@ function GoalBanner({ timeUnit }) {
       </div>
       <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-1">
         <div
-          className={`h-1 rounded-full transition-all ${met ? 'bg-green-500' : 'bg-blue-500 dark:bg-indigo-500'}`}
+          className={`h-1 rounded-full transition-all ${met ? 'bg-green-500' : 'bg-accent-500'}`}
           style={{ width: `${progressPercent}%` }}
         />
       </div>

@@ -53,7 +53,7 @@ export default function ReportItemCard({
           className={`${compactMode ? 'mt-1' : 'mt-2'} bg-gray-100 dark:bg-slate-700 rounded-full h-1.5`}
         >
           <div
-            className="bg-blue-500 dark:bg-indigo-500 rounded-full h-1.5"
+            className="bg-accent-500 rounded-full h-1.5"
             style={{ width: `${(entry.duration / grandTotal) * 100}%` }}
           />
         </div>

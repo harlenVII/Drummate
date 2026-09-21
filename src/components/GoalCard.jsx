@@ -91,13 +91,13 @@ function GoalCard({
             <button
               type="button"
               onClick={() => onPin(goal)}
-              className={`text-xs hover:underline ${goal.pinned ? 'text-blue-600 dark:text-indigo-400 font-medium' : 'text-gray-400 dark:text-slate-500'}`}
+              className={`text-xs hover:underline ${goal.pinned ? 'text-accent-600 dark:text-accent-400 font-medium' : 'text-gray-400 dark:text-slate-500'}`}
             >
               {goal.pinned ? t('goal.pinned') : t('goal.pinAction')}
             </button>
           )}
           {onEdit && (
-            <button onClick={() => onEdit(goal)} className="text-xs text-blue-600 dark:text-indigo-600 hover:underline">
+            <button onClick={() => onEdit(goal)} className="text-xs text-accent-600 hover:underline">
               {t('goal.editGoal')}
             </button>
           )}
@@ -121,7 +121,7 @@ function GoalCard({
 
       <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
         <div
-          className={`h-2 rounded-full transition-all ${met ? 'bg-green-500' : 'bg-blue-500 dark:bg-indigo-500'}`}
+          className={`h-2 rounded-full transition-all ${met ? 'bg-green-500' : 'bg-accent-500'}`}
           style={{ width: `${progressPercent}%` }}
         />
       </div>

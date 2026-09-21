@@ -87,7 +87,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
             onChange={(e) => setName(e.target.value)}
             placeholder={t('goal.namePlaceholder')}
             maxLength={80}
-            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500"
           />
         </label>
 
@@ -105,7 +105,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
             dateFormat="yyyy/MM/dd"
             calendarStartDay={1}
             shouldCloseOnSelect
-            className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+            className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500"
             wrapperClassName="w-full"
             popperProps={{ strategy: 'fixed' }}
           />
@@ -125,7 +125,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
             dateFormat="yyyy/MM/dd"
             calendarStartDay={1}
             shouldCloseOnSelect
-            className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+            className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500"
             wrapperClassName="w-full"
             popperProps={{ strategy: 'fixed' }}
           />
@@ -139,7 +139,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
             step="0.5"
             value={targetHours}
             onChange={(e) => { setTargetHours(e.target.value); setError(''); }}
-            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500"
+            className="border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-500"
           />
         </label>
 
@@ -154,7 +154,7 @@ function GoalSetupModal({ isOpen, onClose, onSave, goal }) {
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-blue-600 dark:bg-indigo-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors"
+            className="px-4 py-2 bg-accent-600 text-white text-sm rounded-lg font-medium hover:bg-accent-700 transition-colors"
           >
             {t('save')}
           </button>

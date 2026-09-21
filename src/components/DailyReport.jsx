@@ -62,7 +62,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
           onClick={() => setEditMode(!editMode)}
           className={`text-sm font-medium px-3 py-1 rounded-lg transition-colors ${
             editMode
-              ? 'text-blue-600 dark:text-indigo-600 bg-blue-50 dark:bg-indigo-50 dark:bg-indigo-900/30'
+              ? 'text-accent-600 bg-accent-50 dark:bg-accent-900/30'
               : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
           }`}
         >
@@ -101,7 +101,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {editMode && (
         <button
           onClick={() => setShowItemPicker(true)}
-          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-gray-500 dark:text-slate-400 font-medium hover:border-blue-400 dark:hover:border-indigo-400 hover:text-blue-500 dark:hover:text-indigo-500 transition-colors"
+          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-gray-500 dark:text-slate-400 font-medium hover:border-accent-400 hover:text-accent-500 transition-colors"
         >
           + {t('addManualTime')}
         </button>
@@ -121,7 +121,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {grandTotal > 0 && (
         <button
           onClick={() => setShowModal(true)}
-          className="mt-1 px-4 py-2 bg-blue-600 dark:bg-indigo-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors"
+          className="mt-1 px-4 py-2 bg-accent-600 text-white rounded-lg font-medium hover:bg-accent-700 transition-colors"
         >
           {t('generateReport')}
         </button>
@@ -165,8 +165,8 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
                     {item.category && (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         item.category === 'fundamentals'
-                          ? 'bg-blue-100 dark:bg-indigo-100 text-blue-600 dark:text-indigo-600'
-                          : 'bg-purple-100 text-purple-600'
+                          ? 'bg-accent-100 text-accent-600'
+                          : 'bg-accent-100 text-accent-600'
                       }`}>
                         {t(`categories.${item.category}`)}
                       </span>

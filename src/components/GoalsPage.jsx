@@ -192,7 +192,7 @@ function GoalsPage({ user, compactMode = false, timeUnit }) {
           <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-300">{t('goal.current')}</h3>
           <button
             onClick={handleNew}
-            className="px-3 py-1.5 bg-blue-600 dark:bg-indigo-600 text-white text-sm rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors"
+            className="px-3 py-1.5 bg-accent-600 text-white text-sm rounded-lg font-medium hover:bg-accent-700 transition-colors"
           >
             {t('goal.newGoal')}
           </button>
