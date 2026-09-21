@@ -166,7 +166,8 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         item.category === 'fundamentals'
                           ? 'bg-accent-100 text-accent-600'
-                          : 'bg-accent-100 text-accent-600'
+                          /* purple is an intentional category marker, deliberately excluded from the accent system */
+                          : 'bg-purple-100 text-purple-600'
                       }`}>
                         {t(`categories.${item.category}`)}
                       </span>
