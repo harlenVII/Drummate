@@ -10,7 +10,7 @@ export default function AppHeader({ user, onOpenSettings }) {
       </h1>
       <button
         onClick={onOpenSettings}
-        className="w-9 h-9 rounded-full bg-blue-600 dark:bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors shrink-0"
+        className="w-9 h-9 rounded-full bg-accent-600 flex items-center justify-center text-white text-sm font-semibold hover:bg-accent-700 transition-colors shrink-0"
         aria-label={t('accessibility.openSettings')}
         data-settings-button
       >

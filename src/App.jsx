@@ -192,7 +192,7 @@ function App() {
           role="status"
           aria-live="polite"
         >
-          <div className="w-12 h-12 border-4 border-blue-500 dark:border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-accent-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-700 dark:text-slate-200 font-medium">{t('auth.syncing')}</p>
           <button
             onClick={handleEnterOfflineMode}

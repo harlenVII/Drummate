@@ -43,7 +43,7 @@ export default function VisitorSignUpModal({ onClose }) {
           </div>
         ) : (
           <div className="p-6">
-            <div className="mb-4 px-4 py-3 bg-blue-50 dark:bg-indigo-900/30 border border-blue-200 dark:border-indigo-700 rounded-xl text-blue-700 dark:text-indigo-200 text-sm">
+            <div className="mb-4 px-4 py-3 bg-accent-50 dark:bg-accent-900/30 border border-accent-200 dark:border-accent-700 rounded-xl text-accent-700 dark:text-accent-200 text-sm">
               {t('settings.visitorSignUpNotice')}
             </div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-4">
@@ -56,7 +56,7 @@ export default function VisitorSignUpModal({ onClose }) {
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('auth.name')}
                 autoComplete="name"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               />
               <input
                 type="email"
@@ -66,7 +66,7 @@ export default function VisitorSignUpModal({ onClose }) {
                 required
                 inputMode="email"
                 autoComplete="email"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               />
               <input
                 type="password"
@@ -76,7 +76,7 @@ export default function VisitorSignUpModal({ onClose }) {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-base text-gray-800 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent"
               />
               {error && (
                 <p className="text-red-500 text-sm">{error}</p>
@@ -84,7 +84,7 @@ export default function VisitorSignUpModal({ onClose }) {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-accent-500 text-white font-semibold rounded-xl hover:bg-accent-600 transition-colors disabled:opacity-50"
               >
                 {submitting ? t('auth.syncing') : t('auth.signUp')}
               </button>

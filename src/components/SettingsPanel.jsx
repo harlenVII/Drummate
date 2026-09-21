@@ -95,8 +95,8 @@ function PillGroup({ options, value, onSelect }) {
   );
 }
 
-function Toggle({ checked, onChange, disabled = false, tone = 'indigo' }) {
-  const onBg = tone === 'amber' ? 'bg-amber-500' : 'bg-blue-600 dark:bg-indigo-600';
+function Toggle({ checked, onChange, disabled = false, tone = 'accent' }) {
+  const onBg = tone === 'amber' ? 'bg-amber-500' : 'bg-accent-600';
   return (
     <button
       onClick={onChange}
@@ -203,7 +203,7 @@ function SettingsPanel({
     naturalVoiceSubtitle = t('naturalVoice.requires');
   } else if (kokoroStatus === 'downloading') {
     naturalVoiceMessage = t('naturalVoice.downloading');
-    naturalVoiceMessageTone = 'text-blue-500 dark:text-indigo-500';
+    naturalVoiceMessageTone = 'text-accent-500';
   } else if (kokoroStatus === 'ready' && kokoroEffective) {
     naturalVoiceMessage = t('naturalVoice.ready');
     naturalVoiceMessageTone = 'text-green-600';
@@ -226,13 +226,13 @@ function SettingsPanel({
     handsFreeMessageTone = 'text-red-500';
   } else if (wakeWordLoading) {
     handsFreeMessage = t('handsFree.loading');
-    handsFreeMessageTone = 'text-blue-500 dark:text-indigo-500';
+    handsFreeMessageTone = 'text-accent-500';
   } else if (listeningState === 'error') {
     handsFreeMessage = t('handsFree.commandError');
     handsFreeMessageTone = 'text-red-500';
   } else if (listeningState === 'processing' && voiceTranscript) {
     handsFreeMessage = `"${voiceTranscript}"`;
-    handsFreeMessageTone = 'text-blue-600 dark:text-indigo-600 font-medium';
+    handsFreeMessageTone = 'text-accent-600 font-medium';
   } else if (wakeWordDetected && listeningState === 'listening') {
     handsFreeMessage = t('handsFree.listening');
     handsFreeMessageTone = 'text-green-600 font-medium';
@@ -281,7 +281,10 @@ function SettingsPanel({
         {/* Profile */}
         {!isVisitor && (
           <div className="px-5 py-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-base font-semibold shrink-0">
+            {/* No accent-ramp equivalent for the violet end-stop; deliberate,
+                accepted minor deviation so the avatar doesn't stay indigo/violet
+                in the orange/green schemes (see task-11 ruling). */}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 flex items-center justify-center text-white text-base font-semibold shrink-0">
               {(user?.name || user?.email || '?')[0].toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -370,7 +373,7 @@ function SettingsPanel({
                 <select
                   value={currentTz}
                   onChange={handleTimezoneChange}
-                  className="appearance-none bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 pr-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm text-right"
+                  className="appearance-none bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 pr-5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 dark:focus-visible:ring-accent-400 focus-visible:rounded-sm text-right"
                 >
                   {!currentTzInList && <option value={currentTz}>{currentTz}</option>}
                   {TIMEZONE_OPTIONS.map((o) => (
@@ -406,7 +409,7 @@ function SettingsPanel({
                     setPriorHoursInput(String(val));
                     setPriorHours(val, backend, userId).catch(console.error);
                   }}
-                  className="w-20 text-right bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:rounded-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="w-20 text-right bg-transparent border-none text-sm text-gray-700 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 dark:focus-visible:ring-accent-400 focus-visible:rounded-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
                 <span className="text-xs text-gray-400 dark:text-slate-500">hrs</span>
               </div>
@@ -438,7 +441,7 @@ function SettingsPanel({
               <p className={`text-xs ${naturalVoiceMessageTone}`}>{naturalVoiceMessage}</p>
               <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 dark:bg-indigo-500 rounded-full transition-all duration-300"
+                  className="h-full bg-accent-500 rounded-full transition-all duration-300"
                   style={{ width: `${kokoroProgress.percentage}%` }}
                 />
               </div>
@@ -492,7 +495,7 @@ function SettingsPanel({
           {offlineMode && pendingCount > 0 && (
             <button
               onClick={onShowPending}
-              className="block w-full px-5 pb-2 text-right text-xs text-blue-600 dark:text-indigo-400 hover:underline"
+              className="block w-full px-5 pb-2 text-right text-xs text-accent-600 dark:text-accent-400 hover:underline"
             >
               {t('offline.settingsPendingRow', { count: pendingCount })} →
             </button>
@@ -508,7 +511,7 @@ function SettingsPanel({
               </div>
               <button
                 onClick={() => setShowSignUpModal(true)}
-                className="w-full py-2 bg-blue-500 dark:bg-indigo-500 text-white font-semibold rounded-xl hover:bg-blue-600 dark:hover:bg-indigo-600 transition-colors"
+                className="w-full py-2 bg-accent-500 text-white font-semibold rounded-xl hover:bg-accent-600 transition-colors"
               >
                 {t('settings.guestSignUp')}
               </button>

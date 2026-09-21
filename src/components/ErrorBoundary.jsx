@@ -26,7 +26,7 @@ export default class ErrorBoundary extends Component {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-indigo-600 rounded-lg hover:bg-blue-700 dark:hover:bg-indigo-700"
+            className="px-4 py-2 text-sm font-medium text-white bg-accent-600 rounded-lg hover:bg-accent-700"
           >
             Reload
           </button>

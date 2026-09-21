@@ -114,7 +114,7 @@ function NotesPage({
 
       <button
         onClick={openCreate}
-        className={`self-start ${compactMode ? 'px-3 py-1' : 'px-4 py-2'} bg-blue-600 dark:bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 dark:hover:bg-indigo-700 transition-colors`}
+        className={`self-start ${compactMode ? 'px-3 py-1' : 'px-4 py-2'} bg-accent-600 text-white text-sm font-medium rounded-md hover:bg-accent-700 transition-colors`}
       >
         {t('notes.addButton')}
       </button>
