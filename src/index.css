@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "react-datepicker/dist/react-datepicker.css";
 
+/* Docs under docs/ contain example JSX with literal class strings; exclude
+ * them from Tailwind's content scan so utility rules aren't generated from
+ * documentation prose and shipped in the build. */
+@source not "../docs";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
@@ -138,6 +143,38 @@ input, textarea {
 /* Ensure popper floats above modal (z-50 = 50) */
 .react-datepicker-popper {
   z-index: 60;
+}
+
+/* Light mode overrides — accent-driven, must precede the .dark block below.
+ * Unscoped (not gated behind `.dark`), so these apply in light mode; dark
+ * mode gets its own copies below because the compound `.dark …` selectors
+ * carry higher specificity and win there regardless.
+ *
+ * Hover states repeat the vendor's `:not([aria-disabled=true])` clause
+ * (see node_modules/react-datepicker/dist/react-datepicker.css) purely to
+ * match its specificity — without it, our hover rule (2 class-selectors)
+ * loses the cascade to the vendor's hover rule (3), which also targets
+ * `__day--selected`. The existing `.dark` hover block below doesn't need
+ * this because the `.dark` ancestor already supplies the third selector. */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: var(--color-accent-600);
+  color: #ffffff;
+}
+
+.react-datepicker__day--selected:not([aria-disabled=true]):hover,
+.react-datepicker__day--keyboard-selected:not([aria-disabled=true]):hover {
+  background-color: var(--color-accent-700);
+}
+
+.react-datepicker__day--today {
+  color: var(--color-accent-600);
+  font-weight: bold;
+}
+
+.react-datepicker__day--today.react-datepicker__day--selected,
+.react-datepicker__day--today.react-datepicker__day--keyboard-selected {
+  color: #ffffff;
 }
 
 /* Dark mode overrides */

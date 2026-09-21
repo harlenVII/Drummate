@@ -117,7 +117,7 @@ export default function AuthScreen() {
             {isSignUp ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
             <button
               onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
-              className="text-accent-500 font-medium hover:underline"
+              className="text-accent-600 font-medium hover:underline"
             >
               {isSignUp ? t('auth.signIn') : t('auth.signUp')}
             </button>

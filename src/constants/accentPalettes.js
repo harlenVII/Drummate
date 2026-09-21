@@ -9,6 +9,11 @@
 //
 // The blue ramps reproduce the pre-migration palette exactly (Tailwind blue in
 // light, indigo in dark), so existing users see no change until they opt in.
+//
+// Text safety: steps 600 and darker are contrast-checked (WCAG AA, 4.5:1) as
+// foreground text on white — see tests/colorSchemes.test.js. Step 500 and
+// lighter are NOT text-safe on white (green/500 is as low as 2.54:1) and must
+// only be used for fills, borders, rings, and gradients — never `text-*`.
 
 export const ACCENTS = ['blue', 'orange', 'green'];
 export const DEFAULT_ACCENT = 'blue';

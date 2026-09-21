@@ -373,7 +373,7 @@ function PracticeItemList({
             </button>
             <button
               onClick={() => setMergeSourceItem(item)}
-              className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-accent-500 transition-colors"
+              className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-accent-600 transition-colors"
               title={t('merge')}
               aria-label={`${t('merge')}: ${item.name}`}
             >

@@ -101,7 +101,7 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       {editMode && (
         <button
           onClick={() => setShowItemPicker(true)}
-          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-gray-500 dark:text-slate-400 font-medium hover:border-accent-400 hover:text-accent-500 transition-colors"
+          className="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg text-gray-500 dark:text-slate-400 font-medium hover:border-accent-400 hover:text-accent-600 transition-colors"
         >
           + {t('addManualTime')}
         </button>

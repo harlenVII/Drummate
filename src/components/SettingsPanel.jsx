@@ -7,7 +7,8 @@ import { getTimezone, setTimezone } from '../services/timezoneService';
 import { getPriorHours, setPriorHours } from '../services/priorPracticeService';
 import { db } from '../services/database';
 import VisitorSignUpModal from './VisitorSignUpModal';
-import { ACCENT_PALETTES } from '../constants/accentPalettes';
+import { resolveAccentRamp } from '../utils/accentPalette';
+import { useIsDarkMode } from '../hooks/useIsDarkMode';
 
 // Curated 24-city list: one common city per UTC offset (plus Kolkata at +5:30
 // for India's population). Offsets shown are standard time; actual offset
@@ -81,7 +82,7 @@ function PillGroup({ options, value, onSelect }) {
           {opt.swatch && (
             <span
               aria-hidden="true"
-              className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10"
+              className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/30"
               // Swatch color is per-option runtime data (one hex per accent scheme);
               // Tailwind can't generate a class from a variable, so this is a
               // deliberate, sanctioned exception to the Tailwind-only rule.
@@ -155,6 +156,7 @@ function SettingsPanel({
   const { t } = useLanguage();
   const { isVisitor, exitVisitorModeLogOff } = useAuth();
   const backend = useBackend();
+  const isDarkMode = useIsDarkMode();
   const [showLogOffConfirm, setShowLogOffConfirm] = useState(false);
   const [showSignUpModal, setShowSignUpModal] = useState(false);
   const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
@@ -203,7 +205,7 @@ function SettingsPanel({
     naturalVoiceSubtitle = t('naturalVoice.requires');
   } else if (kokoroStatus === 'downloading') {
     naturalVoiceMessage = t('naturalVoice.downloading');
-    naturalVoiceMessageTone = 'text-accent-500';
+    naturalVoiceMessageTone = 'text-accent-600';
   } else if (kokoroStatus === 'ready' && kokoroEffective) {
     naturalVoiceMessage = t('naturalVoice.ready');
     naturalVoiceMessageTone = 'text-green-600';
@@ -226,7 +228,7 @@ function SettingsPanel({
     handsFreeMessageTone = 'text-red-500';
   } else if (wakeWordLoading) {
     handsFreeMessage = t('handsFree.loading');
-    handsFreeMessageTone = 'text-accent-500';
+    handsFreeMessageTone = 'text-accent-600';
   } else if (listeningState === 'error') {
     handsFreeMessage = t('handsFree.commandError');
     handsFreeMessageTone = 'text-red-500';
@@ -334,9 +336,9 @@ function SettingsPanel({
             control={
               <PillGroup
                 options={[
-                  { value: 'blue', label: t('colorSchemeBlue'), swatch: ACCENT_PALETTES.blue.light[600] },
-                  { value: 'orange', label: t('colorSchemeOrange'), swatch: ACCENT_PALETTES.orange.light[600] },
-                  { value: 'green', label: t('colorSchemeGreen'), swatch: ACCENT_PALETTES.green.light[600] },
+                  { value: 'blue', label: t('colorSchemeBlue'), swatch: resolveAccentRamp('blue', isDarkMode)[600] },
+                  { value: 'orange', label: t('colorSchemeOrange'), swatch: resolveAccentRamp('orange', isDarkMode)[600] },
+                  { value: 'green', label: t('colorSchemeGreen'), swatch: resolveAccentRamp('green', isDarkMode)[600] },
                 ]}
                 value={accent}
                 onSelect={(v) => onAccentChange(v)}

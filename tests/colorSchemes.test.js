@@ -69,6 +69,20 @@ describe('accent palettes', () => {
     }
   });
 
+  it('is text-safe (AA, 4.5:1) at step 600 on white for every scheme, but NOT at step 500', () => {
+    // Executable contract for the ramp: step 600 and darker may be used as
+    // foreground text (`text-accent-600`) on a white surface. Step 500 and
+    // lighter are for fills/borders/rings/gradients only — they read as too
+    // light for text and must never be used as `text-*`. This guards against
+    // a repeat of the light/500 foreground-text bug (blue 3.68:1, orange
+    // 3.56:1, green 2.54:1 — none of which clear even AA-large 3:1 for green).
+    for (const accent of ACCENTS) {
+      const ramp = ACCENT_PALETTES[accent].light;
+      expect(contrast(ramp[600], WHITE), `${accent} light/600 on white`).toBeGreaterThanOrEqual(AA);
+      expect(contrast(ramp[500], WHITE), `${accent} light/500 on white`).toBeLessThan(AA);
+    }
+  });
+
   it('clears WCAG AA for link text on its surface', () => {
     for (const accent of ACCENTS) {
       // light mode: accent-600 text on a white card
@@ -142,6 +156,28 @@ describe('index.css token blocks', () => {
     expect(datepickerCss).not.toMatch(/#4f46e5|#4338ca|#818cf8/);
     expect(datepickerCss).toMatch(
       /react-datepicker__day--selected[\s\S]{0,200}var\(--color-accent-600\)/,
+    );
+  });
+
+  it('drives the LIGHT-mode date picker selected day from accent tokens too', () => {
+    // Regression guard: the datepicker overrides originally only existed
+    // under `.dark`, so a light-mode selection kept react-datepicker's own
+    // vendor blue (#216ba5) instead of following the chosen scheme. Split the
+    // datepicker rules into what comes before vs. after the `.dark
+    // .react-datepicker {` block, and require the LIGHT half to already
+    // define a token-driven, unscoped (non-`.dark`) selected-day rule.
+    const datepickerCss = css.slice(css.indexOf('.react-datepicker-popper'));
+    const darkBlockStart = datepickerCss.indexOf('.dark .react-datepicker {');
+    expect(darkBlockStart).toBeGreaterThan(-1);
+    const lightBlock = datepickerCss.slice(0, darkBlockStart);
+
+    // Must be unscoped (not gated behind `.dark`) and reference the token.
+    expect(lightBlock).toMatch(
+      /(?<!\.dark\s)\.react-datepicker__day--selected,\s*\n\.react-datepicker__day--keyboard-selected\s*\{\s*background-color:\s*var\(--color-accent-600\)/,
+    );
+    expect(lightBlock).toMatch(/var\(--color-accent-700\)/); // hover
+    expect(lightBlock).toMatch(
+      /\.react-datepicker__day--today\s*\{[^}]*var\(--color-accent-600\)/,
     );
   });
 });
