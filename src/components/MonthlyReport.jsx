@@ -13,14 +13,19 @@ import {
 } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useIsDarkMode } from '../hooks/useIsDarkMode';
+import { useAccent } from '../hooks/useAccent';
+import { resolveAccentRamp, buildHeatmapPalette } from '../utils/accentPalette';
 import { buildBreakdown } from '../utils/practiceStats';
-import { computePercentiles, intensityColor } from '../utils/heatmap';
+import { computePercentiles, intensityColor, intensityTextColor } from '../utils/heatmap';
 
 const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick, onWeekClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const isDarkMode = useIsDarkMode();
+  const accent = useAccent();
+  const ramp = resolveAccentRamp(accent, isDarkMode);
+  const heatPalette = buildHeatmapPalette(ramp, isDarkMode);
   const monthEnd = getMonthEnd(monthStart);
   const monthDays = getDaysInRange(monthStart, monthEnd);
   const today = getTodayString();
@@ -48,10 +53,6 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
   // --- Heatmap ---
   // Intensity buckets from per-day durations (zeros ignored inside the util).
   const { p25, p50, p75 } = computePercentiles(monthDays.map((d) => dayTotals[d] || 0));
-
-  const BG_TEXT = isDarkMode
-    ? { '#334155': '#94a3b8', '#a5b4fc': '#312e81', '#6366f1': '#ffffff', '#4338ca': '#ffffff', '#3730a3': '#ffffff' }
-    : { '#e2e8f0': '#94a3b8', '#bfdbfe': '#1e3a8a', '#60a5fa': '#ffffff', '#2563eb': '#ffffff', '#1e3a8a': '#ffffff' };
 
   // Build calendar grid cells
   const firstDayOfWeek = (new Date(monthStart + 'T12:00:00').getDay() + 6) % 7; // 0=Mon
@@ -176,7 +177,8 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
             const dayNum = parseInt(date.split('-')[2], 10);
             const cx = PADDING + c * (CELL + GAP);
             const cy = r * (CELL + GAP) + HEADER_H;
-            const bg = intensityColor(seconds, { p25, p50, p75 }, isDarkMode);
+            const bg = intensityColor(seconds, { p25, p50, p75 }, heatPalette);
+            const fg = intensityTextColor(seconds, { p25, p50, p75 }, heatPalette);
             return (
               <g key={date} onClick={() => onDayClick(date)} style={{ cursor: 'pointer' }}>
                 <rect
@@ -186,7 +188,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                   height={CELL}
                   rx={4}
                   fill={bg}
-                  stroke={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : 'none'}
+                  stroke={isToday ? ramp[500] : 'none'}
                   strokeWidth={isToday ? 2 : 0}
                 />
                 <text
@@ -194,7 +196,7 @@ function MonthlyReport({ items, monthStart, monthLogs, onMonthChange, onDayClick
                   y={cy + CELL / 2 + 4}
                   textAnchor="middle"
                   fontSize="11"
-                  fill={BG_TEXT[bg]}
+                  fill={fg}
                 >
                   {dayNum}
                 </text>

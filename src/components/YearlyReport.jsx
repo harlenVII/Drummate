@@ -13,6 +13,8 @@ import {
 import { computeLongestStreak, computeCurrentStreak } from '../utils/streaks';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useIsDarkMode } from '../hooks/useIsDarkMode';
+import { useAccent } from '../hooks/useAccent';
+import { resolveAccentRamp, buildHeatmapPalette } from '../utils/accentPalette';
 import { buildBreakdown } from '../utils/practiceStats';
 import { computePercentiles, intensityColor } from '../utils/heatmap';
 
@@ -22,6 +24,9 @@ const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep
 function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, onMonthClick, timeUnit, groupByCategory, compactMode = false }) {
   const { t } = useLanguage();
   const isDarkMode = useIsDarkMode();
+  const accent = useAccent();
+  const ramp = resolveAccentRamp(accent, isDarkMode);
+  const heatPalette = buildHeatmapPalette(ramp, isDarkMode);
   const yearEnd = getYearEnd(yearStart);
   const year = yearStart.split('-')[0];
   const today = getTodayString();
@@ -226,8 +231,8 @@ function YearlyReport({ items, yearStart, yearLogs, onYearChange, onDayClick, on
                 width={CELL}
                 height={CELL}
                 rx={2}
-                fill={intensityColor(seconds, { p25, p50, p75 }, isDarkMode)}
-                stroke={isToday ? (isDarkMode ? '#6366f1' : '#3b82f6') : 'none'}
+                fill={intensityColor(seconds, { p25, p50, p75 }, heatPalette)}
+                stroke={isToday ? ramp[500] : 'none'}
                 strokeWidth={isToday ? 1 : 0}
                 onClick={() => onDayClick(date)}
                 style={{ cursor: 'pointer' }}

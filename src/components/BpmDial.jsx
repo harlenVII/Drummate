@@ -1,6 +1,8 @@
 import { useRef, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useIsDarkMode } from '../hooks/useIsDarkMode';
+import { useAccent } from '../hooks/useAccent';
+import { resolveAccentRamp } from '../utils/accentPalette';
 
 const MIN_BPM = 30;
 const MAX_BPM = 300;
@@ -64,7 +66,8 @@ const ticks = Array.from({ length: NUM_TICKS }, (_, i) => {
 function BpmDial({ bpm, onBpmChange }) {
   const { t } = useLanguage();
   const isDarkMode = useIsDarkMode();
-  const accentColor = isDarkMode ? '#4f46e5' : '#2563eb';
+  const accent = useAccent();
+  const accentColor = resolveAccentRamp(accent, isDarkMode)[600];
   const svgRef = useRef(null);
   const isDragging = useRef(false);
   const lastAngle = useRef(null);

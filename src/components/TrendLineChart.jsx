@@ -1,5 +1,7 @@
 import { formatDuration } from '../utils/formatTime';
 import { useIsDarkMode } from '../hooks/useIsDarkMode';
+import { useAccent } from '../hooks/useAccent';
+import { resolveAccentRamp } from '../utils/accentPalette';
 
 // SVG layout constants (viewBox units, scaled to container width).
 const PAD_X = 12; // horizontal padding so edge dots/labels are not clipped
@@ -17,10 +19,12 @@ const PLOT_H = 60;
  */
 export default function TrendLineChart({ title, points, timeUnit, compactMode = false }) {
   const isDarkMode = useIsDarkMode();
+  const accent = useAccent();
   if (!points || points.length === 0) return null;
 
-  const accent = isDarkMode ? '#6366f1' : '#3b82f6';
-  const accentLight = isDarkMode ? '#a5b4fc' : '#93c5fd';
+  const ramp = resolveAccentRamp(accent, isDarkMode);
+  const accentColor = ramp[500];
+  const accentLight = ramp[300];
   const futureDot = isDarkMode ? '#334155' : '#e5e7eb';
 
   const n = points.length;
@@ -50,7 +54,7 @@ export default function TrendLineChart({ title, points, timeUnit, compactMode = 
           <polyline
             points={polylineStr}
             fill="none"
-            stroke={accent}
+            stroke={accentColor}
             strokeWidth="2"
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -73,7 +77,7 @@ export default function TrendLineChart({ title, points, timeUnit, compactMode = 
                 cx={p.x}
                 cy={p.y}
                 r={p.future ? 3 : p.highlight ? 5 : 4}
-                fill={p.future ? futureDot : p.highlight ? accent : accentLight}
+                fill={p.future ? futureDot : p.highlight ? accentColor : accentLight}
               />
               {!p.future && (
                 <text x={p.x} y={p.y - 8} textAnchor={valueAnchor} fontSize="9" fill="#6b7280">
@@ -85,7 +89,7 @@ export default function TrendLineChart({ title, points, timeUnit, compactMode = 
                 y={PAD_TOP + PLOT_H + 14}
                 textAnchor="middle"
                 fontSize="9"
-                fill={p.future ? futureDot : p.highlight ? accent : '#9ca3af'}
+                fill={p.future ? futureDot : p.highlight ? accentColor : '#9ca3af'}
               >
                 {p.xLabel}
               </text>
