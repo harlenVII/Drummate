@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { ACCENTS, ACCENT_STEPS, ACCENT_PALETTES, DEFAULT_ACCENT } from '../src/constants/accentPalettes';
 
@@ -77,5 +79,68 @@ describe('accent palettes', () => {
       expect(contrast(ACCENT_PALETTES[accent].dark[400], SLATE_900), `${accent} dark link on page`)
         .toBeGreaterThanOrEqual(AA);
     }
+  });
+});
+
+describe('index.css token blocks', () => {
+  // Note: using process.cwd() for compatibility with different test environments
+  let cssPath;
+  try {
+    cssPath = fileURLToPath(new URL('../src/index.css', import.meta.url));
+  } catch (e) {
+    cssPath = `${process.cwd()}/src/index.css`;
+  }
+  const css = readFileSync(cssPath, 'utf8');
+
+  // Pulls every `--color-accent-N: #hex;` declaration out of the block that
+  // starts at `selector`, so the stylesheet can be compared to the JS tables.
+  const rampFor = (selector) => {
+    const start = css.indexOf(selector);
+    if (start === -1) throw new Error(`no CSS block for selector: ${selector}`);
+    const open = css.indexOf('{', start);
+    const close = css.indexOf('}', open);
+    const body = css.slice(open, close);
+    const found = {};
+    for (const m of body.matchAll(/--color-accent-(\d+)\s*:\s*(#[0-9a-fA-F]{6})/g)) {
+      found[Number(m[1])] = m[2].toLowerCase();
+    }
+    return found;
+  };
+
+  const selectors = {
+    'blue/light': '@theme',
+    'orange/light': 'html[data-accent="orange"]',
+    'green/light': 'html[data-accent="green"]',
+    'blue/dark': 'html.dark {',
+    'orange/dark': 'html.dark[data-accent="orange"]',
+    'green/dark': 'html.dark[data-accent="green"]',
+  };
+
+  for (const [label, selector] of Object.entries(selectors)) {
+    it(`${label} matches accentPalettes.js`, () => {
+      const [accent, mode] = label.split('/');
+      expect(rampFor(selector)).toEqual(ACCENT_PALETTES[accent][mode]);
+    });
+  }
+
+  it('declares the blue light ramp as the @theme default', () => {
+    // An unconfigured document must resolve to blue/light.
+    expect(rampFor('@theme')[600]).toBe('#2563eb');
+  });
+
+  it('orders dark blocks after light blocks so equal specificity resolves correctly', () => {
+    expect(css.indexOf('html.dark {')).toBeGreaterThan(css.indexOf('html[data-accent="green"]'));
+    expect(css.indexOf('html.dark[data-accent="orange"]')).toBeGreaterThan(css.indexOf('html.dark {'));
+  });
+
+  it('drives the date picker from accent tokens rather than hardcoded indigo', () => {
+    // Scope to the datepicker rules only. The indigo hexes legitimately appear
+    // earlier in the file as the blue scheme's dark ramp, so asserting against
+    // the whole stylesheet would fail.
+    const datepickerCss = css.slice(css.indexOf('.react-datepicker-popper'));
+    expect(datepickerCss).not.toMatch(/#4f46e5|#4338ca|#818cf8/);
+    expect(datepickerCss).toMatch(
+      /react-datepicker__day--selected[\s\S]{0,200}var\(--color-accent-600\)/,
+    );
   });
 });
