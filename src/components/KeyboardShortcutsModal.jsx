@@ -1,20 +1,22 @@
 import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
+// Grouped: navigation, then appearance toggles, then actions, then help.
+// Descriptions are kept short so every row fits on one line (see whitespace-nowrap below).
 const SHORTCUTS = [
-  { keys: ['1', '2', '3', '4'], descEn: 'Switch to Practice / Metronome / Report / Notes', descZh: '切换到练习 / 节拍器 / 报告 / 笔记' },
-  { keys: ['U'],                descEn: 'Toggle time unit: Minutes / Hours',               descZh: '切换时间单位：分钟 / 小时' },
-  { keys: ['L'],                descEn: 'Toggle language: English / Chinese',               descZh: '切换语言：英文 / 中文' },
-  { keys: ['T'],                descEn: 'Toggle theme: Light / Dark',                       descZh: '切换主题：浅色 / 深色' },
-  { keys: ['C'],                descEn: 'Cycle accent color',                               descZh: '切换主题色' },
-  { keys: ['S'],                descEn: 'Stop active timer',                                descZh: '停止计时器' },
-  { keys: ['R'],                descEn: "Today's report (copyable)",                       descZh: '今日报告（可复制）' },
-  { keys: ['Y'],                descEn: "Yesterday's report (copyable)",                   descZh: '昨日报告（可复制）' },
-  { keys: ['A'],                descEn: 'Toggle accent first beat (Metronome)',              descZh: '切换重音第一拍（节拍器）' },
-  { keys: ['M'],                descEn: 'Go to Metronome › Metronome',                     descZh: '前往节拍器 › 节拍器' },
-  { keys: ['P'],                descEn: 'Go to Metronome › Practice',                      descZh: '前往节拍器 › 练习' },
-  { keys: ['G'],                descEn: 'Go to Report › Goals',                          descZh: '前往报告 › 目标' },
-  { keys: ['?'],                descEn: null,                                               descZh: null },
+  { keys: ['1', '2', '3', '4'], descEn: 'Practice / Metronome / Report / Notes', descZh: '练习 / 节拍器 / 报告 / 笔记' },
+  { keys: ['M'],                descEn: 'Go to Metronome › Metronome',          descZh: '前往节拍器 › 节拍器' },
+  { keys: ['P'],                descEn: 'Go to Metronome › Practice',           descZh: '前往节拍器 › 练习' },
+  { keys: ['G'],                descEn: 'Go to Report › Goals',                 descZh: '前往报告 › 目标' },
+  { keys: ['U'],                descEn: 'Time unit: Minutes / Hours',           descZh: '时间单位：分钟 / 小时' },
+  { keys: ['L'],                descEn: 'Language: English / Chinese',          descZh: '语言：英文 / 中文' },
+  { keys: ['T'],                descEn: 'Theme: Light / Dark',                  descZh: '主题：浅色 / 深色' },
+  { keys: ['C'],                descEn: 'Cycle accent color',                   descZh: '切换主题色' },
+  { keys: ['S'],                descEn: 'Stop active timer',                    descZh: '停止计时器' },
+  { keys: ['A'],                descEn: 'Accent beat 1 (Metronome)',            descZh: '重音第一拍（节拍器）' },
+  { keys: ['R'],                descEn: "Today's report (copyable)",            descZh: '今日报告（可复制）' },
+  { keys: ['Y'],                descEn: "Yesterday's report (copyable)",        descZh: '昨日报告（可复制）' },
+  { keys: ['?'],                descEn: null,                                   descZh: null },
 ];
 
 function Kbd({ label }) {
@@ -45,7 +47,7 @@ function KeyboardShortcutsModal({ isOpen, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm flex flex-col"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -57,7 +59,7 @@ function KeyboardShortcutsModal({ isOpen, onClose }) {
           </h2>
         </div>
 
-        <div className="px-5 py-3">
+        <div className="px-5 py-3 overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
               {SHORTCUTS.map(({ keys, descEn, descZh }) => {
@@ -74,7 +76,7 @@ function KeyboardShortcutsModal({ isOpen, onClose }) {
                         </span>
                       ))}
                     </td>
-                    <td className="py-2 text-gray-600 dark:text-slate-300">{desc}</td>
+                    <td className="py-2 whitespace-nowrap text-gray-600 dark:text-slate-300">{desc}</td>
                   </tr>
                 );
               })}
