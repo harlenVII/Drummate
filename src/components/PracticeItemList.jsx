@@ -593,6 +593,10 @@ function PracticeItemList({
           </span>
         </div>
         {isActive ? (
+          /* Stop deliberately stays amber rather than following the accent: it
+             signals "a session is running", the same language as the offline
+             banner and warning UI. It must also stay distinguishable from the
+             accent-colored Start buttons it sits beside in the same list. */
           <button
             onClick={() => onStop()}
             className="shrink-0 px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
@@ -602,7 +606,7 @@ function PracticeItemList({
         ) : (
           <button
             onClick={() => onStart(item.id)}
-            className="shrink-0 px-4 py-1.5 bg-green-600 dark:bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-teal-700 transition-colors"
+            className="shrink-0 px-4 py-1.5 bg-accent-600 text-white rounded-lg text-sm font-medium hover:bg-accent-700 transition-colors"
           >
             {t('start')}
           </button>
