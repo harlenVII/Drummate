@@ -3,9 +3,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const SHORTCUTS = [
   { keys: ['1', '2', '3', '4'], descEn: 'Switch to Practice / Metronome / Report / Notes', descZh: '切换到练习 / 节拍器 / 报告 / 笔记' },
-  { keys: ['T'],                descEn: 'Toggle time unit: Minutes / Hours',               descZh: '切换时间单位：分钟 / 小时' },
-  { keys: ['E', 'C'],           descEn: 'Language: English / Chinese',                      descZh: '语言：英文 / 中文' },
-  { keys: ['L', 'D'],           descEn: 'Theme: Light / Dark',                              descZh: '主题：浅色 / 深色' },
+  { keys: ['U'],                descEn: 'Toggle time unit: Minutes / Hours',               descZh: '切换时间单位：分钟 / 小时' },
+  { keys: ['L'],                descEn: 'Toggle language: English / Chinese',               descZh: '切换语言：英文 / 中文' },
+  { keys: ['T'],                descEn: 'Toggle theme: Light / Dark',                       descZh: '切换主题：浅色 / 深色' },
+  { keys: ['C'],                descEn: 'Cycle accent color',                               descZh: '切换主题色' },
   { keys: ['S'],                descEn: 'Stop active timer',                                descZh: '停止计时器' },
   { keys: ['R'],                descEn: "Today's report (copyable)",                       descZh: '今日报告（可复制）' },
   { keys: ['Y'],                descEn: "Yesterday's report (copyable)",                   descZh: '昨日报告（可复制）' },

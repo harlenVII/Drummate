@@ -156,6 +156,7 @@ function App() {
     reports,
     setTimeUnit,
     setTheme,
+    setAccent,
     setMetronomeAccentFirstBeat: metronome.setAccentFirstBeat,
     saveAndStop,
   });

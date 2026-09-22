@@ -99,9 +99,10 @@ Blocked when focus is in `<input>` or `<textarea>`.
 | `1` / `2` / `3` / `4` | Practice / Metronome / Report / Notes |
 | `Tab` / `Shift+Tab` | Cycle subpages on current tab |
 | `←` / `→` | Step report date (daily=1d, weekly=1w, etc); not bound on Notes |
-| `T` | Toggle time unit between minutes and hours |
-| `E` / `C` | Language English / Chinese |
-| `L` / `D` | Theme Light / Dark |
+| `U` | Toggle time unit between minutes and hours |
+| `L` | Toggle language between English and Chinese |
+| `T` | Toggle theme between Light and Dark |
+| `C` | Cycle accent color (`blue` → `orange` → `green`, order from `ACCENTS`) |
 | `M` | Jump to Metronome tab → Metronome subpage (same no-op guard as `P`) |
 | `P` | Jump to Metronome tab → Practice subpage (no-op if already there, so a running practice run is never reset) |
 | `G` | Jump to Report tab → Goals subpage |

@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getTheme, getAccent } from '../services/themeService';
+import { ACCENTS } from '../constants/accentPalettes';
 import { getTodayString, shiftDate, getWeekStart, getMonthStart, getYearStart } from '../utils/dateHelpers';
 
 export function useKeyboardShortcuts({
@@ -8,18 +10,16 @@ export function useKeyboardShortcuts({
               //   reportDateRef, weekStartRef, monthStartRef, yearStartRef,
               //   handleTabChange, handleSubpageChange, setReportSubpage, setNotesSubpage }
   reports,    // { handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange }
-  setTimeUnit, setTheme, setMetronomeAccentFirstBeat,
+  setTimeUnit, setTheme, setAccent, setMetronomeAccentFirstBeat,
   saveAndStop,
 }) {
-  const { language, toggleLanguage } = useLanguage();
-  const languageRef = useRef(language);
+  const { toggleLanguage } = useLanguage();
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   // null = closed; otherwise the YYYY-MM-DD the report modal is seeded to
   const [reportModalDate, setReportModalDate] = useState(null);
 
-  useEffect(() => { languageRef.current = language; }, [language]);
-
-  // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, t = toggle minutes/hours,
+  // Global shortcuts: 1 = Practice, 2 = Metronome, 3 = Report, u = toggle minutes/hours,
+  // l = toggle language, t = toggle theme, c = cycle accent color,
   // m = Metronome > Metronome subpage, p = Metronome > Practice subpage,
   // g = Report > Goals subpage,
   // r / y = report modal seeded to today / yesterday (no navigation)
@@ -30,11 +30,15 @@ export function useKeyboardShortcuts({
       else if (e.code === 'Digit2') nav.handleTabChange('metronome');
       else if (e.code === 'Digit3') nav.handleTabChange('report');
       else if (e.code === 'Digit4') nav.handleTabChange('notes');
-      else if (e.code === 'KeyT') setTimeUnit(prev => (prev === 'minutes' ? 'hours' : 'minutes'));
-      else if (e.code === 'KeyE') { if (languageRef.current !== 'en') toggleLanguage(); }
-      else if (e.code === 'KeyC') { if (languageRef.current !== 'zh') toggleLanguage(); }
-      else if (e.code === 'KeyL') setTheme('light');
-      else if (e.code === 'KeyD') setTheme('dark');
+      else if (e.code === 'KeyU') setTimeUnit(prev => (prev === 'minutes' ? 'hours' : 'minutes'));
+      else if (e.code === 'KeyL') toggleLanguage();
+      // themeService is the source of truth for both, so read it rather than
+      // threading theme/accent state (and refs) through this hook.
+      else if (e.code === 'KeyT') setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+      else if (e.code === 'KeyC') {
+        const idx = ACCENTS.indexOf(getAccent());
+        setAccent(ACCENTS[(idx + 1) % ACCENTS.length]);
+      }
       else if (e.code === 'KeyS') {
         if (activeItemIdRef.current != null) saveAndStop();
       }
@@ -125,7 +129,7 @@ export function useKeyboardShortcuts({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nav.handleTabChange, nav.handleSubpageChange, nav.setReportSubpage, reports.handleReportDateChange, reports.handleWeekChange, reports.handleMonthChange, reports.handleYearChange, toggleLanguage, saveAndStop, setTheme, setMetronomeAccentFirstBeat, setTimeUnit]);
+  }, [nav.handleTabChange, nav.handleSubpageChange, nav.setReportSubpage, reports.handleReportDateChange, reports.handleWeekChange, reports.handleMonthChange, reports.handleYearChange, toggleLanguage, saveAndStop, setTheme, setAccent, setMetronomeAccentFirstBeat, setTimeUnit]);
 
   return { showKeyboardHelp, setShowKeyboardHelp, reportModalDate, setReportModalDate };
 }

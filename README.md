@@ -129,9 +129,10 @@ Blocked while focus is inside an `<input>` or `<textarea>`.
 | `1` / `2` / `3` / `4` | Practice / Metronome / Report / Notes |
 | `Tab` / `Shift+Tab` | Cycle subpages on the current tab |
 | `←` / `→` | Step the report date (daily = 1 day, weekly = 1 week, …) |
-| `T` | Toggle time unit: minutes / hours |
-| `E` / `C` | Language: English / Chinese |
-| `L` / `D` | Theme: light / dark |
+| `U` | Toggle time unit: minutes / hours |
+| `L` | Toggle language: English / Chinese |
+| `T` | Toggle theme: light / dark |
+| `C` | Cycle accent color: blue → orange → green |
 | `M` | Go to Metronome › Metronome |
 | `P` | Go to Metronome › Practice (tempo-ramp drills) |
 | `G` | Go to Report › Goals |
