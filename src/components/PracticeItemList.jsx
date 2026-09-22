@@ -593,13 +593,16 @@ function PracticeItemList({
           </span>
         </div>
         {isActive ? (
-          /* Stop deliberately stays amber rather than following the accent: it
+          /* Stop deliberately stays yellow rather than following the accent: it
              signals "a session is running", the same language as the offline
              banner and warning UI. It must also stay distinguishable from the
-             accent-colored Start buttons it sits beside in the same list. */
+             accent-colored Start buttons it sits beside in the same list.
+             Dark text, not white: yellow-500 with white is 1.92:1 and fails
+             WCAG AA outright, while slate-900 gives 9.31:1 at rest and 6.08:1
+             on hover. Do not "tidy" this back to text-white. */
           <button
             onClick={() => onStop()}
-            className="shrink-0 px-4 py-1.5 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
+            className="shrink-0 px-4 py-1.5 bg-yellow-500 text-slate-900 rounded-lg text-sm font-medium hover:bg-yellow-600 transition-colors"
           >
             {t('stop')}
           </button>
