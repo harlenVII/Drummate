@@ -4,6 +4,7 @@ const LEGACY_BACKFILL_TZ = 'America/Los_Angeles';
 
 const cachedFormatters = new Map();
 const cachedOffsetFormatters = new Map();
+const cachedClockFormatters = new Map();
 
 function getOffsetFormatter(tz) {
   let f = cachedOffsetFormatters.get(tz);
@@ -35,6 +36,30 @@ function getYmdFormatter(tz) {
 
 export function formatInTimezone(epochMs, tz) {
   return getYmdFormatter(tz).format(new Date(epochMs));
+}
+
+// Clock formatter for session times. hourCycle 'h23' rather than
+// hour12: false: some engines map hour12: false to h24 and render just after
+// midnight as "24:07".
+function getClockFormatter(tz) {
+  let f = cachedClockFormatters.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    });
+    cachedClockFormatters.set(tz, f);
+  }
+  return f;
+}
+
+// "HH:MM" (24-hour, 00-23) for a UTC instant viewed in `tz`.
+export function formatClockInTimezone(epochMs, tz) {
+  const parts = getClockFormatter(tz).formatToParts(new Date(epochMs));
+  const get = (type) => parts.find((p) => p.type === type).value;
+  return `${get('hour')}:${get('minute')}`;
 }
 
 // Returns the UTC offset (ms) for a given UTC instant when viewed in `tz`.
@@ -81,6 +106,13 @@ export function getDateRangeUtc(dateStr, tz) {
   const nextD = new Date(nextMidnightUtc).getUTCDate();
   const endMsExclusive = tzLocalToUtcMs(nextY, nextM, nextD, 0, 0, 0, tz);
   return { startMs, endMsExclusive };
+}
+
+// 23:59:59 local on `dateStr`: one second before the next local midnight.
+// Built from getDateRangeUtc, not tzLocalToUtcMs(..., 23, 59, 59), which is
+// only documented safe for 00:00 and 12:00.
+export function lastSecondOfDay(dateStr, tz) {
+  return getDateRangeUtc(dateStr, tz).endMsExclusive - 1000;
 }
 
 export function noonInHomeTz(dateStr, tz) {
