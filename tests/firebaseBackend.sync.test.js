@@ -369,6 +369,36 @@ describe('subscribeToChanges', () => {
     unsub();
   });
 
+  it("reconciles an existing log's changed duration and time from the listener's initial snapshot", async () => {
+    const id = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'A', category: 'fundamentals', sort_order: 0 });
+    await db.practiceLogs.add({ itemId: id, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'l1', loggedAt: 1700000000000, syncedOnce: true });
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-01', duration: 420, logged_at: 1700000060000 });
+
+    const unsub = subscribe(vi.fn());
+    await fs.__settle();
+
+    const log = await db.practiceLogs.where('uid').equals('l1').first();
+    expect(log.duration).toBe(420);
+    expect(log.loggedAt).toBe(1700000060000);
+    unsub();
+  });
+
+  it("only patches syncedOnce on an existing log whose remote parent can't be resolved locally", async () => {
+    const itemId = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    await db.practiceLogs.add({ itemId, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'l1', loggedAt: 1000, syncedOnce: false });
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'x', item_name: 'Nope', date: '2026-05-01', duration: 999, logged_at: 5000 });
+
+    const unsub = subscribe(vi.fn());
+    await fs.__settle();
+
+    const log = await db.practiceLogs.where('uid').equals('l1').first();
+    expect(log.syncedOnce).toBe(true);
+    expect(log.duration).toBe(300);
+    expect(log.loggedAt).toBe(1000);
+    unsub();
+  });
+
   it('goals listener: add → modified (archived) → removed via reconciler', async () => {
     const onChange = vi.fn();
     const unsub = subscribe(onChange);

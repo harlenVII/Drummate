@@ -1032,10 +1032,25 @@ const firebaseBackend = {
         if (change.type === 'added') {
           const existing = await db.practiceLogs.where('uid').equals(data.uid).first();
           if (existing) {
-            // Initial snapshot replays every doc as 'added' — patch the
-            // syncedOnce flag on local rows that pre-date the v14 migration
-            // path so they aren't re-pushed.
-            if (!existing.syncedOnce) {
+            // Initial snapshot replays every doc as 'added', including logs
+            // edited on another device between this device's pullAll fetch
+            // and this listener registering. Logs now change in place (Daily
+            // edit mode), so resolve the parent and diff exactly like the
+            // 'modified' branch below instead of only patching syncedOnce.
+            let localItem = null;
+            if (data.item_uid) {
+              localItem = await db.practiceItems.where('uid').equals(data.item_uid).first();
+            }
+            if (localItem) {
+              const { action, fields } = logCodec.diff(data, existing, localItem);
+              if (action === 'update') {
+                await db.practiceLogs.update(existing.id, fields);
+                onDataChanged();
+              }
+            } else if (!existing.syncedOnce) {
+              // Parent didn't resolve — keep the old behavior of just patching
+              // the syncedOnce flag on local rows that pre-date the v14
+              // migration path so they aren't re-pushed.
               await db.practiceLogs.update(existing.id, { syncedOnce: true });
             }
             continue;
