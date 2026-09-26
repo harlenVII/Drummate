@@ -188,6 +188,23 @@ describe('practice logs', () => {
     expect(moved.every((l) => l.date === '2026-05-01')).toBe(true);
   });
 
+  it('packs trashed-item logs separately so a hidden row never takes the last visible slot', async () => {
+    const ride = await addItem('Ride', 'fundamentals');
+    const old = await addItem('Old', 'fundamentals');
+    await db.practiceItems.update(old.id, { trashed: true });
+    const { startMs } = getDateRangeUtc('2026-05-02', TZ);
+    // Ride (visible) practiced 00:10-00:20; Old (trashed, hidden from the
+    // Daily view) practiced 00:30-00:40.
+    const a = await addLog(ride.id, 600, { loggedAt: startMs + 20 * 60000 });
+    const b = await addLog(old.id, 600, { loggedAt: startMs + 40 * 60000 });
+
+    await reattributeLogsToDate([a, b], '2026-05-01');
+
+    const end = lastSecondOfDay('2026-05-01', TZ);
+    expect((await db.practiceLogs.get(a)).loggedAt).toBe(end);
+    expect((await db.practiceLogs.get(b)).loggedAt).toBe(end);
+  });
+
   it('re-buckets logs by the current timezone without mutating storage', async () => {
     const item = await addItem('Tom', 'fundamentals');
     // Noon in LA on May 1 lands on the early hours of May 2 in Tokyo (UTC+9).
