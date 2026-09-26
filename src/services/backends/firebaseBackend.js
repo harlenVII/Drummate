@@ -257,6 +257,30 @@ const firebaseBackend = {
     );
   },
 
+  // Delete one practice log from the cloud. Daily edit mode deletes sessions
+  // one at a time. Other devices drop it through the live 'removed' event, or
+  // through pullAll's log-deletion reconciliation if they missed that event.
+  // `localLog` is a log row, or a queued delete_log payload on replay (which
+  // carries itemName instead of itemId).
+  async deleteLogRemote(localLog, userId) {
+    await withOfflineQueue(
+      'delete_log',
+      async () => {
+        const item = localLog.itemId != null ? await db.practiceItems.get(localLog.itemId) : null;
+        return {
+          uid: localLog.uid,
+          itemName: item?.name ?? localLog.itemName,
+          duration: localLog.duration,
+          date: localLog.date,
+        };
+      },
+      async () => {
+        const fs = getFirestore();
+        await fs.deleteDoc(fs.doc(logsRef(userId), localLog.uid));
+      },
+    );
+  },
+
   async pushNote(localNote, userId) {
     if (!localNote.uid) {
       console.error('pushNote: missing uid', localNote);
@@ -828,6 +852,11 @@ const firebaseBackend = {
         } else if (entry.action === 'create_log') {
           const local = await db.practiceLogs.where('uid').equals(entry.payload.uid).first();
           if (local) await firebaseBackend.pushLog(local, userId);
+        } else if (entry.action === 'delete_log') {
+          await firebaseBackend.deleteLogRemote(entry.payload, userId);
+          // pullAll (earlier in init) re-adds the row from the cloud copy this
+          // delete hadn't reached yet, so remove it locally too.
+          await db.practiceLogs.where('uid').equals(entry.payload.uid).delete();
         } else if (entry.action === 'delete_item') {
           await firebaseBackend.pushDeleteItem(entry.payload.uid, userId);
         } else if (entry.action === 'rename_item') {

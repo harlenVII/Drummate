@@ -11,6 +11,7 @@
  * @property {(err: any) => boolean} isNetworkError
  * @property {(localItem: object, userId: string) => Promise<void>} pushItem
  * @property {(localLog: object, userId: string) => Promise<void>} pushLog
+ * @property {(localLog: object, userId: string) => Promise<void>} deleteLogRemote
  * @property {(localNote: object, userId: string) => Promise<void>} pushNote
  * @property {(noteUid: string, userId: string) => Promise<void>} deleteNoteRemote
  * @property {(localPractice: object, userId: string) => Promise<void>} pushPractice

@@ -186,6 +186,7 @@
     "action": {
       "createItem": "Created practice item: {name}",
       "createLog": "Logged {duration} min on {name} ({date})",
+      "deleteLog": "Deleted {duration} min on {name} ({date})",
       "renameItem": "Renamed {from} → {to}",
       "renameItemTo": "Renamed to {to}",
       "renameItemGeneric": "Renamed an item",

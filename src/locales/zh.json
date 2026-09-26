@@ -186,6 +186,7 @@
     "action": {
       "createItem": "创建练习项目：{name}",
       "createLog": "在 {name} 上记录 {duration} 分钟（{date}）",
+      "deleteLog": "删除了 {name} 上的 {duration} 分钟（{date}）",
       "renameItem": "重命名 {from} → {to}",
       "renameItemTo": "重命名为 {to}",
       "renameItemGeneric": "重命名了一个项目",

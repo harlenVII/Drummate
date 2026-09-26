@@ -26,6 +26,11 @@ describe('formatPendingAction', () => {
     expect(formatPendingAction(entry, t)).toBe('offline.action.createLog|duration=12,name=Hi-hat,date=2026-05-17');
   });
 
+  it('delete_log with itemName, duration, date', () => {
+    const entry = { action: 'delete_log', payload: { uid: 'l1', itemName: 'Hi-hat', duration: 300, date: '2026-09-25' } };
+    expect(formatPendingAction(entry, t)).toBe('offline.action.deleteLog|duration=5,name=Hi-hat,date=2026-09-25');
+  });
+
   it('rename_item with previousName !== newName', () => {
     const entry = { action: 'rename_item', payload: { uid: 'a', previousName: 'Snare', newName: 'Snare Drum' } };
     expect(formatPendingAction(entry, t)).toBe('offline.action.renameItem|from=Snare,to=Snare Drum');

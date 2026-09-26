@@ -15,6 +15,15 @@ export function formatPendingAction(entry, t) {
       });
     }
 
+    case 'delete_log': {
+      const minutes = Math.round((payload.duration ?? 0) / 60);
+      return t('offline.action.deleteLog', {
+        duration: minutes,
+        name: payload.itemName ?? '',
+        date: payload.date ?? '',
+      });
+    }
+
     case 'rename_item': {
       const { previousName, newName } = payload;
       if (!newName) return t('offline.action.renameItemGeneric');
