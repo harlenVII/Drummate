@@ -3,6 +3,8 @@ import { formatDuration } from '../utils/formatTime';
 import { formatDateLabel, shiftDate, getTodayString } from '../utils/dateHelpers';
 import { useLanguage } from '../contexts/LanguageContext';
 import { buildBreakdown } from '../utils/practiceStats';
+import { toSessionRows } from '../utils/sessions';
+import { useTimezone } from '../hooks/useTimezone';
 import ReportItemCard from './ReportItemCard';
 import ReportNavHeader from './ReportNavHeader';
 import ReportItemBreakdown from './ReportItemBreakdown';
@@ -15,6 +17,10 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
   const [editMode, setEditMode] = useState(false);
   const [showMergeConfirm, setShowMergeConfirm] = useState(false);
   const [merging, setMerging] = useState(false);
+  const tz = useTimezone();
+  // Items whose session list is open. Kept across date changes so one item
+  // can be followed from day to day.
+  const [expandedItemIds, setExpandedItemIds] = useState(() => new Set());
 
   // Build per-item breakdown (totals, split by category, grandTotal)
   const { breakdown, fundamentals, songs, grandTotal } = buildBreakdown(items, reportLogs);
@@ -30,6 +36,22 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
 
   const isToday = reportDate === getTodayString();
 
+  // The day's logs grouped by item, for each card's session list.
+  const logsByItem = new Map();
+  for (const log of reportLogs) {
+    if (!logsByItem.has(log.itemId)) logsByItem.set(log.itemId, []);
+    logsByItem.get(log.itemId).push(log);
+  }
+
+  const toggleExpanded = (itemId) => {
+    setExpandedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  };
+
   const renderItemCard = (entry) => (
     <ReportItemCard
       key={entry.id}
@@ -39,6 +61,10 @@ function DailyReport({ items, allItems, reportDate, reportLogs, onDateChange, on
       compactMode={compactMode}
       editMode={editMode}
       onEditTime={onEditTime}
+      sessions={toSessionRows(logsByItem.get(entry.id) || [])}
+      expanded={expandedItemIds.has(entry.id)}
+      onToggleExpand={toggleExpanded}
+      tz={tz}
     />
   );
 
