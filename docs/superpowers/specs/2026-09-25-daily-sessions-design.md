@@ -94,7 +94,7 @@ Inputs:
 7. **`d < 0`:** set `remaining = −d` and walk the positives from latest to earliest.
    - If `s.duration > remaining`: set `duration = s.duration − remaining` and `loggedAt = max(s.loggedAt − remaining × 1000, dayStartMs)`, then stop.
    - Otherwise: delete `s` and subtract `s.duration` from `remaining`. Stop once `remaining` reaches 0.
-   - The clamp keeps the entry on its day. For a session that crossed midnight, the end stops at 00:00 and the start moves earlier instead.
+   - The clamp keeps the entry on its day. For a session that crossed midnight, the end stops at 00:00 and the session keeps its new, shorter length, so its start ends up later than before (23:50–00:20 shortened by 25 minutes becomes 23:55–00:00).
    - Because `target > 0` here, the walk always stops before running out of sessions.
 
 **Invariant:** once the plan is applied, the item's entries for that day sum to `max(0, target)`. Tests assert this for every case.
