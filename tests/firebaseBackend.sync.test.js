@@ -99,10 +99,10 @@ describe('pullAll', () => {
     // reconciliation loop. So even though item 'a' is absent from the real items snapshot,
     // the bail prevents the deletion loop from running, and the item survives locally.
     //
-    // Note: logs are NOT directly reconciled by pullAll (no log-deletion-by-absence loop);
-    // log deletion only happens as a cascade inside the item-deletion loop. So the cleanest
-    // observable effect of the logs bail is: a synced item that IS absent from the remote
-    // items snapshot is NOT deletion-reconciled, because the guard exits before that loop.
+    // The guard also exits before pullAll's log-deletion loop (see 'does not delete
+    // synced logs when the logs snapshot is fromCache'). The observable effect checked
+    // here: a synced item that IS absent from the remote items snapshot is NOT
+    // deletion-reconciled, because the guard exits before that loop.
     fs = createFakeFirestore({
       // items path is NOT fromCache (fromCache = false by default)
       fromCacheByPath: { [logsPath]: true },
@@ -152,6 +152,49 @@ describe('pullAll', () => {
     expect(log).toBeTruthy();
     expect(log.itemUid).toBe('b');
     expect(log.itemId).toBe(idB);
+  });
+
+  it('adopts a remote duration change on an existing log', async () => {
+    const id = await db.practiceItems.add({ uid: 'a', name: 'Rudiments', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    await db.practiceLogs.add({ itemId: id, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'l1', loggedAt: 1700000000000, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'Rudiments', category: 'fundamentals', sort_order: 0 });
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'Rudiments', date: '2026-05-01', duration: 420, logged_at: 1700000060000 });
+
+    await firebaseBackend.pullAll(UID);
+
+    const log = await db.practiceLogs.where('uid').equals('l1').first();
+    expect(log.duration).toBe(420);
+    expect(log.loggedAt).toBe(1700000060000);
+  });
+
+  it('deletes a synced log missing from the cloud but keeps unsynced and unresolved ones', async () => {
+    const id = await db.practiceItems.add({ uid: 'a', name: 'Rudiments', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'Rudiments', category: 'fundamentals', sort_order: 0 });
+    // Deleted on another device: synced locally, gone from the cloud.
+    await db.practiceLogs.add({ itemId: id, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'gone', loggedAt: 1, syncedOnce: true });
+    // Created here and not pushed yet.
+    await db.practiceLogs.add({ itemId: id, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'local', loggedAt: 2, syncedOnce: false });
+    // Still in the cloud, but its remote parent ('x') doesn't resolve locally.
+    await db.practiceLogs.add({ itemId: id, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'orphan', loggedAt: 3, syncedOnce: true });
+    fs.__seed(logsPath, 'orphan', { uid: 'orphan', item_uid: 'x', item_name: 'Nope', date: '2026-05-01', duration: 300, logged_at: 3 });
+
+    await firebaseBackend.pullAll(UID);
+
+    expect(await db.practiceLogs.where('uid').equals('gone').first()).toBeUndefined();
+    expect(await db.practiceLogs.where('uid').equals('local').first()).toBeTruthy();
+    expect(await db.practiceLogs.where('uid').equals('orphan').first()).toBeTruthy();
+  });
+
+  it('does not delete synced logs when the logs snapshot is fromCache', async () => {
+    fs = createFakeFirestore({ fromCacheByPath: { [logsPath]: true } });
+    setFirestoreImpl(fs);
+    const id = await db.practiceItems.add({ uid: 'a', name: 'Rudiments', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'Rudiments', category: 'fundamentals', sort_order: 0 });
+    await db.practiceLogs.add({ itemId: id, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'l1', loggedAt: 1, syncedOnce: true });
+
+    await firebaseBackend.pullAll(UID);
+
+    expect(await db.practiceLogs.where('uid').equals('l1').first()).toBeTruthy();
   });
 });
 
@@ -307,6 +350,21 @@ describe('subscribeToChanges', () => {
     const log = await db.practiceLogs.where('uid').equals('l1').first();
     expect(log.itemUid).toBe('b');
     expect(log.itemId).toBe(idB);
+    unsub();
+  });
+
+  it('adopts a duration change on a modified log', async () => {
+    const id = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'A', category: 'fundamentals', sort_order: 0 });
+    await db.practiceLogs.add({ itemId: id, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'l1', loggedAt: 1700000000000, syncedOnce: true });
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-01', duration: 300, logged_at: 1700000000000 });
+    const unsub = subscribe(vi.fn());
+    await fs.__settle();
+
+    fs.__emit(logsPath, [{ type: 'modified', id: 'l1', data: { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-01', duration: 420, logged_at: 1700000000000 } }]);
+    await fs.__settle();
+
+    expect((await db.practiceLogs.where('uid').equals('l1').first()).duration).toBe(420);
     unsub();
   });
 

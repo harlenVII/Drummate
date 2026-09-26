@@ -33,6 +33,11 @@ export function diff(data, existing, localItem) {
     fields.loggedAt = remoteLoggedAt;
     fields.date = data.date;
   }
+  // Daily edit mode lengthens and shortens existing sessions in place, so a
+  // changed duration must propagate like a changed time.
+  if (typeof data.duration === 'number' && existing.duration !== data.duration) {
+    fields.duration = data.duration;
+  }
   if (!existing.syncedOnce) fields.syncedOnce = true;
   return { action: Object.keys(fields).length ? 'update' : 'skip', fields };
 }

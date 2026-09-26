@@ -709,6 +709,24 @@ const firebaseBackend = {
       });
     }
 
+    // Reconciliation step for single logs: a locally-synced log that is now
+    // missing from the cloud was deleted on another device (Daily edit mode
+    // deletes sessions one at a time). Local-only logs (syncedOnce=false) are
+    // kept so pushAllLocal can push them up. The remote set counts EVERY
+    // remote doc with a uid, including ones whose parent didn't resolve in
+    // the loop above, so an unresolved parent never looks like a deletion.
+    // This relies on syncedOnce=true meaning the row really is in the cloud.
+    const remoteLogUids = new Set();
+    for (const docSnap of logsSnap.docs) {
+      const uid = docSnap.data().uid;
+      if (uid) remoteLogUids.add(uid);
+    }
+    const goneLogIds = [];
+    for (const l of logsByUid.values()) {
+      if (l.syncedOnce && !remoteLogUids.has(l.uid)) goneLogIds.push(l.id);
+    }
+    if (goneLogIds.length > 0) await db.practiceLogs.bulkDelete(goneLogIds);
+
     // Reconciliation step: any local item that has been synced before but is
     // now missing from the cloud was deleted on another device. Apply the
     // delete locally + cascade logs. Local-only items (syncedOnce=false) are

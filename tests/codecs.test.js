@@ -269,6 +269,11 @@ describe('logCodec', () => {
     expect(r.fields).toEqual({ loggedAt: 1700000000000, date: '2026-01-01' });
   });
 
+  it('diff when duration changed -> update duration', () => {
+    const existing = { ...logCodec.toLocal(remote, localItem), duration: 300 };
+    expect(logCodec.diff(remote, existing, localItem)).toEqual({ action: 'update', fields: { duration: 600 } });
+  });
+
   it('table is practiceLogs', () => {
     expect(logCodec.table).toBe('practiceLogs');
   });
