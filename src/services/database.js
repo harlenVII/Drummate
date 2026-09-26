@@ -2,7 +2,7 @@ import Dexie from 'dexie';
 import { getTodayString } from '../utils/dateHelpers';
 import { SUBDIVISIONS } from '../constants/subdivisions';
 import { TRASH_RETENTION_DAYS } from '../constants/trash.js';
-import { legacyDateToLoggedAt, formatInTimezone, noonInHomeTz, getDateRangeUtc, lastSecondOfDay } from '../utils/tzDateHelpers.js';
+import { legacyDateToLoggedAt, formatInTimezone, getDateRangeUtc, lastSecondOfDay } from '../utils/tzDateHelpers.js';
 import { planTimeEdit, planPackIntoDay } from '../utils/sessions.js';
 import { getTimezone } from './timezoneService.js';
 
@@ -341,17 +341,6 @@ export const addLog = async (itemId, duration, opts = {}) => {
   const itemUid = item?.uid || null;
   return await db.practiceLogs.add({
     itemId, itemUid, date, duration, uid, loggedAt, syncedOnce: false,
-  });
-};
-
-export const addAdjustmentLog = async (itemId, duration, dateStr) => {
-  const tz = getTimezone();
-  const loggedAt = noonInHomeTz(dateStr, tz);
-  const uid = crypto.randomUUID();
-  const item = await db.practiceItems.get(itemId);
-  const itemUid = item?.uid || null;
-  return await db.practiceLogs.add({
-    itemId, itemUid, date: dateStr, duration, uid, loggedAt, syncedOnce: false,
   });
 };
 

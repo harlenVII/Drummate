@@ -2,8 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useBackend } from '../contexts/BackendContext';
 import {
-  db,
-  addAdjustmentLog,
+  editItemDayTime,
   reattributeLogsToDate,
   getLogsByDate,
   getLogsByDateRange,
@@ -58,11 +57,14 @@ export function useReports({ onNavigateToSubpage, items = [] }) {
     setReportDate(dateString);
   }, []);
 
+  // Edit mode sets an item's total for the day; editItemDayTime applies the
+  // change to that day's sessions (see planTimeEdit in utils/sessions.js).
+  // Pushes are fire-and-forget so the edit modal closes without waiting.
   const handleManualTimeAdjust = useCallback(async (itemId, deltaSeconds, date) => {
-    const logId = await addAdjustmentLog(itemId, deltaSeconds, date);
+    const { upserted, deleted } = await editItemDayTime(itemId, date, deltaSeconds);
     if (user) {
-      const log = await db.practiceLogs.get(logId);
-      backend.pushLog(log, user.id).catch(console.error);
+      for (const log of upserted) backend.pushLog(log, user.id).catch(console.error);
+      for (const log of deleted) backend.deleteLogRemote(log, user.id).catch(console.error);
     }
   }, [user, backend]);
 

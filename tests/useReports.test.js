@@ -8,7 +8,10 @@ import 'fake-indexeddb/auto';
 vi.mock('../src/services/backends/firebaseBackend', () => ({ default: { pushLog: vi.fn() } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 
-import { db, addAdjustmentLog } from '../src/services/database';
+import { db, addLog } from '../src/services/database';
+import { getDateRangeUtc, noonInHomeTz } from '../src/utils/tzDateHelpers';
+import { getTimezone } from '../src/services/timezoneService';
+import firebaseBackend from '../src/services/backends/firebaseBackend';
 import { useReports } from '../src/hooks/useReports';
 
 beforeEach(async () => {
@@ -18,8 +21,8 @@ beforeEach(async () => {
 
 describe('useReports', () => {
   it('handleReportDateChange updates date and reactively loads that day\'s logs', async () => {
-    // Seed an adjustment log on a specific date.
-    await addAdjustmentLog(1, 600, '2026-01-15');
+    // Seed a log at noon on a specific date.
+    await addLog(1, 600, { loggedAt: noonInHomeTz('2026-01-15', getTimezone()) });
 
     const { result } = renderHook(() =>
       useReports({ onNavigateToSubpage: vi.fn() }));
@@ -59,5 +62,17 @@ describe('useReports', () => {
     await act(async () => { result.current.handleMonthClick('2026-03-01'); });
     expect(result.current.monthStart).toBe('2026-03-01');
     expect(onNavigateToSubpage).toHaveBeenCalledWith('monthly');
+  });
+
+  it('a signed-out edit changes local rows without calling the backend', async () => {
+    const { startMs } = getDateRangeUtc('2026-01-15', getTimezone());
+    const id = await addLog(1, 600, { loggedAt: startMs + 9 * 3600000 });
+    const { result } = renderHook(() =>
+      useReports({ onNavigateToSubpage: vi.fn() }));
+
+    await act(async () => { await result.current.handleManualTimeAdjust(1, -600, '2026-01-15'); });
+
+    expect(await db.practiceLogs.get(id)).toBeUndefined();
+    expect(firebaseBackend.pushLog).not.toHaveBeenCalled();
   });
 });

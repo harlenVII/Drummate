@@ -4,7 +4,6 @@ import {
   db,
   addItem,
   addLog,
-  addAdjustmentLog,
   reattributeLogsToDate,
   editItemDayTime,
   getLogsByDate,
@@ -168,15 +167,6 @@ describe('practice logs', () => {
     expect(log.date).toBe('2026-05-01');
     expect(log.itemUid).toBe(item.uid);
     expect(log.syncedOnce).toBe(false);
-  });
-
-  it('addAdjustmentLog anchors loggedAt to noon of the given date in the home tz', async () => {
-    const item = await addItem('Kick', 'fundamentals');
-    await addAdjustmentLog(item.id, 600, '2026-05-01');
-
-    const onDate = await getLogsByDate('2026-05-01');
-    expect(onDate).toHaveLength(1);
-    expect(onDate[0].loggedAt).toBe(noonInHomeTz('2026-05-01', TZ));
   });
 
   it('reattributeLogsToDate packs logs back to back so the last ends 23:59:59 on the new date', async () => {
