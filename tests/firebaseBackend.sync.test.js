@@ -96,7 +96,7 @@ describe('pullAll', () => {
     // Items snapshot is NOT fromCache (real server data — empty, i.e. remote deleted item 'a').
     // Logs snapshot IS fromCache (offline cache — bail before deletion-reconciliation).
     //
-    // The logs-fromCache guard at line 679 of pullAll returns BEFORE the item-deletion
+    // The logs-fromCache guard in pullAll returns BEFORE the item-deletion
     // reconciliation loop. So even though item 'a' is absent from the real items snapshot,
     // the bail prevents the deletion loop from running, and the item survives locally.
     //
@@ -539,6 +539,24 @@ describe('flushSyncQueue', () => {
 
     await firebaseBackend.flushSyncQueue(UID);
 
+    expect(fs.__get(logsPath, 'l1')).toBeUndefined();
+    expect(await db.practiceLogs.where('uid').equals('l1').first()).toBeUndefined();
+    expect(await db.syncQueue.count()).toBe(0);
+  });
+
+  it('create_log replay lets a remote deletion win when the row is gone locally after pullAll', async () => {
+    const itemId = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'A', category: 'fundamentals', sort_order: 0 });
+    // Synced locally, but already deleted on another device: absent from the cloud.
+    await db.practiceLogs.add({ itemId, itemUid: 'a', date: '2026-05-01', duration: 420, uid: 'l1', loggedAt: 1100, syncedOnce: true });
+    await db.syncQueue.add({ action: 'create_log', payload: { uid: 'l1', itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 420, loggedAt: 1100 } });
+
+    await firebaseBackend.pullAll(UID); // absence-reconciles l1 away locally
+    expect(await db.practiceLogs.where('uid').equals('l1').first()).toBeUndefined();
+
+    await firebaseBackend.flushSyncQueue(UID);
+
+    // A push-from-payload regression would recreate the cloud doc here.
     expect(fs.__get(logsPath, 'l1')).toBeUndefined();
     expect(await db.practiceLogs.where('uid').equals('l1').first()).toBeUndefined();
     expect(await db.syncQueue.count()).toBe(0);

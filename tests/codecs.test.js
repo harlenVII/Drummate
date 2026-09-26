@@ -274,6 +274,13 @@ describe('logCodec', () => {
     expect(logCodec.diff(remote, existing, localItem)).toEqual({ action: 'update', fields: { duration: 600 } });
   });
 
+  it('diff skips when the remote doc has no duration field', () => {
+    const copy = { ...remote };
+    delete copy.duration;
+    const existing = logCodec.toLocal(remote, localItem);
+    expect(logCodec.diff(copy, existing, localItem)).toEqual({ action: 'skip', fields: {} });
+  });
+
   it('table is practiceLogs', () => {
     expect(logCodec.table).toBe('practiceLogs');
   });
