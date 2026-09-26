@@ -138,6 +138,21 @@ async function replayGoalPayload(p, userId) {
   return true;
 }
 
+// create_log is an upsert: it covers new logs AND edits to existing ones
+// (Daily edit mode, Merge to yesterday). pullAll may have reset the local
+// row's time and duration to the cloud's old values, so re-apply the queued
+// ones before pushing. A row that is gone locally was deleted on another
+// device (or cascaded with its item) since it was queued; the deletion wins.
+async function replayLogPayload(p, userId) {
+  if (!(p.uid && typeof p.loggedAt === 'number')) return false;
+  const local = await db.practiceLogs.where('uid').equals(p.uid).first();
+  if (!local) return true;
+  const fields = { loggedAt: p.loggedAt, duration: p.duration, date: p.date };
+  await db.practiceLogs.update(local.id, fields);
+  await firebaseBackend.pushLog({ ...local, ...fields }, userId);
+  return true;
+}
+
 // --- Backend ---
 
 const firebaseBackend = {
@@ -232,6 +247,7 @@ const firebaseBackend = {
           itemName: item?.name,
           date: localLog.date,
           duration: localLog.duration,
+          loggedAt: localLog.loggedAt,
           uid: localLog.uid,
         };
       },
@@ -850,8 +866,12 @@ const firebaseBackend = {
           const local = await db.practiceItems.where('uid').equals(entry.payload.uid).first();
           if (local) await firebaseBackend.pushItem(local, userId);
         } else if (entry.action === 'create_log') {
-          const local = await db.practiceLogs.where('uid').equals(entry.payload.uid).first();
-          if (local) await firebaseBackend.pushLog(local, userId);
+          if (!(await replayLogPayload(entry.payload, userId))) {
+            // Legacy payload (queued before loggedAt was included): keep the
+            // old behavior of pushing whatever the local row holds.
+            const local = await db.practiceLogs.where('uid').equals(entry.payload.uid).first();
+            if (local) await firebaseBackend.pushLog(local, userId);
+          }
         } else if (entry.action === 'delete_log') {
           await firebaseBackend.deleteLogRemote(entry.payload, userId);
           // pullAll (earlier in init) re-adds the row from the cloud copy this

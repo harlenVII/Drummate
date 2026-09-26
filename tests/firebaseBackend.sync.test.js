@@ -434,6 +434,21 @@ describe('subscribeToChanges', () => {
   });
 });
 
+describe('pushLog', () => {
+  it("queues create_log with the row's loggedAt when offline", async () => {
+    const itemId = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    setOfflineMode(true);
+    try {
+      await firebaseBackend.pushLog({ itemId, itemUid: 'a', uid: 'l1', date: '2026-05-01', duration: 420, loggedAt: 1000 }, UID);
+    } finally {
+      setOfflineMode(false);
+    }
+    const [entry] = await db.syncQueue.toArray();
+    expect(entry.action).toBe('create_log');
+    expect(entry.payload).toEqual({ itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 420, loggedAt: 1000, uid: 'l1' });
+  });
+});
+
 describe('deleteLogRemote', () => {
   it('deletes the cloud doc when online', async () => {
     fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-01', duration: 300, logged_at: 1 });
@@ -492,6 +507,78 @@ describe('flushSyncQueue', () => {
     await db.practiceLogs.add({ itemId, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'l1', loggedAt: 1, syncedOnce: true });
     await db.syncQueue.add({ action: 'delete_log', payload: { uid: 'l1', itemName: 'A', duration: 300, date: '2026-05-01' } });
 
+    await firebaseBackend.flushSyncQueue(UID);
+
+    expect(fs.__get(logsPath, 'l1')).toBeUndefined();
+    expect(await db.practiceLogs.where('uid').equals('l1').first()).toBeUndefined();
+    expect(await db.syncQueue.count()).toBe(0);
+  });
+
+  it('create_log replay restores an offline edit that pullAll reverted (offline merge regression)', async () => {
+    const itemId = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'A', category: 'fundamentals', sort_order: 0 });
+    // The cloud still has the pre-merge values.
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-02', duration: 300, logged_at: 2000 });
+    // Offline, the log was moved to the previous day and lengthened; the change was queued.
+    await db.practiceLogs.add({ itemId, itemUid: 'a', date: '2026-05-01', duration: 420, uid: 'l1', loggedAt: 1000, syncedOnce: true });
+    await db.syncQueue.add({ action: 'create_log', payload: { uid: 'l1', itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 420, loggedAt: 1000 } });
+
+    // Reconnect runs pullAll first (reverting local to the cloud copy), then flushes.
+    await firebaseBackend.pullAll(UID);
+    expect((await db.practiceLogs.where('uid').equals('l1').first()).loggedAt).toBe(2000);
+    await firebaseBackend.flushSyncQueue(UID);
+
+    expect(await db.practiceLogs.where('uid').equals('l1').first()).toMatchObject({ loggedAt: 1000, duration: 420, date: '2026-05-01' });
+    expect(fs.__get(logsPath, 'l1')).toMatchObject({ logged_at: 1000, duration: 420, date: '2026-05-01' });
+    expect(await db.syncQueue.count()).toBe(0);
+  });
+
+  it('falls back to reading local for a legacy create_log payload without loggedAt', async () => {
+    const itemId = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    await db.practiceLogs.add({ itemId, itemUid: 'a', date: '2026-05-01', duration: 300, uid: 'l1', loggedAt: 1000, syncedOnce: false });
+    await db.syncQueue.add({ action: 'create_log', payload: { uid: 'l1', itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 300 } });
+
+    await firebaseBackend.flushSyncQueue(UID);
+
+    expect(fs.__get(logsPath, 'l1')).toMatchObject({ logged_at: 1000, duration: 300 });
+    expect(await db.syncQueue.count()).toBe(0);
+  });
+
+  it('a create then a delete queued offline for a log never in the cloud leaves nothing behind', async () => {
+    // Created and deleted offline: the row is gone locally and never reached the cloud.
+    await db.syncQueue.add({ action: 'create_log', payload: { uid: 'l1', itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 300, loggedAt: 1000 } });
+    await db.syncQueue.add({ action: 'delete_log', payload: { uid: 'l1', itemName: 'A', duration: 300, date: '2026-05-01' } });
+
+    await firebaseBackend.flushSyncQueue(UID);
+
+    expect(fs.__get(logsPath, 'l1')).toBeUndefined();
+    expect(await db.syncQueue.count()).toBe(0);
+  });
+
+  it('two queued edits to one log replay in order, and the second wins', async () => {
+    const itemId = await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'A', category: 'fundamentals', sort_order: 0 });
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-01', duration: 300, logged_at: 1000 });
+    await db.practiceLogs.add({ itemId, itemUid: 'a', date: '2026-05-01', duration: 600, uid: 'l1', loggedAt: 1300, syncedOnce: true });
+    await db.syncQueue.add({ action: 'create_log', payload: { uid: 'l1', itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 420, loggedAt: 1100 } });
+    await db.syncQueue.add({ action: 'create_log', payload: { uid: 'l1', itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 600, loggedAt: 1300 } });
+
+    await firebaseBackend.pullAll(UID);
+    await firebaseBackend.flushSyncQueue(UID);
+
+    expect(await db.practiceLogs.where('uid').equals('l1').first()).toMatchObject({ loggedAt: 1300, duration: 600 });
+    expect(fs.__get(logsPath, 'l1')).toMatchObject({ logged_at: 1300, duration: 600 });
+  });
+
+  it('an edit then a delete queued offline ends deleted', async () => {
+    await db.practiceItems.add({ uid: 'a', name: 'A', category: 'fundamentals', sortOrder: 0, syncedOnce: true });
+    fs.__seed(itemsPath, 'a', { uid: 'a', name: 'A', category: 'fundamentals', sort_order: 0 });
+    fs.__seed(logsPath, 'l1', { uid: 'l1', item_uid: 'a', item_name: 'A', date: '2026-05-01', duration: 300, logged_at: 1000 });
+    // Offline: lengthened (queued), then deleted (row removed locally, queued).
+    await db.syncQueue.add({ action: 'create_log', payload: { uid: 'l1', itemUid: 'a', itemName: 'A', date: '2026-05-01', duration: 420, loggedAt: 1100 } });
+    await db.syncQueue.add({ action: 'delete_log', payload: { uid: 'l1', itemName: 'A', duration: 420, date: '2026-05-01' } });
+
+    await firebaseBackend.pullAll(UID); // re-adds l1 from the cloud
     await firebaseBackend.flushSyncQueue(UID);
 
     expect(fs.__get(logsPath, 'l1')).toBeUndefined();
