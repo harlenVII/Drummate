@@ -2,7 +2,8 @@ import Dexie from 'dexie';
 import { getTodayString } from '../utils/dateHelpers';
 import { SUBDIVISIONS } from '../constants/subdivisions';
 import { TRASH_RETENTION_DAYS } from '../constants/trash.js';
-import { legacyDateToLoggedAt, formatInTimezone, noonInHomeTz, getDateRangeUtc } from '../utils/tzDateHelpers.js';
+import { legacyDateToLoggedAt, formatInTimezone, noonInHomeTz, getDateRangeUtc, lastSecondOfDay } from '../utils/tzDateHelpers.js';
+import { planTimeEdit, planPackIntoDay } from '../utils/sessions.js';
 import { getTimezone } from './timezoneService.js';
 
 export const db = new Dexie('DrummateDB');
@@ -391,21 +392,69 @@ export const getAllLogs = async () => {
   return withTzDate(await db.practiceLogs.toArray());
 };
 
-// Re-stamp a set of logs to a different calendar date. Used by the
+// Re-stamp a set of logs onto a different calendar date. Used by the
 // "Merge today's practice to yesterday" action — preserves per-item
 // breakdown by reattributing each existing log rather than aggregating.
+// Rows are packed back to back in their original order so the last one ends
+// at 23:59:59 of newDateStr (see planPackIntoDay).
 export const reattributeLogsToDate = async (logIds, newDateStr) => {
   const tz = getTimezone();
-  const loggedAt = noonInHomeTz(newDateStr, tz);
+  const dayStartMs = getDateRangeUtc(newDateStr, tz).startMs;
+  const dayEndMs = lastSecondOfDay(newDateStr, tz);
   return await db.transaction('rw', db.practiceLogs, async () => {
+    const logs = (await db.practiceLogs.bulkGet(logIds)).filter(Boolean);
     const updated = [];
-    for (const id of logIds) {
-      const log = await db.practiceLogs.get(id);
-      if (!log) continue;
+    for (const { id, loggedAt } of planPackIntoDay(logs, { dayStartMs, dayEndMs })) {
       await db.practiceLogs.update(id, { loggedAt, date: newDateStr });
-      updated.push({ ...log, loggedAt, date: newDateStr });
+      updated.push({ ...logs.find((l) => l.id === id), loggedAt, date: newDateStr });
     }
     return updated;
+  });
+};
+
+// Apply a Daily edit-mode change to one item's total for one day, following
+// planTimeEdit's rules. `now` is injectable for tests. Returns the rows the
+// caller must push ({ upserted }) and the rows to delete remotely ({ deleted }).
+export const editItemDayTime = async (itemId, dateStr, deltaSeconds, now = Date.now()) => {
+  const tz = getTimezone();
+  const { startMs, endMsExclusive } = getDateRangeUtc(dateStr, tz);
+  // "now" when editing today; 23:59:59 on a past day so the time stays on it.
+  // Checked at save time: a view opened before midnight is a past day now.
+  const anchorMs = formatInTimezone(now, tz) === dateStr ? now : lastSecondOfDay(dateStr, tz);
+  return await db.transaction('rw', db.practiceLogs, db.practiceItems, async () => {
+    // Same loggedAt window getLogsByDate uses, so the plan sees exactly the
+    // rows the Daily card summed.
+    const entries = await db.practiceLogs
+      .where('loggedAt')
+      .between(startMs, endMsExclusive, true, false)
+      .filter((l) => l.itemId === itemId)
+      .toArray();
+    const plan = planTimeEdit(entries, deltaSeconds, { anchorMs, dayStartMs: startMs });
+
+    const deleted = entries.filter((e) => plan.deleteIds.includes(e.id));
+    if (plan.deleteIds.length > 0) await db.practiceLogs.bulkDelete(plan.deleteIds);
+
+    const upserted = [];
+    for (const { id, loggedAt, duration } of plan.updates) {
+      const fields = { loggedAt, duration, date: formatInTimezone(loggedAt, tz) };
+      await db.practiceLogs.update(id, fields);
+      upserted.push({ ...entries.find((e) => e.id === id), ...fields });
+    }
+    if (plan.create) {
+      const item = await db.practiceItems.get(itemId);
+      const log = {
+        itemId,
+        itemUid: item?.uid || null,
+        date: formatInTimezone(plan.create.loggedAt, tz),
+        duration: plan.create.duration,
+        uid: crypto.randomUUID(),
+        loggedAt: plan.create.loggedAt,
+        syncedOnce: false,
+      };
+      const id = await db.practiceLogs.add(log);
+      upserted.push({ ...log, id });
+    }
+    return { upserted, deleted };
   });
 };
 

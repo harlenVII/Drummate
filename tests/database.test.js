@@ -6,6 +6,7 @@ import {
   addLog,
   addAdjustmentLog,
   reattributeLogsToDate,
+  editItemDayTime,
   getLogsByDate,
   deleteItem,
   mergeItem,
@@ -20,7 +21,7 @@ import {
   addPractice,
 } from '../src/services/database';
 import { setTimezone } from '../src/services/timezoneService.js';
-import { noonInHomeTz } from '../src/utils/tzDateHelpers.js';
+import { noonInHomeTz, getDateRangeUtc, lastSecondOfDay } from '../src/utils/tzDateHelpers.js';
 
 const TZ = 'America/Los_Angeles';
 
@@ -178,17 +179,23 @@ describe('practice logs', () => {
     expect(onDate[0].loggedAt).toBe(noonInHomeTz('2026-05-01', TZ));
   });
 
-  it('reattributeLogsToDate re-stamps an existing log onto a new calendar date', async () => {
+  it('reattributeLogsToDate packs logs back to back so the last ends 23:59:59 on the new date', async () => {
     const item = await addItem('Ride', 'fundamentals');
-    const id = await addLog(item.id, 120, { loggedAt: noonInHomeTz('2026-05-01', TZ) });
+    const { startMs } = getDateRangeUtc('2026-05-02', TZ);
+    // Practiced 00:10-00:20 and 00:40-01:00 on May 2.
+    const a = await addLog(item.id, 600, { loggedAt: startMs + 20 * 60000 });
+    const b = await addLog(item.id, 1200, { loggedAt: startMs + 60 * 60000 });
 
-    const updated = await reattributeLogsToDate([id], '2026-05-02');
+    const updated = await reattributeLogsToDate([a, b], '2026-05-01');
 
-    expect(updated).toHaveLength(1);
-    expect(await getLogsByDate('2026-05-01')).toHaveLength(0);
-    const moved = await getLogsByDate('2026-05-02');
-    expect(moved).toHaveLength(1);
-    expect(moved[0].date).toBe('2026-05-02');
+    expect(updated).toHaveLength(2);
+    expect(await getLogsByDate('2026-05-02')).toHaveLength(0);
+    const end = lastSecondOfDay('2026-05-01', TZ);
+    expect((await db.practiceLogs.get(b)).loggedAt).toBe(end);
+    expect((await db.practiceLogs.get(a)).loggedAt).toBe(end - 1200 * 1000);
+    const moved = await getLogsByDate('2026-05-01');
+    expect(moved).toHaveLength(2);
+    expect(moved.every((l) => l.date === '2026-05-01')).toBe(true);
   });
 
   it('re-buckets logs by the current timezone without mutating storage', async () => {
@@ -203,6 +210,110 @@ describe('practice logs', () => {
     const shifted = await getLogsByDate('2026-05-02');
     expect(shifted).toHaveLength(1);
     expect(shifted[0].date).toBe('2026-05-02'); // re-derived on read, not stored
+  });
+});
+
+// ---------------------------------------------------------------------------
+// editItemDayTime — Daily edit mode applied to sessions
+// ---------------------------------------------------------------------------
+describe('editItemDayTime', () => {
+  const DATE = '2026-05-01';
+  // m minutes after 00:00 on DATE in the pinned LA timezone
+  const minute = (m) => getDateRangeUtc(DATE, TZ).startMs + m * 60000;
+
+  it('adding time today lengthens the latest session and moves it to end now', async () => {
+    const item = await addItem('Paradiddle', 'fundamentals');
+    await addLog(item.id, 300, { loggedAt: minute(21 * 60 + 7) });
+    const late = await addLog(item.id, 300, { loggedAt: minute(21 * 60 + 45) });
+    const now = minute(22 * 60 + 30);
+
+    const { upserted, deleted } = await editItemDayTime(item.id, DATE, 120, now);
+
+    const row = await db.practiceLogs.get(late);
+    expect(row.loggedAt).toBe(now);
+    expect(row.duration).toBe(420);
+    expect(upserted).toHaveLength(1);
+    expect(upserted[0]).toMatchObject({ id: late, loggedAt: now, duration: 420, date: DATE, itemId: item.id });
+    expect(deleted).toEqual([]);
+  });
+
+  it('on a past day the anchor is 23:59:59 of that day', async () => {
+    const item = await addItem('Paradiddle', 'fundamentals');
+    const id = await addLog(item.id, 300, { loggedAt: minute(9 * 60) });
+    const now = getDateRangeUtc('2026-05-03', TZ).startMs + 10 * 3600000; // two days later
+
+    await editItemDayTime(item.id, DATE, 60, now);
+
+    const row = await db.practiceLogs.get(id);
+    expect(row.loggedAt).toBe(lastSecondOfDay(DATE, TZ));
+    expect(row.duration).toBe(360);
+    expect(await getLogsByDate(DATE)).toHaveLength(1);
+  });
+
+  it('a save just after midnight still lands on the day being viewed', async () => {
+    const item = await addItem('Paradiddle', 'fundamentals');
+    const id = await addLog(item.id, 300, { loggedAt: minute(23 * 60 + 50) });
+    const justAfterMidnight = getDateRangeUtc('2026-05-02', TZ).startMs + 60000; // 00:01 May 2
+
+    await editItemDayTime(item.id, DATE, 120, justAfterMidnight);
+
+    expect((await db.practiceLogs.get(id)).loggedAt).toBe(lastSecondOfDay(DATE, TZ));
+    expect(await getLogsByDate(DATE)).toHaveLength(1);
+    expect(await getLogsByDate('2026-05-02')).toHaveLength(0);
+  });
+
+  it('creates a session when the item has none that day', async () => {
+    const item = await addItem('Kick', 'fundamentals');
+    const now = minute(20 * 60);
+
+    const { upserted } = await editItemDayTime(item.id, DATE, 600, now);
+
+    expect(upserted).toHaveLength(1);
+    expect(upserted[0]).toMatchObject({
+      itemId: item.id, itemUid: item.uid, duration: 600, loggedAt: now, date: DATE, syncedOnce: false,
+    });
+    expect(upserted[0].uid).toBeTruthy();
+    expect(await db.practiceLogs.get(upserted[0].id)).toBeTruthy();
+  });
+
+  it('subtracting deletes used-up sessions and returns them', async () => {
+    const item = await addItem('Snare', 'fundamentals');
+    const early = await addLog(item.id, 300, { loggedAt: minute(21 * 60 + 7) });
+    const late = await addLog(item.id, 300, { loggedAt: minute(21 * 60 + 45) });
+
+    const { upserted, deleted } = await editItemDayTime(item.id, DATE, -480, minute(22 * 60));
+
+    expect(await db.practiceLogs.get(late)).toBeUndefined();
+    expect(deleted.map((l) => l.id)).toEqual([late]);
+    expect(deleted[0].uid).toBeTruthy();
+    expect((await db.practiceLogs.get(early)).duration).toBe(120);
+    expect(upserted.map((l) => l.id)).toEqual([early]);
+  });
+
+  it('only touches the edited item', async () => {
+    const a = await addItem('A', 'fundamentals');
+    const b = await addItem('B', 'fundamentals');
+    await addLog(a.id, 300, { loggedAt: minute(60) });
+    const bLog = await addLog(b.id, 300, { loggedAt: minute(120) });
+
+    await editItemDayTime(a.id, DATE, -300, minute(180));
+
+    expect((await db.practiceLogs.get(bLog)).duration).toBe(300);
+    expect(await db.practiceLogs.count()).toBe(1);
+  });
+
+  it('acts on the rows the Daily view shows for that date in the current timezone', async () => {
+    const item = await addItem('Paradiddle', 'fundamentals');
+    // 20:00 on May 1 in LA is 12:00 on May 2 in Tokyo.
+    const id = await addLog(item.id, 300, { loggedAt: minute(20 * 60) });
+    await setTimezone('Asia/Tokyo');
+
+    await editItemDayTime(item.id, DATE, 120, Date.UTC(2026, 5, 1)); // "now" is weeks later
+
+    expect((await db.practiceLogs.get(id)).duration).toBe(300); // not a May 1 row in Tokyo
+    const may1 = await getLogsByDate(DATE);
+    expect(may1).toHaveLength(1);
+    expect(may1[0].duration).toBe(120);
   });
 });
 
