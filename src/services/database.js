@@ -3,7 +3,7 @@ import { getTodayString } from '../utils/dateHelpers';
 import { SUBDIVISIONS } from '../constants/subdivisions';
 import { TRASH_RETENTION_DAYS } from '../constants/trash.js';
 import { legacyDateToLoggedAt, formatInTimezone, getDateRangeUtc, lastSecondOfDay } from '../utils/tzDateHelpers.js';
-import { planTimeEdit, planPackIntoDay } from '../utils/sessions.js';
+import { planTimeEdit, planPackIntoDay, resolveOverlaps } from '../utils/sessions.js';
 import { getTimezone } from './timezoneService.js';
 
 export const db = new Dexie('DrummateDB');
@@ -386,17 +386,31 @@ export const getAllLogs = async () => {
 // breakdown by reattributing each existing log rather than aggregating.
 // Each item is lined up on its own so its last row ends at 23:59:59 of
 // newDateStr (see planPackIntoDay); a trashed item's rows therefore never
-// take a visible item's slot.
+// take a visible item's slot. The item's sessions already on newDateStr then
+// slide back where they overlap (see resolveOverlaps). Returns every row it
+// changed, including slid ones, so the caller pushes them all.
 export const reattributeLogsToDate = async (logIds, newDateStr) => {
   const tz = getTimezone();
-  const dayStartMs = getDateRangeUtc(newDateStr, tz).startMs;
+  const { startMs: dayStartMs, endMsExclusive } = getDateRangeUtc(newDateStr, tz);
   const dayEndMs = lastSecondOfDay(newDateStr, tz);
   return await db.transaction('rw', db.practiceLogs, async () => {
-    const logs = (await db.practiceLogs.bulkGet(logIds)).filter(Boolean);
+    const moving = (await db.practiceLogs.bulkGet(logIds)).filter(Boolean);
+    const stamps = new Map(planPackIntoDay(moving, { dayStartMs, dayEndMs }).map((s) => [s.id, s.loggedAt]));
+
+    const movingIds = new Set(moving.map((l) => l.id));
+    const itemIds = new Set(moving.map((l) => l.itemId));
+    const alreadyThere = await db.practiceLogs
+      .where('loggedAt')
+      .between(dayStartMs, endMsExclusive, true, false)
+      .filter((l) => itemIds.has(l.itemId) && !movingIds.has(l.id))
+      .toArray();
+    const rows = [...alreadyThere, ...moving.map((l) => ({ ...l, loggedAt: stamps.get(l.id) }))];
+    for (const { id, loggedAt } of resolveOverlaps(rows, { dayStartMs })) stamps.set(id, loggedAt);
+
     const updated = [];
-    for (const { id, loggedAt } of planPackIntoDay(logs, { dayStartMs, dayEndMs })) {
+    for (const [id, loggedAt] of stamps) {
       await db.practiceLogs.update(id, { loggedAt, date: newDateStr });
-      updated.push({ ...logs.find((l) => l.id === id), loggedAt, date: newDateStr });
+      updated.push({ ...rows.find((l) => l.id === id), loggedAt, date: newDateStr });
     }
     return updated;
   });

@@ -94,6 +94,23 @@ export function planTimeEdit(entries, deltaSeconds, { anchorMs, dayStartMs }) {
       }
     }
   }
+  return withOverlapFix(plan, entries, dayStartMs);
+}
+
+// After an edit, fix overlaps within the item (see resolveOverlaps): slid rows
+// join plan.updates with their durations unchanged. A created row never needs
+// it — one is only created when the item has no other session that day.
+function withOverlapFix(plan, entries, dayStartMs) {
+  const deleted = new Set(plan.deleteIds);
+  const updates = new Map(plan.updates.map((u) => [u.id, u]));
+  const after = entries
+    .filter((e) => !deleted.has(e.id))
+    .map((e) => (updates.has(e.id) ? { ...e, ...updates.get(e.id) } : e));
+  for (const { id, loggedAt } of resolveOverlaps(after, { dayStartMs })) {
+    const update = updates.get(id);
+    if (update) update.loggedAt = loggedAt;
+    else plan.updates.push({ id, loggedAt, duration: after.find((e) => e.id === id).duration });
+  }
   return plan;
 }
 
@@ -126,4 +143,28 @@ export function planPackIntoDay(entries, { dayStartMs, dayEndMs }) {
     if (!(e.duration > 0)) out.push({ id: e.id, loggedAt: dayEndMs });
   }
   return out;
+}
+
+// Plan the overlap fix within each item: the item's session that ends latest
+// stays put, and any earlier session of the same item that overlaps a later
+// one slides back just far enough, keeping its length. Different items are
+// never compared, so they may overlap each other. When two sessions end at the
+// same moment, the newer row (higher id) stays put. A slid session never ends
+// before dayStartMs (it would change days); in that rare case a small overlap
+// can remain. Returns [{ id, loggedAt }] for the rows that must move.
+export function resolveOverlaps(entries, { dayStartMs }) {
+  const moves = [];
+  for (const group of groupByItem(entries.filter((e) => e.duration > 0))) {
+    const latestFirst = group.sort((a, b) => (b.loggedAt - a.loggedAt) || (b.id - a.id));
+    let boundary = Infinity; // earliest start among the later sessions
+    for (const s of latestFirst) {
+      let end = s.loggedAt;
+      if (end > boundary) {
+        end = Math.max(boundary, dayStartMs);
+        if (end !== s.loggedAt) moves.push({ id: s.id, loggedAt: end });
+      }
+      boundary = Math.min(boundary, end - s.duration * 1000);
+    }
+  }
+  return moves;
 }

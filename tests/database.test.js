@@ -206,6 +206,24 @@ describe('practice logs', () => {
     for (const id of ids) expect((await db.practiceLogs.get(id)).loggedAt).toBe(end);
   });
 
+  it('reattributeLogsToDate slides the item\'s session already on that day back, and leaves other items alone', async () => {
+    const a = await addItem('A', 'fundamentals');
+    const b = await addItem('B', 'fundamentals');
+    const may1 = getDateRangeUtc('2026-05-01', TZ).startMs;
+    const may2 = getDateRangeUtc('2026-05-02', TZ).startMs;
+    const yesterdayA = await addLog(a.id, 6600, { loggedAt: may1 + (23 * 60 + 50) * 60000 }); // 22:00-23:50
+    const yesterdayB = await addLog(b.id, 900, { loggedAt: may1 + (23 * 60 + 55) * 60000 }); // 23:40-23:55
+    const todayA = await addLog(a.id, 1800, { loggedAt: may2 + 35 * 60000 }); // 00:05-00:35
+
+    const updated = await reattributeLogsToDate([todayA], '2026-05-01');
+
+    const end = lastSecondOfDay('2026-05-01', TZ);
+    expect((await db.practiceLogs.get(todayA)).loggedAt).toBe(end); // 23:29:59-23:59:59
+    expect((await db.practiceLogs.get(yesterdayA)).loggedAt).toBe(end - 1800 * 1000); // 21:39:59-23:29:59
+    expect((await db.practiceLogs.get(yesterdayB)).loggedAt).toBe(may1 + (23 * 60 + 55) * 60000);
+    expect(updated.map((l) => l.id).sort()).toEqual([todayA, yesterdayA].sort());
+  });
+
   it('packs trashed-item logs separately so a hidden row never takes the last visible slot', async () => {
     const ride = await addItem('Ride', 'fundamentals');
     const old = await addItem('Old', 'fundamentals');
@@ -313,6 +331,19 @@ describe('editItemDayTime', () => {
     expect(deleted[0].uid).toBeTruthy();
     expect((await db.practiceLogs.get(early)).duration).toBe(120);
     expect(upserted.map((l) => l.id)).toEqual([early]);
+  });
+
+  it('slides an overlapping earlier session of the item back and returns it for upload', async () => {
+    const item = await addItem('A', 'fundamentals');
+    const early = await addLog(item.id, 1800, { loggedAt: minute(20 * 60 + 30) }); // 20:00-20:30
+    const late = await addLog(item.id, 600, { loggedAt: minute(20 * 60 + 50) }); // 20:40-20:50
+
+    // At 21:00 add 30 min: the latest becomes 20:20-21:00.
+    const { upserted } = await editItemDayTime(item.id, DATE, 1800, minute(21 * 60));
+
+    expect(await db.practiceLogs.get(late)).toMatchObject({ loggedAt: minute(21 * 60), duration: 2400 });
+    expect(await db.practiceLogs.get(early)).toMatchObject({ loggedAt: minute(20 * 60 + 20), duration: 1800 });
+    expect(upserted.map((l) => l.id).sort()).toEqual([early, late].sort());
   });
 
   it('only touches the edited item', async () => {

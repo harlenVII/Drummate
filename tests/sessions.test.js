@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toSessionRows, planTimeEdit, planPackIntoDay } from '../src/utils/sessions.js';
+import { toSessionRows, planTimeEdit, planPackIntoDay, resolveOverlaps } from '../src/utils/sessions.js';
 
 const MIN = 60 * 1000;
 const DAY_START = 1780000000000; // stands in for 00:00 of the edited day
@@ -124,6 +124,75 @@ describe('planTimeEdit', () => {
       const plan = planTimeEdit(entries, delta, opts);
       expect(total(apply(entries, plan))).toBe(Math.max(0, shown + delta));
     }
+  });
+
+  it('adding time slides an earlier overlapping session of the same item back', () => {
+    // A: 20:00-20:30 and 20:40-20:50. At 21:00, add 30 min: the latest becomes
+    // 20:20-21:00, so 20:00-20:30 slides back to 19:50-20:20.
+    const entries = [row(1, 20 * 60 + 30, 1800, 'A'), row(2, 20 * 60 + 50, 600, 'A')];
+    const plan = planTimeEdit(entries, 1800, { anchorMs: at(21 * 60), dayStartMs: DAY_START });
+    expect(plan).toEqual({
+      updates: [
+        { id: 2, loggedAt: at(21 * 60), duration: 2400 },
+        { id: 1, loggedAt: at(20 * 60 + 20), duration: 1800 },
+      ],
+      deleteIds: [],
+      create: null,
+    });
+  });
+
+  it('an edit also fixes an overlap that already existed in the item', () => {
+    // Old rows 11:30-12:00 and 11:50-12:10 overlap. Removing 1 min shortens the
+    // latest to 11:50-12:09; the other slides back to 11:20-11:50.
+    const entries = [row(1, 12 * 60, 1800, 'A'), row(2, 12 * 60 + 10, 1200, 'A')];
+    const plan = planTimeEdit(entries, -60, opts);
+    expect(plan.updates).toEqual([
+      { id: 2, duration: 1140, loggedAt: at(12 * 60 + 9) },
+      { id: 1, loggedAt: at(11 * 60 + 50), duration: 1800 },
+    ]);
+  });
+});
+
+describe('resolveOverlaps', () => {
+  const opts = { dayStartMs: DAY_START };
+
+  it('slides an earlier overlapping session back, keeping its length', () => {
+    // A: 20:00-20:30 overlaps the latest, 20:20-21:00.
+    const entries = [row(1, 20 * 60 + 30, 1800, 'A'), row(2, 21 * 60, 2400, 'A')];
+    expect(resolveOverlaps(entries, opts)).toEqual([{ id: 1, loggedAt: at(20 * 60 + 20) }]);
+  });
+
+  it('cascades down the item list', () => {
+    // 19:50-20:10, 20:00-20:30 and 20:20-21:00: each earlier one slides behind the next.
+    const entries = [
+      row(1, 20 * 60 + 10, 1200, 'A'),
+      row(2, 20 * 60 + 30, 1800, 'A'),
+      row(3, 21 * 60, 2400, 'A'),
+    ];
+    expect(resolveOverlaps(entries, opts)).toEqual([
+      { id: 2, loggedAt: at(20 * 60 + 20) },
+      { id: 1, loggedAt: at(19 * 60 + 50) },
+    ]);
+  });
+
+  it('leaves non-overlapping sessions alone and never compares different items', () => {
+    const entries = [
+      row(1, 20 * 60 + 30, 1800, 'A'), // A 20:00-20:30
+      row(2, 20 * 60 + 40, 1800, 'B'), // B 20:10-20:40 overlaps A, but is another item
+      row(3, 19 * 60, 600, 'A'), // A 18:50-19:00
+    ];
+    expect(resolveOverlaps(entries, opts)).toEqual([]);
+  });
+
+  it('keeps the newer row in place when two sessions end at the same moment', () => {
+    const entries = [row(1, 23 * 60 + 59, 600, 'A'), row(2, 23 * 60 + 59, 300, 'A')];
+    expect(resolveOverlaps(entries, opts)).toEqual([{ id: 1, loggedAt: at(23 * 60 + 54) }]);
+  });
+
+  it('never slides a session end before the start of the day, even if an overlap remains', () => {
+    // Latest crossed midnight: 23:50-00:20. The other (23:55-00:05) can only go back to 00:00.
+    const entries = [row(1, 5, 600, 'A'), row(2, 20, 1800, 'A')];
+    expect(resolveOverlaps(entries, opts)).toEqual([{ id: 1, loggedAt: DAY_START }]);
   });
 });
 
