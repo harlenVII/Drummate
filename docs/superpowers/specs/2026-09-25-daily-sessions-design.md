@@ -27,7 +27,8 @@ From the user:
 - Old entries keep their noon times.
 - **Adding time:** the item's latest session gets longer and moves to end now.
 - **Subtracting time:** the session keeps its start and its end moves earlier.
-- **Merge to yesterday:** the last entry ends at 11:59:59 PM yesterday. Overlap with sessions already on that day is acceptable.
+- **Merge to yesterday:** each item's last merged session ends at 11:59:59 PM yesterday.
+- **Overlaps are fixed within each item only** (decided 2026-10-03, after hands-on testing): after an edit or a merge, an item's sessions never overlap each other. Sessions of different items may overlap.
 - Times are always 24-hour ("21:02"), in both languages.
 - Assume all data matches the current Dexie schema. In particular, a log with `syncedOnce: true` really exists in the cloud. This assumption is what makes absence-based deletion safe for logs (see Sync §2).
 
@@ -42,7 +43,7 @@ Defaults proposed during brainstorming and approved:
 - Delete (or typing a total of 0) removes all of that item's entries for the day, including old negative ones.
 - Old negative entries are otherwise left alone. The one exception, added while writing this spec, is when they cancel out the item's whole day (see "Legacy fold" under Editing time).
 - A shortened session's end never moves back past 00:00 of its own day.
-- Merge packs entries back to back in their original order.
+- Merge packs each item's entries back to back in their original order. (The first version packed the whole day as one chain, so only the day's latest session ended at 11:59:59 PM; changed 2026-10-03.)
 
 ## Viewing sessions
 
@@ -97,6 +98,16 @@ Inputs:
    - The clamp keeps the entry on its day. For a session that crossed midnight, the end stops at 00:00 and the session keeps its new, shorter length, so its start ends up later than before (23:50–00:20 shortened by 25 minutes becomes 23:55–00:00).
    - Because `target > 0` here, the walk always stops before running out of sessions.
 
+**Overlap fix** (added 2026-10-03). After the rules above, `planTimeEdit` runs `resolveOverlaps` on the item's resulting rows:
+
+- The item's session that ends latest stays put.
+- Each earlier session of the item that overlaps a later one slides back just far enough, keeping its length. This cascades down the item's list.
+- Slid rows join `updates` with unchanged durations, so the invariant below still holds.
+- When two sessions end at the same moment, the newer row (higher id) stays put.
+- A slid session never ends before `dayStartMs`; in that rare case a small overlap can remain.
+- Example: A has 20:00–20:30 and 20:40–20:50. At 21:00 you add 30 minutes, so the latest becomes 20:20–21:00, and 20:00–20:30 slides back to 19:50–20:20.
+- An overlap that already existed in the item (for example between old noon-stamped rows) is fixed the same way the next time the item's day is edited.
+
 **Invariant:** once the plan is applied, the item's entries for that day sum to `max(0, target)`. Tests assert this for every case.
 
 Return shape: `{ updates: [{ id, loggedAt, duration }], deleteIds: [id], create: { loggedAt, duration } | null }`.
@@ -120,13 +131,17 @@ Return shape: `{ updates: [{ id, loggedAt, duration }], deleteIds: [id], create:
 
 ## Merge to yesterday
 
-`reattributeLogsToDate(logIds, newDateStr)` keeps its signature and its return value (the updated rows), so `handleMergeToYesterday` does not change. Only the stamping changes, through a pure `planPackIntoDay(entries, { dayStartMs, dayEndMs })`:
+`reattributeLogsToDate(logIds, newDateStr)` keeps its signature. It returns every row it changed (the merged rows plus any slid rows), and `handleMergeToYesterday`, which does not change, pushes them all. Stamping goes through two pure helpers:
 
 - `dayEndMs = lastSecondOfDay(newDateStr, tz)`.
-- Positive entries are sorted by `loggedAt` ascending and packed back to back so the last one ends at `dayEndMs`. Walk from the latest with `cursor = dayEndMs`. Each entry gets `loggedAt = max(cursor, dayStartMs)`, then `cursor = loggedAt − duration × 1000`.
+- **`planPackIntoDay(entries, { dayStartMs, dayEndMs })` lines up each item on its own.**
+  - An item's positive entries are sorted by `loggedAt` ascending and packed back to back so its last one ends at `dayEndMs`.
+  - Walk from the latest with `cursor = dayEndMs`. Each entry gets `loggedAt = max(cursor, dayStartMs)`, then `cursor = loggedAt − duration × 1000`.
+  - Every merged item therefore ends at 23:59:59, and a trashed item's rows never take a visible item's slot.
 - Negative entries get `loggedAt = dayEndMs`.
-- Every entry gets `date = newDateStr`.
-- Packed entries may overlap sessions already on that day. This is accepted: bucketing only reads `loggedAt`, and totals, streaks and goals only sum durations.
+- **`resolveOverlaps` then fixes each item's list on `newDateStr`.** It runs over the merged rows together with the merged items' sessions already on that day. The merged rows end latest and stay; the item's earlier sessions slide back where they overlap. Example: yesterday A has 22:00–23:50 and today A has 00:05–00:35. After the merge, today's session shows 23:29–23:59 and yesterday's slides back to 21:39–23:29.
+- Every changed entry gets `date = newDateStr`.
+- Sessions of different items may overlap. This is accepted: bucketing only reads `loggedAt`, and totals, streaks and goals only sum durations.
 
 ## Time helpers (`tzDateHelpers.js`)
 
@@ -206,7 +221,8 @@ New keys, added to both `en.json` and `zh.json`:
 
 ## Known limitations and side effects
 
-- Merged or extended sessions can overlap real ones. This is cosmetic in a per-item list; the future timeline will need to handle it.
+- Sessions of different items can overlap; an item's own list never does. This is fine in the per-item list; the future day timeline will need to handle it.
+- The overlap fix can move sessions the timer recorded: an item's earlier sessions slide back to make room for its latest one.
 - Adding time to an item while its timer is running produces two overlapping sessions once the timer stops.
 - Moving an extended session to "now" drops its original start time. This was chosen deliberately.
 - A device still on the old app version ignores changed durations and missed deletions until it reloads into the new version.
@@ -219,7 +235,7 @@ New keys, added to both `en.json` and `zh.json`:
 - Editing or deleting one session directly.
 - Session lists on the Weekly, Monthly or Yearly reports.
 - Showing the running timer as a session.
-- Preventing overlaps.
+- Preventing overlaps between different items.
 
 ## Testing
 
@@ -241,8 +257,17 @@ Follow the CLAUDE.md testing rules: pin the timezone with `await setTimezone('Am
     - the sum invariant holds in every case
   - `planPackIntoDay`:
     - entries are packed back to back in their original order, the last ending at `dayEndMs`
+    - each item is lined up on its own, so every item ends at `dayEndMs`
     - negatives go to `dayEndMs`
     - the clamp at `dayStartMs`
+  - `resolveOverlaps`:
+    - an earlier overlapping session slides back, keeping its length
+    - the slide cascades down the item's list
+    - non-overlapping sessions and other items are left alone
+    - on a tie the newer row stays
+    - the day-start clamp
+  - `planTimeEdit` applies the overlap fix after adding time, and also fixes an overlap that already existed.
+- **`tests/database.test.js`** (overlap fix): `editItemDayTime` slides an overlapping earlier session back and returns it for upload; `reattributeLogsToDate` lines up each item on its own and slides the item's session already on that day back, leaving other items alone.
 - **`tests/tzDateHelpers.test.js`**:
   - `formatClockInTimezone` gives "21:02", and just after midnight gives "00:07" rather than "24:07".
   - One instant formats differently in Los Angeles and Tokyo.
