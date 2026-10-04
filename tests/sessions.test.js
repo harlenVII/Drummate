@@ -4,7 +4,7 @@ import { toSessionRows, planTimeEdit, planPackIntoDay } from '../src/utils/sessi
 const MIN = 60 * 1000;
 const DAY_START = 1780000000000; // stands in for 00:00 of the edited day
 const at = (minutes) => DAY_START + minutes * MIN; // wall-clock minutes after 00:00
-const row = (id, endMinutes, durationSeconds) => ({ id, loggedAt: at(endMinutes), duration: durationSeconds });
+const row = (id, endMinutes, durationSeconds, itemId) => ({ id, loggedAt: at(endMinutes), duration: durationSeconds, itemId });
 const total = (entries) => entries.reduce((s, e) => s + e.duration, 0);
 
 // Apply a plan the way editItemDayTime does, so tests can check the result.
@@ -146,6 +146,21 @@ describe('planPackIntoDay', () => {
       { id: 1, loggedAt: DAY_END },
       { id: 2, loggedAt: DAY_END },
     ]);
+  });
+
+  it('lines up each item on its own, so every item ends at 23:59:59', () => {
+    // Today: A 09:00-09:10, B 09:15-09:45, A again 09:50-09:55, C 10:00-10:05.
+    const entries = [
+      row(1, 9 * 60 + 10, 600, 'A'),
+      row(2, 9 * 60 + 45, 1800, 'B'),
+      row(3, 9 * 60 + 55, 300, 'A'),
+      row(4, 10 * 60 + 5, 300, 'C'),
+    ];
+    const stamps = new Map(planPackIntoDay(entries, opts).map((s) => [s.id, s.loggedAt]));
+    expect(stamps.get(2)).toBe(DAY_END); // B
+    expect(stamps.get(4)).toBe(DAY_END); // C
+    expect(stamps.get(3)).toBe(DAY_END); // A's later session
+    expect(stamps.get(1)).toBe(DAY_END - 300 * 1000); // A's earlier session, right before it
   });
 
   it('never stamps a row before the start of the day', () => {

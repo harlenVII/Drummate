@@ -188,6 +188,24 @@ describe('practice logs', () => {
     expect(moved.every((l) => l.date === '2026-05-01')).toBe(true);
   });
 
+  it('reattributeLogsToDate lines up each item on its own, so every item ends 23:59:59', async () => {
+    const a = await addItem('A', 'fundamentals');
+    const b = await addItem('B', 'fundamentals');
+    const c = await addItem('C', 'songs');
+    const { startMs } = getDateRangeUtc('2026-05-02', TZ);
+    // Today: A 09:00-09:10, B 09:15-09:45, C 10:00-10:05.
+    const ids = [
+      await addLog(a.id, 600, { loggedAt: startMs + (9 * 60 + 10) * 60000 }),
+      await addLog(b.id, 1800, { loggedAt: startMs + (9 * 60 + 45) * 60000 }),
+      await addLog(c.id, 300, { loggedAt: startMs + (10 * 60 + 5) * 60000 }),
+    ];
+
+    await reattributeLogsToDate(ids, '2026-05-01');
+
+    const end = lastSecondOfDay('2026-05-01', TZ);
+    for (const id of ids) expect((await db.practiceLogs.get(id)).loggedAt).toBe(end);
+  });
+
   it('packs trashed-item logs separately so a hidden row never takes the last visible slot', async () => {
     const ride = await addItem('Ride', 'fundamentals');
     const old = await addItem('Old', 'fundamentals');

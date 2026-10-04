@@ -97,18 +97,30 @@ export function planTimeEdit(entries, deltaSeconds, { anchorMs, dayStartMs }) {
   return plan;
 }
 
-// Plan Merge-to-yesterday stamps: positive rows are packed back to back in
-// their original order so the last one ends at dayEndMs (23:59:59). Rows keep
-// their durations. Negative rows have no time range and go to dayEndMs.
+function groupByItem(rows) {
+  const groups = new Map();
+  for (const r of rows) {
+    if (!groups.has(r.itemId)) groups.set(r.itemId, []);
+    groups.get(r.itemId).push(r);
+  }
+  return [...groups.values()];
+}
+
+// Plan Merge-to-yesterday stamps. Each item is lined up on its own: its
+// positive rows are packed back to back in their original order so its last
+// one ends at dayEndMs (23:59:59). Rows keep their durations; different items
+// may overlap. Negative rows have no time range and go to dayEndMs.
 // No row is stamped before dayStartMs. Returns [{ id, loggedAt }].
 export function planPackIntoDay(entries, { dayStartMs, dayEndMs }) {
-  const positives = entries.filter((e) => e.duration > 0).sort(byLoggedAt);
   const out = [];
-  let cursor = dayEndMs;
-  for (let i = positives.length - 1; i >= 0; i--) {
-    const loggedAt = Math.max(cursor, dayStartMs);
-    out.push({ id: positives[i].id, loggedAt });
-    cursor = loggedAt - positives[i].duration * 1000;
+  for (const group of groupByItem(entries.filter((e) => e.duration > 0))) {
+    const positives = group.sort(byLoggedAt);
+    let cursor = dayEndMs;
+    for (let i = positives.length - 1; i >= 0; i--) {
+      const loggedAt = Math.max(cursor, dayStartMs);
+      out.push({ id: positives[i].id, loggedAt });
+      cursor = loggedAt - positives[i].duration * 1000;
+    }
   }
   for (const e of entries) {
     if (!(e.duration > 0)) out.push({ id: e.id, loggedAt: dayEndMs });

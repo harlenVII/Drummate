@@ -384,28 +384,19 @@ export const getAllLogs = async () => {
 // Re-stamp a set of logs onto a different calendar date. Used by the
 // "Merge today's practice to yesterday" action — preserves per-item
 // breakdown by reattributing each existing log rather than aggregating.
-// Logs of trashed items (hidden from the Daily view) are packed separately
-// from visible ones — each group still ends at 23:59:59 of newDateStr (see
-// planPackIntoDay) — so a hidden row never takes the slot a visible session
-// needs.
+// Each item is lined up on its own so its last row ends at 23:59:59 of
+// newDateStr (see planPackIntoDay); a trashed item's rows therefore never
+// take a visible item's slot.
 export const reattributeLogsToDate = async (logIds, newDateStr) => {
   const tz = getTimezone();
   const dayStartMs = getDateRangeUtc(newDateStr, tz).startMs;
   const dayEndMs = lastSecondOfDay(newDateStr, tz);
-  return await db.transaction('rw', db.practiceLogs, db.practiceItems, async () => {
+  return await db.transaction('rw', db.practiceLogs, async () => {
     const logs = (await db.practiceLogs.bulkGet(logIds)).filter(Boolean);
-    const itemIds = [...new Set(logs.map((l) => l.itemId))];
-    const items = (await db.practiceItems.bulkGet(itemIds)).filter(Boolean);
-    const trashedItemIds = new Set(items.filter((i) => i.trashed).map((i) => i.id));
-    const visible = logs.filter((l) => !trashedItemIds.has(l.itemId));
-    const hidden = logs.filter((l) => trashedItemIds.has(l.itemId));
-
     const updated = [];
-    for (const group of [visible, hidden]) {
-      for (const { id, loggedAt } of planPackIntoDay(group, { dayStartMs, dayEndMs })) {
-        await db.practiceLogs.update(id, { loggedAt, date: newDateStr });
-        updated.push({ ...logs.find((l) => l.id === id), loggedAt, date: newDateStr });
-      }
+    for (const { id, loggedAt } of planPackIntoDay(logs, { dayStartMs, dayEndMs })) {
+      await db.practiceLogs.update(id, { loggedAt, date: newDateStr });
+      updated.push({ ...logs.find((l) => l.id === id), loggedAt, date: newDateStr });
     }
     return updated;
   });
