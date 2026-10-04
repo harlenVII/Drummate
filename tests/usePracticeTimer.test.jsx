@@ -222,3 +222,45 @@ describe('live metronome sync on item switch', () => {
     expect(engine.setBpm).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Highlighted item: always exactly one while there are active items
+// ---------------------------------------------------------------------------
+describe('focused (highlighted) item', () => {
+  const item = (id, category, extra = {}) => ({ id, category, archived: false, trashed: false, ...extra });
+  const items = [item(1, 'fundamentals'), item(2, 'fundamentals'), item(3, 'songs')];
+
+  it('highlights the first item before the user picks one', () => {
+    const { result } = renderHook(() => usePracticeTimer({ metronome: makeMetronome(), items }));
+    expect(result.current.focusedPracticeItemId).toBe(1);
+  });
+
+  it('keeps the item the user picked', () => {
+    const { result } = renderHook(() => usePracticeTimer({ metronome: makeMetronome(), items }));
+    act(() => result.current.setFocusedPracticeItemId(2));
+    expect(result.current.focusedPracticeItemId).toBe(2);
+  });
+
+  it('moves to the running item when the highlighted one is archived, and stays there after the timer stops', () => {
+    const metronome = makeMetronome();
+    const { result, rerender } = renderHook(
+      ({ list }) => usePracticeTimer({ metronome, items: list }),
+      { initialProps: { list: items } },
+    );
+    act(() => {
+      result.current.setFocusedPracticeItemId(2);
+      result.current.setActiveItemId(3);
+    });
+
+    rerender({ list: [item(1, 'fundamentals'), item(2, 'fundamentals', { archived: true }), item(3, 'songs')] });
+    expect(result.current.focusedPracticeItemId).toBe(3);
+
+    act(() => result.current.setActiveItemId(null));
+    expect(result.current.focusedPracticeItemId).toBe(3);
+  });
+
+  it('is null when there are no active items', () => {
+    const { result } = renderHook(() => usePracticeTimer({ metronome: makeMetronome(), items: [] }));
+    expect(result.current.focusedPracticeItemId).toBeNull();
+  });
+});

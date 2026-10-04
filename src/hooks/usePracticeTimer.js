@@ -4,8 +4,9 @@ import { useBackend } from '../contexts/BackendContext';
 import { db, addLog } from '../services/database';
 import { getItem, setItem, removeItem } from '../utils/safeStorage';
 import { SUBDIVISIONS } from '../constants/subdivisions';
+import { resolveFocusedItemId } from '../utils/practiceFocus';
 
-export function usePracticeTimer({ metronome }) {
+export function usePracticeTimer({ metronome, items = [] }) {
   const { user } = useAuth();
   const backend = useBackend();
   // metronome provides: bpm, timeSignature, subdivision, soundType,
@@ -14,7 +15,7 @@ export function usePracticeTimer({ metronome }) {
 
   const [editing, setEditing] = useState(false);
   const [activeItemId, setActiveItemId] = useState(null);
-  const [focusedPracticeItemId, setFocusedPracticeItemId] = useState(null);
+  const [storedFocusedItemId, setFocusedPracticeItemId] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -24,6 +25,14 @@ export function usePracticeTimer({ metronome }) {
   useEffect(() => {
     activeItemIdRef.current = activeItemId;
   }, [activeItemId]);
+
+  // Resolved during render so a stale stored choice never shows as "nothing
+  // highlighted", then written back so the fallback sticks — otherwise falling
+  // back to the running item would jump to the first item when the timer stops.
+  const focusedPracticeItemId = resolveFocusedItemId(items, storedFocusedItemId, activeItemId);
+  useEffect(() => {
+    if (focusedPracticeItemId !== storedFocusedItemId) setFocusedPracticeItemId(focusedPracticeItemId);
+  }, [focusedPracticeItemId, storedFocusedItemId]);
 
   // Recover any unsaved practice session from a previous page close
   useEffect(() => {

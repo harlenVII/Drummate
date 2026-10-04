@@ -11,7 +11,9 @@ export function useKeyboardShortcuts({
               //   handleTabChange, handleSubpageChange, setReportSubpage, setNotesSubpage }
   reports,    // { handleReportDateChange, handleWeekChange, handleMonthChange, handleYearChange }
   setTimeUnit, setTheme, setAccent, setMetronomeAccentFirstBeat,
-  saveAndStop,
+  saveAndStop, handleStart,
+  focusedItemId,  // the highlighted practice item (resolved; null only when there are none)
+  editing,        // practice list edit mode — S never starts a timer there
 }) {
   const { toggleLanguage } = useLanguage();
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
@@ -39,8 +41,12 @@ export function useKeyboardShortcuts({
         const idx = ACCENTS.indexOf(getAccent());
         setAccent(ACCENTS[(idx + 1) % ACCENTS.length]);
       }
+      // Start/stop toggle: stops whatever is running (even if another item is
+      // highlighted — Space on the Practice tab is the "switch" key); when idle,
+      // starts the highlighted item.
       else if (e.code === 'KeyS') {
         if (activeItemIdRef.current != null) saveAndStop();
+        else if (!editing && focusedItemId != null) handleStart(focusedItemId);
       }
       // Each key toggles its own date; the other key switches the date instead of closing
       else if (e.code === 'KeyR') {
@@ -129,7 +135,7 @@ export function useKeyboardShortcuts({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nav.handleTabChange, nav.handleSubpageChange, nav.setReportSubpage, reports.handleReportDateChange, reports.handleWeekChange, reports.handleMonthChange, reports.handleYearChange, toggleLanguage, saveAndStop, setTheme, setAccent, setMetronomeAccentFirstBeat, setTimeUnit]);
+  }, [nav.handleTabChange, nav.handleSubpageChange, nav.setReportSubpage, reports.handleReportDateChange, reports.handleWeekChange, reports.handleMonthChange, reports.handleYearChange, toggleLanguage, saveAndStop, handleStart, focusedItemId, editing, setTheme, setAccent, setMetronomeAccentFirstBeat, setTimeUnit]);
 
   return { showKeyboardHelp, setShowKeyboardHelp, reportModalDate, setReportModalDate };
 }

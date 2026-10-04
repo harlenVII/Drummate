@@ -12,7 +12,7 @@ const SHORTCUTS = [
   { keys: ['L'],                descEn: 'Language: English / Chinese',          descZh: '语言：英文 / 中文' },
   { keys: ['T'],                descEn: 'Theme: Light / Dark',                  descZh: '主题：浅色 / 深色' },
   { keys: ['C'],                descEn: 'Cycle accent color',                   descZh: '切换主题色' },
-  { keys: ['S'],                descEn: 'Stop active timer',                    descZh: '停止计时器' },
+  { keys: ['S'],                descEn: 'Start / stop timer',                   descZh: '开始 / 停止计时器' },
   { keys: ['A'],                descEn: 'Accent beat 1 (Metronome)',            descZh: '重音第一拍（节拍器）' },
   { keys: ['R'],                descEn: "Today's report (copyable)",            descZh: '今日报告（可复制）' },
   { keys: ['Y'],                descEn: "Yesterday's report (copyable)",        descZh: '昨日报告（可复制）' },

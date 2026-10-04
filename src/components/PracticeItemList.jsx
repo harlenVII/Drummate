@@ -284,13 +284,6 @@ function PracticeItemList({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  // When there is no focused item but a timer is running, snap focus to the active item
-  useEffect(() => {
-    if (focusedItemId == null && activeItemId != null) {
-      onFocusChange(activeItemId);
-    }
-  }, [activeItemId, focusedItemId, onFocusChange]);
-
   useEffect(() => {
     if (editing) setAddCategory('fundamentals');
   }, [editing]);

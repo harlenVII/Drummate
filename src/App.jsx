@@ -53,7 +53,7 @@ function App() {
   useAppData();
   const metronome = useMetronomeState();
 
-  const timer = usePracticeTimer({ metronome });
+  const timer = usePracticeTimer({ metronome, items });
   const {
     activeItemId, elapsedTime,
     focusedPracticeItemId, setFocusedPracticeItemId,
@@ -159,6 +159,9 @@ function App() {
     setAccent,
     setMetronomeAccentFirstBeat: metronome.setAccentFirstBeat,
     saveAndStop,
+    handleStart,
+    focusedItemId: focusedPracticeItemId,
+    editing,
   });
 
   if (!user && !isVisitor) {
